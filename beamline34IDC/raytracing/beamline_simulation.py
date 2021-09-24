@@ -1,6 +1,49 @@
-#
-# Python script to run shadow3. Created automatically with ShadowTools.make_python_script_from_list().
-#
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# ----------------------------------------------------------------------- #
+# Copyright (c) 2021, UChicago Argonne, LLC. All rights reserved.         #
+#                                                                         #
+# Copyright 2021. UChicago Argonne, LLC. This software was produced       #
+# under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
+# Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
+# U.S. Department of Energy. The U.S. Government has rights to use,       #
+# reproduce, and distribute this software.  NEITHER THE GOVERNMENT NOR    #
+# UChicago Argonne, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR        #
+# ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is     #
+# modified to produce derivative works, such modified software should     #
+# be clearly marked, so as not to confuse it with the version available   #
+# from ANL.                                                               #
+#                                                                         #
+# Additionally, redistribution and use in source and binary forms, with   #
+# or without modification, are permitted provided that the following      #
+# conditions are met:                                                     #
+#                                                                         #
+#     * Redistributions of source code must retain the above copyright    #
+#       notice, this list of conditions and the following disclaimer.     #
+#                                                                         #
+#     * Redistributions in binary form must reproduce the above copyright #
+#       notice, this list of conditions and the following disclaimer in   #
+#       the documentation and/or other materials provided with the        #
+#       distribution.                                                     #
+#                                                                         #
+#     * Neither the name of UChicago Argonne, LLC, Argonne National       #
+#       Laboratory, ANL, the U.S. Government, nor the names of its        #
+#       contributors may be used to endorse or promote products derived   #
+#       from this software without specific prior written permission.     #
+#                                                                         #
+# THIS SOFTWARE IS PROVIDED BY UChicago Argonne, LLC AND CONTRIBUTORS     #
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT       #
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS       #
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL UChicago     #
+# Argonne, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,        #
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,    #
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;        #
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER        #
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT      #
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN       #
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
+# POSSIBILITY OF SUCH DAMAGE.                                             #
+# ----------------------------------------------------------------------- #
 import Shadow
 import numpy
 import os, glob, sys
@@ -16,30 +59,6 @@ from orangecontrib.shadow.util.hybrid         import hybrid_control
 
 from orangecontrib.shadow_advanced_tools.widgets.sources.ow_hybrid_undulator import HybridUndulatorAttributes
 import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as hybrid_undulator_bl
-
-def get_hybrid_input_parameters(shadow_beam, diffraction_plane=1, calcType=1, nf=0, verbose=False):
-    input_parameters = hybrid_control.HybridInputParameters()
-    input_parameters.ghy_lengthunit = 2
-    input_parameters.widget = MockWidget(verbose=verbose)
-    input_parameters.shadow_beam = shadow_beam
-    input_parameters.ghy_diff_plane = diffraction_plane
-    input_parameters.ghy_calcType = calcType
-    input_parameters.ghy_distance = -1
-    input_parameters.ghy_focallength = -1
-    input_parameters.ghy_nf = nf
-    input_parameters.ghy_nbins_x = 100
-    input_parameters.ghy_nbins_z = 100
-    input_parameters.ghy_npeak = 10
-    input_parameters.ghy_fftnpts = 10000
-    input_parameters.file_to_write_out = 0
-    input_parameters.ghy_automatic = 0
-
-    return input_parameters
-
-def clean_up():
-    for pattern in ["angle.*", "effic.*", "mirr.*", "optax.*", "rmir.*", "screen.*", "star.*"]:
-        files = glob.glob(os.path.join(os.curdir, pattern), recursive=True)
-        for file in files: os.remove(file)
 
 class MockUndulatorHybrid(MockWidget, HybridUndulatorAttributes):
     def __init__(self, verbose=False,  workspace_units=2):
@@ -153,6 +172,8 @@ def run_geometrical_source(n_rays=500000, random_seed=5676561):
     # Run SHADOW to create the source + BUT WE USE OASYS LIBRARY TO BE ABLE TO RUN HYBRYD
     source_beam = fix_Intensity(ShadowBeam.traceFromSource(shadow_source))
 
+    return source_beam
+
 def run_invariant_shadow_simulation(source_beam):
     #####################################################
     # SHADOW 3 INITIALIZATION
@@ -170,7 +191,6 @@ def run_invariant_shadow_simulation(source_beam):
     #  https://raw.githubusercontent.com/srio/shadow3/master/docs/source.nml
     #  https://raw.githubusercontent.com/srio/shadow3/master/docs/oe.nml
     #
-
 
     # WB SLITS
     oe1.DUMMY = 0.1
@@ -245,7 +265,26 @@ def run_invariant_shadow_simulation(source_beam):
 
     return output_beam
 
-def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), plot=False, verbose=False):
+def get_hybrid_input_parameters(shadow_beam, diffraction_plane=1, calcType=1, nf=0, verbose=False):
+    input_parameters = hybrid_control.HybridInputParameters()
+    input_parameters.ghy_lengthunit = 2
+    input_parameters.widget = MockWidget(verbose=verbose)
+    input_parameters.shadow_beam = shadow_beam
+    input_parameters.ghy_diff_plane = diffraction_plane
+    input_parameters.ghy_calcType = calcType
+    input_parameters.ghy_distance = -1
+    input_parameters.ghy_focallength = -1
+    input_parameters.ghy_nf = nf
+    input_parameters.ghy_nbins_x = 100
+    input_parameters.ghy_nbins_z = 100
+    input_parameters.ghy_npeak = 10
+    input_parameters.ghy_fftnpts = 10000
+    input_parameters.file_to_write_out = 0
+    input_parameters.ghy_automatic = 0
+
+    return input_parameters
+
+def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), verbose=False):
     oe5 = Shadow.OE()
     oe6 = Shadow.OE()
     oe7 = Shadow.OE()
@@ -295,9 +334,9 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), plo
 
     # DISPLACEMENT
     oe6.F_MOVE = 1
-    oe6.OFFX =  input_features.get_parameter("vkb_offset_x")
-    oe6.OFFY =  input_features.get_parameter("vkb_offset_y")
-    oe6.OFFZ =  input_features.get_parameter("vkb_offset_z")
+    oe6.OFFX = input_features.get_parameter("vkb_offset_x")
+    oe6.OFFY = input_features.get_parameter("vkb_offset_y")
+    oe6.OFFZ = input_features.get_parameter("vkb_offset_z")
     oe6.X_ROT = input_features.get_parameter("vkb_rotation_x")
     oe6.Y_ROT = input_features.get_parameter("vkb_rotation_y")
     oe6.Z_ROT = input_features.get_parameter("vkb_rotation_z")
@@ -330,9 +369,9 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), plo
 
     # DISPLACEMENT
     oe7.F_MOVE = 1
-    oe7.OFFX =  input_features.get_parameter("hkb_offset_x")
-    oe7.OFFY =  input_features.get_parameter("hkb_offset_y")
-    oe7.OFFZ =  input_features.get_parameter("hkb_offset_z")
+    oe7.OFFX = input_features.get_parameter("hkb_offset_x")
+    oe7.OFFY = input_features.get_parameter("hkb_offset_y")
+    oe7.OFFZ = input_features.get_parameter("hkb_offset_z")
     oe7.X_ROT = input_features.get_parameter("hkb_rotation_x")
     oe7.Y_ROT = input_features.get_parameter("hkb_rotation_y")
     oe7.Z_ROT = input_features.get_parameter("hkb_rotation_z")
@@ -355,28 +394,31 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), plo
     # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
     output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), ShadowOpticalElement(oe6), widget_class_name="EllypticalMirror")
     output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                    diffraction_plane=1, # Tangential
-                                                                    calcType=3, # Diffraction by Mirror Size + Errors
+                                                                    diffraction_plane=1,  # Tangential
+                                                                    calcType=3,  # Diffraction by Mirror Size + Errors
                                                                     nf=1,
                                                                     verbose=verbose)).nf_beam
-    
+
     # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
     output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), ShadowOpticalElement(oe7), widget_class_name="EllypticalMirror")
     output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                    diffraction_plane=1, # Tangential
-                                                                    calcType=3, # Diffraction by Mirror Size + Errors
+                                                                    diffraction_plane=1,  # Tangential
+                                                                    calcType=3,  # Diffraction by Mirror Size + Errors
                                                                     nf=1,
                                                                     verbose=verbose)).nf_beam
-    
+
     output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), ShadowOpticalElement(oe8), widget_class_name="EmptyElement")
-    
+
+    return output_beam
+
+def extract_output_parameters(output_beam, plot=False):
     to_micron = 1e3
     to_urad = 1e6
-    
+
     output_beam._beam.rays[:, 0] *= to_micron
     output_beam._beam.rays[:, 1] *= to_micron
     output_beam._beam.rays[:, 2] *= to_micron
-    
+
     output_beam._beam.rays[:, 3] *= to_urad
     output_beam._beam.rays[:, 4] *= to_urad
     output_beam._beam.rays[:, 5] *= to_urad
@@ -388,14 +430,14 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), plo
 
     ticket['fwhm_h'], ticket['fwhm_quote_h'], ticket['fwhm_coordinates_h'] = get_fwhm(ticket['histogram_h'], ticket['bin_h_center'])
     ticket['fwhm_v'], ticket['fwhm_quote_v'], ticket['fwhm_coordinates_v'] = get_fwhm(ticket['histogram_v'], ticket['bin_v_center'])
-    ticket['sigma_h']    = get_sigma(ticket['histogram_h'], ticket['bin_h_center'])
-    ticket['sigma_v']    = get_sigma(ticket['histogram_v'], ticket['bin_v_center'])
+    ticket['sigma_h'] = get_sigma(ticket['histogram_h'], ticket['bin_h_center'])
+    ticket['sigma_v'] = get_sigma(ticket['histogram_v'], ticket['bin_v_center'])
     ticket['centroid_h'] = get_average(ticket['histogram_h'], ticket['bin_h_center'])
     ticket['centroid_v'] = get_average(ticket['histogram_v'], ticket['bin_v_center'])
-    
+
     histogram = ticket["histogram"]
-    
-    peak_intensity     = numpy.average(histogram[numpy.where(histogram >= numpy.max(histogram) * 0.90)])
+
+    peak_intensity = numpy.average(histogram[numpy.where(histogram >= numpy.max(histogram) * 0.90)])
     integral_intensity = numpy.sum(histogram)
 
     output_parameters = DictionaryWrapper(
@@ -408,144 +450,13 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), plo
         integral_intensity=integral_intensity,
         peak_intensity=peak_intensity
     )
-    
+
     if plot:
         ticket = Shadow.ShadowTools.plotxy(output_beam._beam, 4, 6, nbins=201, nolost=1, title="Focal Spot Divergence", xrange=[-150.0, +150.0], yrange=[-200.0, +200.0])
     else:
         ticket = output_beam._beam.histo2(4, 6, nbins=201, nolost=1, xrange=[-150.0, +150.0], yrange=[-200.0, +200.0])
-    
+
     output_parameters.set_parameter("h_divergence", get_average(ticket['histogram_h'], ticket['bin_h_center']))
     output_parameters.set_parameter("v_divergence", get_average(ticket['histogram_v'], ticket['bin_v_center']))
 
     return output_parameters
-
-from oasys.util.oasys_util import TTYGrabber
-
-if __name__=="__main__":
-    clean_up()
-
-    #source_beam = run_geometrical_source(n_rays=50000)
-    source_beam = run_hybrid_undulator_source(n_rays=5000000)
-
-    input_beam = run_invariant_shadow_simulation(source_beam)
-
-    output_parameters = run_ML_shadow_simulation(input_beam,
-                                                 input_features=DictionaryWrapper(coh_slits_h_aperture = 0.03,
-                                                                                            coh_slits_h_center = 0.0,
-                                                                                            coh_slits_v_aperture = 0.07,
-                                                                                            coh_slits_v_center = 0.0,
-                                                                                            vkb_p_distance=221,
-                                                                                            vkb_offset_x  = 0.0,
-                                                                                            vkb_offset_y  =0.0,
-                                                                                            vkb_offset_z  =0.0,
-                                                                                            vkb_rotation_x=0.0,
-                                                                                            vkb_rotation_y=0.0,
-                                                                                            vkb_rotation_z=0.0,
-                                                                                            hkb_p_distance=120,
-                                                                                            hkb_offset_x = 0.0,
-                                                                                            hkb_offset_y=0.0,
-                                                                                            hkb_offset_z=0.0,
-                                                                                            hkb_rotation_x=0.0,
-                                                                                            hkb_rotation_y=0.0,
-                                                                                            hkb_rotation_z=0.0),
-                                                 verbose=True, plot=True)
-
-    clean_up()
-
-    '''
-    show_shadow = True
-
-    class DontPrint(object):
-        def write(*args): pass
-
-    ttx = TTYGrabber()
-
-    # create a list of possible values to map the change in curvature of both the kb mirrors
-    # FROM OASYS p value change in range +-20 mm with step 1 (visual scanning loop)
-
-    #vkb_p_distances = numpy.arange(start=201.0, stop=242.0, step=1.0)
-    #hkb_p_distances = numpy.arange(start=100.0, stop=141.0, step=1.0)
-    vkb_p_distances = numpy.arange(start=219.0, stop=224.0, step=1.0)
-    hkb_p_distances = numpy.arange(start=118.0, stop=123.0, step=1.0)
-
-    input_features_list = ListOfParameters()
-
-    for vkb_p_distance in vkb_p_distances:
-        for hkb_p_distance  in hkb_p_distances:
-            input_features_list.add_parameters(DictionaryWrapper(coh_slits_h_aperture = 0.03,
-                                                                 coh_slits_h_center = 0.0,
-                                                                 coh_slits_v_aperture = 0.07,
-                                                                 coh_slits_v_center = 0.0,
-                                                                 vkb_p_distance=vkb_p_distance,
-                                                                 vkb_offset_x  = 0.0,
-                                                                 vkb_offset_y  =0.0,
-                                                                 vkb_offset_z  =0.0,
-                                                                 vkb_rotation_x=0.0,
-                                                                 vkb_rotation_y=0.0,
-                                                                 vkb_rotation_z=0.0,
-                                                                 hkb_p_distance=hkb_p_distance,
-                                                                 hkb_offset_x = 0.0,
-                                                                 hkb_offset_y=0.0,
-                                                                 hkb_offset_z=0.0,
-                                                                 hkb_rotation_x=0.0,
-                                                                 hkb_rotation_y=0.0,
-                                                                 hkb_rotation_z=0.0))
-
-    # store the input file
-    input_features_list.to_npy_file("input")
-
-    # load the input file
-    input_features_list = ListOfParameters()
-    input_features_list.from_npy_file("input.npy")
-
-    output_parameters_list = ListOfParameters()
-
-    if not show_shadow: ttx.start()
-
-    input_beam = run_invariant_shadow_simulation(n_rays=5000)
-
-    try:
-        for index in range(input_features_list.get_number_of_parameters()):
-            output_parameters = run_ML_shadow_simulation(input_beam, input_features=input_features_list.get_parameters(index))
-            output_parameters_list.add_parameters(output_parameters)
-            print("Run simulation # ", index+1)
-    except Exception as e:
-        print(e)
-
-    if not show_shadow: ttx.stop()
-
-    clean_up()
-
-    output_parameters_list.to_npy_file("output.npy")
-
-    print("*************************************************")
-    print("*************************************************")
-    print("              INPUT/OUTPUT")
-    print("*************************************************")
-    print("*************************************************")
-
-    print(input_features_list.get_number_of_parameters())
-    print(output_parameters_list.get_number_of_parameters())
-
-    for index in range(input_features_list.get_number_of_parameters()):
-        print("------- Input:")
-        print(input_features_list.get_parameters(index))
-        print("        Output:")
-        print(output_parameters_list.get_parameters(index))
-
-    #####################
-    # SAVE/LOAD AS TRAINING DATA
-
-    result = numpy.full((1, 2), None)
-    result[0, 0] = input_features_list.to_numpy_matrix()
-    result[0, 1] = output_parameters_list.to_numpy_matrix()
-
-    numpy.save("database.npy", result, allow_pickle=True)
-
-    test = numpy.load("database.npy", allow_pickle=True)
-
-    input_features_list = ListOfParameters().from_numpy_matrix(test[0, 0])
-    output_parameters_list = ListOfParameters().from_numpy_matrix(test[0, 1])
-
-    print(test)
-    '''
