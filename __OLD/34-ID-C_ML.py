@@ -153,6 +153,8 @@ def run_geometrical_source(n_rays=500000, random_seed=5676561):
     # Run SHADOW to create the source + BUT WE USE OASYS LIBRARY TO BE ABLE TO RUN HYBRYD
     source_beam = fix_Intensity(ShadowBeam.traceFromSource(shadow_source))
 
+    return source_beam
+
 def run_invariant_shadow_simulation(source_beam):
     #####################################################
     # SHADOW 3 INITIALIZATION
