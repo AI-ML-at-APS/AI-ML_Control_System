@@ -206,22 +206,26 @@ def run_hybrid_undulator_source_through_aperture(n_rays=500000, aperture=[0.001,
 
         return output_beam
 
-    source_beam = ShadowBeam()
+    current_good_rays = 0
 
-    while(source_beam.get_number_of_rays() < target_good_rays):
+    while(current_good_rays < target_good_rays):
         temp_beam = run_beam_through_aperture(n_rays, aperture, distance)
 
         print("HYBRID UNDULATOR: ", temp_beam.get_number_of_rays(), " good rays")
-        source_beam._beam.rays = numpy.append(source_beam._beam.rays,
-                                              temp_beam._beam.rays)
-        print("TOTAL: ", source_beam.get_number_of_rays(), " good rays on ", target_good_rays)
+
+        if current_good_rays == 0: source_beam = ShadowBeam(beam=temp_beam._beam)
+        else:                      source_beam._beam.rays = numpy.append(source_beam._beam.rays, temp_beam._beam.rays)
+
+        current_good_rays = source_beam.get_number_of_rays()
+
+        print("TOTAL: ", current_good_rays, " good rays on ", target_good_rays)
 
     return source_beam
 
-def save_source_beam(source_beam, file_name="begin.dat"):
+def __save_source_beam(source_beam, file_name="begin.dat"):
     source_beam.writeToFile(file_name)
 
-def load_source_beam(file_name="begin.dat"):
+def __load_source_beam(file_name="begin.dat"):
     source_beam = ShadowBeam()
     source_beam.loadFromFile(file_name)
 
@@ -239,26 +243,26 @@ def __run_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561,
 
 def __run_and_save_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561, aperture=[0.03, 0.07], distance=50500, file_name="begin.dat"):
     source_beam = __run_source(type, n_rays, random_seed, aperture, distance)
-    save_source_beam(source_beam, file_name)
+    __save_source_beam(source_beam, file_name)
 
     return source_beam
 
 def __parse_arguments(arguments):
     type = SourceType.GEOMETRICAL
     n_rays = 100000
-    random_seed = 5676561
+    random_seed = 0
     aperture = [0.03, 0.07]
     distance = 50500
     file_name = "begin.dat"
 
-    if not arguments is None and len(arguments) > 2:
-        type = int(arguments[1])
-
-        if arguments[2] == "--h":
+    if not arguments is None and len(arguments) > 1:
+        if arguments[0] == "--h":
             print("Help will come soon")
         else:
-            for i in range(2, len(arguments)):
-                if "-n" == arguments[i][:2]:
+            for i in range(1, len(arguments)):
+                if "-t" == arguments[i][:2]:
+                    type = int(arguments[i][2:])
+                elif "-n" == arguments[i][:2]:
                     n_rays = int(arguments[i][2:])
                 elif "-r" == arguments[i][:2]:
                     random_seed = int(arguments[i][2:])
@@ -274,12 +278,23 @@ def __parse_arguments(arguments):
 def get_source_beam(arguments):
     type, n_rays, random_seed, aperture, distance, file_name = __parse_arguments(arguments)
 
-    if arguments[0] == "run_save":
-        source_beam = __run_and_save_source(type, n_rays, aperture, distance, file_name)
+    if arguments[0] == "save":
+        source_beam = __run_and_save_source(type, n_rays, random_seed, aperture, distance, file_name)
     else:
         if arguments[0] == "load":
-            source_beam = load_source_beam(file_name=file_name)
+            source_beam = __load_source_beam(file_name=file_name)
         elif arguments[0] == "run":
-            source_beam = __run_source(type, n_rays, aperture, distance)
-
+            source_beam = __run_source(type, n_rays, random_seed, aperture, distance)
+        else:
+            raise ValueError("Calculation not recognized")
     return source_beam
+
+import sys
+
+if __name__=="__main__":
+    arguments = sys.argv[1:]
+
+    try:
+        get_source_beam(arguments)
+    except Exception as e:
+        print(e)
