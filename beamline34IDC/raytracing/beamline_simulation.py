@@ -46,133 +46,15 @@
 # ----------------------------------------------------------------------- #
 import Shadow
 import numpy
-import os, glob, sys
 
 from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
 
 from orangecontrib.ml.util.mocks import MockWidget
-from orangecontrib.ml.util.data_structures import ListOfParameters, DictionaryWrapper
+from orangecontrib.ml.util.data_structures import DictionaryWrapper
 
 # OASYS + HYBRID library, to add correction for diffraction and error profiles interference effects.
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, ShadowOpticalElement
 from orangecontrib.shadow.util.hybrid         import hybrid_control
-
-from orangecontrib.shadow_advanced_tools.widgets.sources.ow_hybrid_undulator import HybridUndulatorAttributes
-import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as hybrid_undulator_bl
-
-class MockUndulatorHybrid(MockWidget, HybridUndulatorAttributes):
-    def __init__(self, verbose=False,  workspace_units=2):
-        MockWidget.__init__(self, verbose, workspace_units)
-
-        self.distribution_source = 0  # SRW
-        self.optimize_source = 0
-        self.polarization = 1
-        self.coherent_beam = 0
-        self.phase_diff = 0.0
-        self.polarization_degree = 1.0
-        self.max_number_of_rejected_rays = 0
-
-        self.use_harmonic = 2
-        self.energy = 4999
-        self.energy_to = 5001
-        self.energy_points = 3#21
-
-        self.number_of_periods = 72  # Number of ID Periods (without counting for terminations
-        self.undulator_period = 0.033  # Period Length [m]
-        self.horizontal_central_position = 0.0
-        self.vertical_central_position = 0.0
-        self.longitudinal_central_position = 0.0
-
-        self.Kv = 1.907944
-        self.Kh = 0.0
-        self.magnetic_field_from = 0
-        self.initial_phase_vertical = 0.0
-        self.initial_phase_horizontal = 0.0
-        self.symmetry_vs_longitudinal_position_vertical = 1
-        self.symmetry_vs_longitudinal_position_horizontal = 0
-
-        self.electron_energy_in_GeV = 7.0
-        self.electron_energy_spread = 0.00098
-        self.ring_current = 0.1
-        self.electron_beam_size_h = 0.0002805
-        self.electron_beam_size_v = 1.02e-05
-        self.electron_beam_divergence_h = 1.18e-05
-        self.electron_beam_divergence_v = 3.4e-06
-
-        self.type_of_initialization = 0
-
-        self.source_dimension_wf_h_slit_gap = 0.005
-        self.source_dimension_wf_v_slit_gap = 0.001
-        self.source_dimension_wf_h_slit_points = 500
-        self.source_dimension_wf_v_slit_points = 100
-        self.source_dimension_wf_distance = 10.0
-
-        self.horizontal_range_modification_factor_at_resizing = 0.5
-        self.horizontal_resolution_modification_factor_at_resizing = 5.0
-        self.vertical_range_modification_factor_at_resizing = 0.5
-        self.vertical_resolution_modification_factor_at_resizing = 5.0
-
-        self.auto_expand = 0
-        self.auto_expand_rays = 0
-
-        self.kind_of_sampler = 1
-        self.save_srw_result = 0
-
-def run_hybrid_undulator_source(n_rays=500000, random_seed=5676561):
-    widget = MockUndulatorHybrid(verbose=True)
-
-    widget.number_of_rays = n_rays
-    widget.seed = random_seed
-
-    source_beam, _ = hybrid_undulator_bl.run_hybrid_undulator_simulation(widget)
-
-    return source_beam
-
-def run_geometrical_source(n_rays=500000, random_seed=5676561):
-    #####################################################
-    # SHADOW 3 INITIALIZATION
-
-    #
-    # initialize shadow3 source (oe0) and beam
-    #
-    oe0 = Shadow.Source()
-
-    oe0.FDISTR = 3
-    oe0.F_COLOR = 3
-    oe0.F_PHOT = 0
-    oe0.HDIV1 = 4e-07
-    oe0.HDIV2 = 4e-07
-    oe0.IDO_VX = 0
-    oe0.IDO_VZ = 0
-    oe0.IDO_X_S = 0
-    oe0.IDO_Y_S = 0
-    oe0.IDO_Z_S = 0
-    oe0.ISTAR1 = random_seed
-    oe0.NPOINT = n_rays
-    oe0.PH1 = 4999.0
-    oe0.PH2 = 5001.0
-    oe0.SIGDIX = 1.6e-05
-    oe0.SIGDIZ = 7e-06
-    oe0.SIGMAX = 0.281
-    oe0.SIGMAZ = 0.014
-    oe0.VDIV1 = 8e-07
-    oe0.VDIV2 = 8e-07
-
-    # WEIRD MEMORY INITIALIZATION BY FORTRAN. JUST A FIX.
-    def fix_Intensity(beam_out, polarization=0):
-        if polarization == 0:
-            beam_out._beam.rays[:, 15] = 0
-            beam_out._beam.rays[:, 16] = 0
-            beam_out._beam.rays[:, 17] = 0
-        return beam_out
-
-    shadow_source = ShadowSource.create_src()
-    shadow_source.set_src(src=oe0)
-
-    # Run SHADOW to create the source + BUT WE USE OASYS LIBRARY TO BE ABLE TO RUN HYBRYD
-    source_beam = fix_Intensity(ShadowBeam.traceFromSource(shadow_source))
-
-    return source_beam
 
 def run_invariant_shadow_simulation(source_beam):
     #####################################################
