@@ -46,7 +46,6 @@
 # ----------------------------------------------------------------------- #
 import Shadow
 import numpy
-import os, glob, sys
 
 from orangecontrib.ml.util.mocks import MockWidget
 
