@@ -44,13 +44,21 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import sys
+
 from beamline34IDC.util import clean_up
 from beamline34IDC.training.database import build_training_database
 
+from beamline34IDC.raytracing.source_simulation import get_source_beam
+from beamline34IDC.raytracing.beamline_simulation import run_invariant_shadow_simulation
+
 if __name__ == "__main__":
+    arguments = sys.argv[1:]
 
     try:
-        build_training_database()
+        input_beam = run_invariant_shadow_simulation(get_source_beam(arguments))
+
+        build_training_database(input_beam)
     except Exception as e:
         print(e)
 

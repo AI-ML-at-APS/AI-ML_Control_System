@@ -54,6 +54,11 @@ from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, S
 from orangecontrib.shadow_advanced_tools.widgets.sources.ow_hybrid_undulator import HybridUndulatorAttributes
 import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as hybrid_undulator_bl
 
+class SourceType:
+    GEOMETRICAL = 0
+    HYBRID_UNDULATOR = 1
+    HYBRID_UNDULATOR_APERTURE = 2
+
 def run_geometrical_source(n_rays=500000, random_seed=5676561, aperture=[0.03, 0.07], distance=50500):
     #####################################################
     # SHADOW 3 INITIALIZATION
@@ -64,6 +69,8 @@ def run_geometrical_source(n_rays=500000, random_seed=5676561, aperture=[0.03, 0
     oe0 = Shadow.Source()
 
     div = [0.5*aperture[0]/distance, 0.5*aperture[1]/distance]
+
+    print("Run geometrical source with limited divergence: ", div, "rad")
 
     oe0.FDISTR = 3
     oe0.F_COLOR = 3
@@ -117,7 +124,7 @@ class MockUndulatorHybrid(MockWidget, HybridUndulatorAttributes):
         self.use_harmonic = 2
         self.energy = 4999
         self.energy_to = 5001
-        self.energy_points = 3#21
+        self.energy_points = 11
 
         self.number_of_periods = 72  # Number of ID Periods (without counting for terminations
         self.undulator_period = 0.033  # Period Length [m]
@@ -171,7 +178,6 @@ def run_hybrid_undulator_source(n_rays=500000, random_seed=5676561):
     return source_beam
 
 def run_hybrid_undulator_source_through_aperture(n_rays=500000, aperture=[0.001, 0.001], distance=10000.0, target_good_rays=50000):
-
     def run_beam_through_aperture(n_rays, aperture, distance):
         oe1 = Shadow.OE()
 
@@ -218,5 +224,62 @@ def save_source_beam(source_beam, file_name="begin.dat"):
 def load_source_beam(file_name="begin.dat"):
     source_beam = ShadowBeam()
     source_beam.loadFromFile(file_name)
+
+    return source_beam
+
+def __run_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561, aperture=[0.03, 0.07], distance=50500):
+    if type == SourceType.GEOMETRICAL:
+        source_beam = run_geometrical_source(n_rays, random_seed, aperture, distance)
+    elif type == SourceType.HYBRID_UNDULATOR:
+        source_beam = run_hybrid_undulator_source(n_rays, random_seed)
+    elif type == SourceType.HYBRID_UNDULATOR_APERTURE:
+        source_beam = run_hybrid_undulator_source_through_aperture(1000000, aperture, distance, target_good_rays=n_rays)
+
+    return source_beam
+
+def __run_and_save_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561, aperture=[0.03, 0.07], distance=50500, file_name="begin.dat"):
+    source_beam = __run_source(type, n_rays, random_seed, aperture, distance)
+    save_source_beam(source_beam, file_name)
+
+    return source_beam
+
+def __parse_arguments(arguments):
+    type = SourceType.GEOMETRICAL
+    n_rays = 100000
+    random_seed = 5676561
+    aperture = [0.03, 0.07]
+    distance = 50500
+    file_name = "begin.dat"
+
+    if not arguments is None and len(arguments) > 2:
+        type = int(arguments[1])
+
+        if arguments[2] == "--h":
+            print("Help will come soon")
+        else:
+            for i in range(2, len(arguments)):
+                if "-n" == arguments[i][:2]:
+                    n_rays = int(arguments[i][2:])
+                elif "-r" == arguments[i][:2]:
+                    random_seed = int(arguments[i][2:])
+                elif "-a" == arguments[i][:2]:
+                    values = arguments[i][2:].split(sep=",")
+                    aperture = [float(values[0]), float(values[1])]
+                    distance = float(values[2])
+                elif "-f" == arguments[i][:2]:
+                    file_name = arguments[i][2:]
+
+    return type, n_rays, random_seed, aperture, distance, file_name
+
+def get_source_beam(arguments):
+    type, n_rays, random_seed, aperture, distance, file_name = __parse_arguments(arguments)
+
+    if arguments[0] == "run_save":
+        source_beam = __run_and_save_source(type, n_rays, aperture, distance, file_name)
+    else:
+        if arguments[0] == "load":
+            source_beam = load_source_beam(file_name=file_name)
+        elif arguments[0] == "run":
+            source_beam = __run_source(type, n_rays, aperture, distance)
 
     return source_beam

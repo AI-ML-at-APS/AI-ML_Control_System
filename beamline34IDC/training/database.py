@@ -47,13 +47,9 @@
 import numpy
 
 from orangecontrib.ml.util.data_structures import ListOfParameters, DictionaryWrapper
-from beamline34IDC.raytracing.beamline_simulation import run_hybrid_undulator_source, run_geometrical_source, \
-    run_ML_shadow_simulation, run_invariant_shadow_simulation, extract_output_parameters
+from beamline34IDC.raytracing.beamline_simulation import run_ML_shadow_simulation, run_invariant_shadow_simulation, extract_output_parameters
 
-GEOMETRICAL=0
-HYBRID_UNDULATOR=1
-
-def build_training_database(n_rays=50000, source=GEOMETRICAL):
+def build_training_database(input_beam):
 
     # create a list of possible values to map the change in curvature of both the kb mirrors
     # FROM OASYS p value change in range +-20 mm with step 1 (visual scanning loop)
@@ -95,11 +91,6 @@ def build_training_database(n_rays=50000, source=GEOMETRICAL):
 
     output_parameters_list = ListOfParameters()
 
-    if source==GEOMETRICAL:        source_beam = run_geometrical_source(n_rays=n_rays)
-    elif source==HYBRID_UNDULATOR: source_beam = run_hybrid_undulator_source(n_rays=n_rays)
-    else: raise ValueError("Source not recognized")
-
-    input_beam = run_invariant_shadow_simulation(source_beam)
 
     try:
         for index in range(input_features_list.get_number_of_parameters()):

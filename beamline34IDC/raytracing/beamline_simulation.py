@@ -53,7 +53,7 @@ from orangecontrib.ml.util.mocks import MockWidget
 from orangecontrib.ml.util.data_structures import DictionaryWrapper
 
 # OASYS + HYBRID library, to add correction for diffraction and error profiles interference effects.
-from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, ShadowOpticalElement
+from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
 from orangecontrib.shadow.util.hybrid         import hybrid_control
 
 def run_invariant_shadow_simulation(source_beam):
