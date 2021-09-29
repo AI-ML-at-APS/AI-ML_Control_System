@@ -124,7 +124,7 @@ class MockUndulatorHybrid(MockWidget, HybridUndulatorAttributes):
         self.use_harmonic = 2
         self.energy = 4999
         self.energy_to = 5001
-        self.energy_points = 11
+        self.energy_points = 3 #11
 
         self.number_of_periods = 72  # Number of ID Periods (without counting for terminations
         self.undulator_period = 0.033  # Period Length [m]
@@ -202,7 +202,7 @@ def run_hybrid_undulator_source_through_aperture(n_rays=500000, aperture=[0.001,
         good_only = numpy.where(output_beam._beam.rays[:, 9] == 1)
         output_beam._beam.rays = output_beam._beam.rays[good_only]
 
-        output_beam._beam.retrace(-distance)
+        output_beam._beam.retrace(0.0) # back to source position
 
         return output_beam
 
@@ -237,7 +237,7 @@ def __run_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561,
     elif type == SourceType.HYBRID_UNDULATOR:
         source_beam = run_hybrid_undulator_source(n_rays, random_seed)
     elif type == SourceType.HYBRID_UNDULATOR_APERTURE:
-        source_beam = run_hybrid_undulator_source_through_aperture(1000000, aperture, distance, target_good_rays=n_rays)
+        source_beam = run_hybrid_undulator_source_through_aperture(n_rays*20, aperture, distance, target_good_rays=n_rays)
 
     return source_beam
 
