@@ -47,7 +47,7 @@
 import numpy
 
 from orangecontrib.ml.util.data_structures import ListOfParameters, DictionaryWrapper
-from beamline34IDC.raytracing.beamline_simulation import run_ML_shadow_simulation, run_invariant_shadow_simulation, extract_output_parameters
+from beamline34IDC.raytracing.beamline_simulation import run_ML_shadow_simulation, extract_output_parameters
 
 def build_training_database(input_beam):
 

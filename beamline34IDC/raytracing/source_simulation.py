@@ -241,6 +241,7 @@ def __run_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561,
 
     return source_beam
 
+# TODO: save the source informations for the history, in order to make hybrid work
 def __run_and_save_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561, aperture=[0.03, 0.07], distance=50500, file_name="begin.dat"):
     source_beam = __run_source(type, n_rays, random_seed, aperture, distance)
     __save_source_beam(source_beam, file_name)
@@ -287,6 +288,7 @@ def get_source_beam(arguments):
             source_beam = __run_source(type, n_rays, random_seed, aperture, distance)
         else:
             raise ValueError("Calculation not recognized")
+
     return source_beam
 
 import sys
