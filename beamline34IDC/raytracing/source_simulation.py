@@ -124,7 +124,7 @@ class MockUndulatorHybrid(MockWidget, HybridUndulatorAttributes):
         self.use_harmonic = 2
         self.energy = 4999
         self.energy_to = 5001
-        self.energy_points = 3 #11
+        self.energy_points = 11
 
         self.number_of_periods = 72  # Number of ID Periods (without counting for terminations
         self.undulator_period = 0.033  # Period Length [m]
@@ -198,11 +198,11 @@ def run_hybrid_undulator_source_through_aperture(n_rays=500000, aperture=[0.001,
         output_beam = ShadowBeam.traceFromOE(run_hybrid_undulator_source(n_rays, 0), # seed to 0 to ensure a new beam every time
                                              ShadowOpticalElement(oe1),
                                              widget_class_name="ScreenSlits")
+        output_beam._beam.retrace(0.0) # back to source position
+
         # good only
         good_only = numpy.where(output_beam._beam.rays[:, 9] == 1)
         output_beam._beam.rays = output_beam._beam.rays[good_only]
-
-        output_beam._beam.retrace(0.0) # back to source position
 
         return output_beam
 
@@ -213,8 +213,8 @@ def run_hybrid_undulator_source_through_aperture(n_rays=500000, aperture=[0.001,
 
         print("HYBRID UNDULATOR: ", temp_beam.get_number_of_rays(), " good rays")
 
-        if current_good_rays == 0: source_beam = ShadowBeam(beam=temp_beam._beam)
-        else:                      source_beam._beam.rays = numpy.append(source_beam._beam.rays, temp_beam._beam.rays)
+        if current_good_rays == 0: source_beam = temp_beam
+        else:                      source_beam = ShadowBeam.mergeBeams(source_beam, temp_beam)
 
         current_good_rays = source_beam.get_number_of_rays()
 
