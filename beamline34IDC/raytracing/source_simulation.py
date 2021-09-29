@@ -50,7 +50,7 @@ import numpy
 from orangecontrib.ml.util.mocks import MockWidget
 
 # OASYS + HYBRID library, to add correction for diffraction and error profiles interference effects.
-from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, ShadowOpticalElement
+from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, ShadowOEHistoryItem, ShadowOpticalElement
 from orangecontrib.shadow_advanced_tools.widgets.sources.ow_hybrid_undulator import HybridUndulatorAttributes
 import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as hybrid_undulator_bl
 
@@ -173,7 +173,7 @@ def run_hybrid_undulator_source(n_rays=500000, random_seed=5676561):
     widget.number_of_rays = n_rays
     widget.seed = random_seed
 
-    source_beam, _ = hybrid_undulator_bl.run_hybrid_undulator_simulation(widget)
+    source_beam = hybrid_undulator_bl.run_hybrid_undulator_simulation(widget)
 
     return source_beam
 
@@ -223,11 +223,18 @@ def run_hybrid_undulator_source_through_aperture(n_rays=500000, aperture=[0.001,
     return source_beam
 
 def __save_source_beam(source_beam, file_name="begin.dat"):
+    source_beam.getOEHistory(0)._shadow_source_end.src.write("source_" + file_name)
     source_beam.writeToFile(file_name)
 
 def __load_source_beam(file_name="begin.dat"):
     source_beam = ShadowBeam()
     source_beam.loadFromFile(file_name)
+
+    shadow_source = ShadowSource.create_src_from_file("source_" + file_name)
+
+    source_beam.history.append(ShadowOEHistoryItem(shadow_source_start=shadow_source,
+                                                   shadow_source_end=shadow_source,
+                                                   widget_class_name="UndeterminedSource"))
 
     return source_beam
 
