@@ -78,6 +78,7 @@ if __name__ == "__main__":
                                                                                 hkb_rotation_x=0.0,
                                                                                 hkb_rotation_y=0.0,
                                                                                 hkb_rotation_z=0.0),
+                                               use_benders=True,
                                                verbose=True)
 
         extract_output_parameters(output_beam=output_beam, plot=True)

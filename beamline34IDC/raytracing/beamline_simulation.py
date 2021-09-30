@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import Shadow
-import numpy
+import os, numpy
 
 from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
 
@@ -55,6 +55,78 @@ from orangecontrib.ml.util.data_structures import DictionaryWrapper
 # OASYS + HYBRID library, to add correction for diffraction and error profiles interference effects.
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
 from orangecontrib.shadow.util.hybrid         import hybrid_control
+from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl import bendable_ellipsoid_mirror_bl as bem
+
+class MockBendableEllipsoidMirror(MockWidget):
+    def __init__(self, oe=Shadow.OE(), verbose=False,  workspace_units=2):
+        MockWidget.__init__(self, verbose, workspace_units)
+
+        self.add_acceptance_slits = 0
+
+        self.dim_x_minus = oe.RWIDX1
+        self.dim_x_plus = oe.RWIDX2
+        self.dim_y_minus = oe.RLEN1
+        self.dim_y_plus = oe.RLEN2
+
+        self.modified_surface = oe.F_G_S
+
+        if self.modified_surface > 0:
+            self.ms_defect_file_name = oe.FILE_RIP.decode('utf-8')
+            self.set_output_file_name(output_file_name="bender_" + self.ms_defect_file_name)
+        else:
+            self.set_output_file_name()
+
+        self.bender_bin_x = 100
+        self.bender_bin_y = 500
+
+        self.E = 131000
+        self.h = 6.2
+
+        self.kind_of_bender = bem.DOUBLE_MOMENTUM
+        self.shape = bem.TRAPEZIUM
+
+        self.which_length = 0
+        self.optimized_length = 0.0
+        self.n_fit_steps = 3
+
+        self.M1    = 0.0
+        self.ratio = 0.5
+        self.e     = 0.3
+
+        self.M1_out    = 0.0
+        self.ratio_out = 0.0
+        self.e_out     = 0.0
+
+        self.M1_fixed    = False
+        self.ratio_fixed = False
+        self.e_fixed     = False
+
+        self.M1_min    = 0.0
+        self.ratio_min = 0.0
+        self.e_min     = 0.0
+
+        self.M1_max    = 1000.0
+        self.ratio_max = 10.0
+        self.e_max     = 1.0
+
+    def set_output_file_name(self, output_file_name="mirror_bender.dat"):
+        self.output_file_name = output_file_name
+
+        if os.path.isabs(self.output_file_name):
+            self.output_file_name_full = self.output_file_name
+        else:
+            if self.output_file_name.startswith(os.path.sep):
+                self.output_file_name_full = os.getcwd() + self.output_file_name
+            else:
+                self.output_file_name_full = os.getcwd() + os.path.sep + self.output_file_name
+
+    def manage_acceptance_slits(self, shadow_oe):
+        if self.add_acceptance_slits==1:
+            shadow_oe.add_acceptance_slits(self.auto_slit_width_xaxis,
+                                           self.auto_slit_height_zaxis,
+                                           self.auto_slit_center_xaxis,
+                                           self.auto_slit_center_zaxis)
+        
 
 def run_invariant_shadow_simulation(source_beam):
     #####################################################
@@ -147,7 +219,7 @@ def run_invariant_shadow_simulation(source_beam):
 
     return output_beam
 
-def get_hybrid_input_parameters(shadow_beam, diffraction_plane=1, calcType=1, nf=0, verbose=False):
+def __get_hybrid_input_parameters(shadow_beam, diffraction_plane=1, calcType=1, nf=0, verbose=False):
     input_parameters = hybrid_control.HybridInputParameters()
     input_parameters.ghy_lengthunit = 2
     input_parameters.widget = MockWidget(verbose=verbose)
@@ -166,11 +238,22 @@ def get_hybrid_input_parameters(shadow_beam, diffraction_plane=1, calcType=1, nf
 
     return input_parameters
 
-def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), verbose=False):
-    oe5 = Shadow.OE()
-    oe6 = Shadow.OE()
-    oe7 = Shadow.OE()
+def __rotate_axis_system(input_beam, rotation_angle=270.0):
     oe8 = Shadow.OE()
+
+    oe8.ALPHA = rotation_angle
+    oe8.DUMMY = 0.1
+    oe8.FWRITE = 3
+    oe8.F_REFRAC = 2
+    oe8.T_IMAGE = 0.0
+    oe8.T_INCIDENCE = 0.0
+    oe8.T_REFLECTION = 180.0
+    oe8.T_SOURCE = 0.0
+
+    return ShadowBeam.traceFromOE(input_beam.duplicate(), ShadowOpticalElement(oe8), widget_class_name="EmptyElement")
+
+def __run_ML_shadow_simulation_common(input_beam, input_features=DictionaryWrapper(), verbose=False):
+    oe5 = Shadow.OE()
 
     # COHERENCE SLITS
     oe5.DUMMY = 0.1
@@ -188,6 +271,18 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), ver
     oe5.T_REFLECTION = 180.0
     oe5.T_SOURCE = 0.0
 
+    # HYBRID CORRECTION TO CONSIDER DIFFRACTION FROM SLITS
+    output_beam = ShadowBeam.traceFromOE(input_beam.duplicate(), ShadowOpticalElement(oe5), widget_class_name="ScreenSlits")
+    output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                      diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
+                                                                      calcType=1,  # Diffraction by Simple Aperture
+                                                                      verbose=verbose)).ff_beam
+
+    return output_beam
+
+def __get_KB_OEs(input_features):
+    oe6 = Shadow.OE()
+    oe7 = Shadow.OE()
     # V-KB
     oe6.ALPHA = 180.0
     oe6.DUMMY = 0.1
@@ -201,7 +296,6 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), ver
     oe6.F_G_S = 2
     oe6.F_REFLEC = 1
     oe6.F_RIPPLE = 1
-
     oe6.RLEN1 = 50.0
     oe6.RLEN2 = 50.0
     oe6.RWIDX1 = 10.0
@@ -258,40 +352,60 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), ver
     oe7.Y_ROT = input_features.get_parameter("hkb_rotation_y")
     oe7.Z_ROT = input_features.get_parameter("hkb_rotation_z")
 
-    oe8.ALPHA = 270.0
-    oe8.DUMMY = 0.1
-    oe8.FWRITE = 3
-    oe8.F_REFRAC = 2
-    oe8.T_IMAGE = 0.0
-    oe8.T_INCIDENCE = 0.0
-    oe8.T_REFLECTION = 180.0
-    oe8.T_SOURCE = 0.0
+    return oe6, oe7
 
-    # HYBRID CORRECTION TO CONSIDER DIFFRACTION FROM SLITS
-    output_beam = ShadowBeam.traceFromOE(input_beam.duplicate(), ShadowOpticalElement(oe5), widget_class_name="ScreenSlits")
-    output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                    diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
-                                                                    calcType=1,  # Diffraction by Simple Aperture
-                                                                    verbose=verbose)).ff_beam
-    # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
-    output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), ShadowOpticalElement(oe6), widget_class_name="EllypticalMirror")
-    output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                    diffraction_plane=1,  # Tangential
-                                                                    calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                    nf=1,
-                                                                    verbose=verbose)).nf_beam
+def __get_KB_mock_widgets(oe6, oe7):
+    hkb_widget = MockBendableEllipsoidMirror(oe6)
 
-    # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
-    output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), ShadowOpticalElement(oe7), widget_class_name="EllypticalMirror")
-    output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                    diffraction_plane=1,  # Tangential
-                                                                    calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                    nf=1,
-                                                                    verbose=verbose)).nf_beam
+    vkb_widget = MockBendableEllipsoidMirror(oe7)
 
-    output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), ShadowOpticalElement(oe8), widget_class_name="EmptyElement")
+    return hkb_widget, vkb_widget
 
-    return output_beam
+def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), use_benders=False, verbose=False):
+    output_beam = __run_ML_shadow_simulation_common(input_beam, input_features, verbose)
+
+    oe6, oe7 = __get_KB_OEs(input_features)
+
+    if not use_benders:
+        # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
+        output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), ShadowOpticalElement(oe6), widget_class_name="EllypticalMirror")
+        output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                          diffraction_plane=1,  # Tangential
+                                                                          calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                          nf=1,
+                                                                          verbose=verbose)).nf_beam
+
+        # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
+        output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), ShadowOpticalElement(oe7), widget_class_name="EllypticalMirror")
+        output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                          diffraction_plane=1,  # Tangential
+                                                                          calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                          nf=1,
+                                                                          verbose=verbose)).nf_beam
+    else:
+        hkb_widget, vkb_widget = __get_KB_mock_widgets(oe6, oe7)
+
+        hkb_shadow_oe, _ = bem.apply_bender_surface(hkb_widget, output_beam, ShadowOpticalElement(oe6))
+
+        # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
+        output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), hkb_shadow_oe, widget_class_name="EllypticalMirror")
+        output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                          diffraction_plane=1,  # Tangential
+                                                                          calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                          nf=1,
+                                                                          verbose=verbose)).nf_beam
+
+        vkb_shadow_oe, _ = bem.apply_bender_surface(vkb_widget, output_beam, ShadowOpticalElement(oe7))
+
+        # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
+        output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), vkb_shadow_oe, widget_class_name="EllypticalMirror")
+        output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                          diffraction_plane=1,  # Tangential
+                                                                          calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                          nf=1,
+                                                                          verbose=verbose)).nf_beam
+
+    return __rotate_axis_system(output_beam, rotation_angle=270.0)
 
 def extract_output_parameters(output_beam, plot=False):
     to_micron = 1e3
