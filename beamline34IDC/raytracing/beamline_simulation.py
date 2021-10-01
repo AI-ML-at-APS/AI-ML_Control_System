@@ -231,8 +231,8 @@ def __get_hybrid_input_parameters(shadow_beam, diffraction_plane=1, calcType=1, 
     input_parameters.ghy_nf = nf
     input_parameters.ghy_nbins_x = 100
     input_parameters.ghy_nbins_z = 100
-    input_parameters.ghy_npeak = 10
-    input_parameters.ghy_fftnpts = 10000
+    input_parameters.ghy_npeak = 20
+    input_parameters.ghy_fftnpts = 50000
     input_parameters.file_to_write_out = 0
     input_parameters.ghy_automatic = 0
 
@@ -385,7 +385,7 @@ def __get_KB_mock_widgets(oe6, oe7):
 
     return vkb_widget, hkb_widget
 
-def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), use_benders=False, verbose=False):
+def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), use_benders=False, verbose=False, near_field=False):
     output_beam = __run_ML_shadow_simulation_common(input_beam, input_features, verbose)
 
     oe6, oe7 = __get_KB_OEs(input_features)
@@ -393,19 +393,34 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), use
     if not use_benders:
         # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
         output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), ShadowOpticalElement(oe6), widget_class_name="EllypticalMirror")
-        output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
-                                                                          diffraction_plane=1,  # Tangential
-                                                                          calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                          nf=1,
-                                                                          verbose=verbose)).nf_beam
+        if near_field:
+            output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                              diffraction_plane=1,  # Tangential
+                                                                              calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                              nf=1,
+                                                                              verbose=verbose)).nf_beam
+        else:
+            output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                              diffraction_plane=1,  # Tangential
+                                                                              calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                              nf=0,
+                                                                              verbose=verbose)).ff_beam
 
         # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
         output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), ShadowOpticalElement(oe7), widget_class_name="EllypticalMirror")
-        output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
-                                                                          diffraction_plane=1,  # Tangential
-                                                                          calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                          nf=1,
-                                                                          verbose=verbose)).nf_beam
+        if near_field:
+            output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                              diffraction_plane=1,  # Tangential
+                                                                              calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                              nf=1,
+                                                                              verbose=verbose)).nf_beam
+        else:
+            output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                              diffraction_plane=1,  # Tangential
+                                                                              calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                              nf=0,
+                                                                              verbose=verbose)).ff_beam
+
     else:
         vkb_widget, hkb_widget = __get_KB_mock_widgets(oe6, oe7)
 
@@ -415,12 +430,18 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), use
 
         # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
         output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), vkb_shadow_oe, widget_class_name="EllypticalMirror")
-        output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+        if near_field:
+            output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
                                                                           diffraction_plane=1,  # Tangential
                                                                           calcType=3,  # Diffraction by Mirror Size + Errors
                                                                           nf=1,
                                                                           verbose=verbose)).nf_beam
-
+        else:
+            output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                          diffraction_plane=1,  # Tangential
+                                                                          calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                          nf=0,
+                                                                          verbose=verbose)).ff_beam
 
         hkb_shadow_oe, _ = bem.apply_bender_surface(hkb_widget, output_beam, ShadowOpticalElement(oe7))
 
@@ -428,11 +449,19 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), use
 
         # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
         output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), hkb_shadow_oe, widget_class_name="EllypticalMirror")
-        output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
-                                                                          diffraction_plane=1,  # Tangential
-                                                                          calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                          nf=1,
-                                                                          verbose=verbose)).nf_beam
+
+        if near_field:
+            output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                              diffraction_plane=1,  # Tangential
+                                                                              calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                              nf=1,
+                                                                              verbose=verbose)).nf_beam
+        else:
+            output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
+                                                                              diffraction_plane=1,  # Tangential
+                                                                              calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                              nf=0,
+                                                                              verbose=verbose)).ff_beam
 
     return __rotate_axis_system(output_beam, rotation_angle=270.0)
 

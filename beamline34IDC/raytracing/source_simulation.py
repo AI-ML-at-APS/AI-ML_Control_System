@@ -173,7 +173,7 @@ def run_hybrid_undulator_source(n_rays=500000, random_seed=5676561):
     widget.number_of_rays = n_rays
     widget.seed = random_seed
 
-    source_beam = hybrid_undulator_bl.run_hybrid_undulator_simulation(widget)
+    source_beam, _ = hybrid_undulator_bl.run_hybrid_undulator_simulation(widget)
 
     return source_beam
 
@@ -244,7 +244,7 @@ def __run_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561,
     elif type == SourceType.HYBRID_UNDULATOR:
         source_beam = run_hybrid_undulator_source(n_rays, random_seed)
     elif type == SourceType.HYBRID_UNDULATOR_APERTURE:
-        source_beam = run_hybrid_undulator_source_through_aperture(n_rays*20, aperture, distance, target_good_rays=n_rays)
+        source_beam = run_hybrid_undulator_source_through_aperture(n_rays, aperture, distance, target_good_rays=n_rays)
 
     return source_beam
 
