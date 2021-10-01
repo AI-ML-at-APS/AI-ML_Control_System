@@ -51,7 +51,7 @@ from orangecontrib.ml.util.mocks import MockWidget
 
 # OASYS + HYBRID library, to add correction for diffraction and error profiles interference effects.
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, ShadowOEHistoryItem, ShadowOpticalElement
-from orangecontrib.shadow_advanced_tools.widgets.sources.ow_hybrid_undulator import HybridUndulatorAttributes
+from orangecontrib.shadow_advanced_tools.widgets.sources.attributes.hybrid_undulator_attributes import HybridUndulatorAttributes
 import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as hybrid_undulator_bl
 
 class SourceType:
