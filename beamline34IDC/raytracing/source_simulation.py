@@ -263,10 +263,21 @@ def __parse_arguments(arguments):
     distance = 50500
     file_name = "begin.dat"
 
-    if not arguments is None and len(arguments) > 1:
+    if not arguments is None:
         if arguments[0] == "--h":
-            print("Help will come soon")
-        else:
+            raise Exception("Sintax:\n" + \
+                            "python -m beamline34IDC.raytracing <action> -t<source type> -n<nr. rays> -r<random seed> -a<aperture> -f<file name>\n\n" + \
+                            "action     : run, save, load\n" + \
+                            "source type: 0 (geometrical), 1 (hybrid undulator), 2 (hybrid undulator with aperture\n" + \
+                            "nr. rays   : number of rays (integer)\n" +
+                            "random seed: integer number > 0\n" + \
+                            "aperture   : horizontal,vertical,distance (float)\n" + \
+                            "file name  : file name where to save or load the initial source raytracing\n\n" + \
+                            "Examples: \n\n" + \
+                            "Run the simulation                         : python -m beamline34IDC.raytracing run -t1 -n1000000 -r0 -a0.03,0.07,50500\n" + \
+                            "Run the simulation and save the source beam: python -m beamline34IDC.raytracing save -t0 -n500000 -r0 -a0.03,0.07,50500 -fbegin_geometrical.dat\n" + \
+                            "Load the source beam and run the simulation: python -m beamline34IDC.raytracing load -fbegin_geometrical.dat")
+        elif len(arguments) > 1:
             for i in range(1, len(arguments)):
                 if "-t" == arguments[i][:2]:
                     type = int(arguments[i][2:])
