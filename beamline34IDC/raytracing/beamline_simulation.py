@@ -365,6 +365,8 @@ def __get_KB_mock_widgets(oe6, oe7):
     vkb_widget.e_fixed = True
     vkb_widget.M1 = 1000
     vkb_widget.ratio = 0.7
+    vkb_widget.which_length = 1
+    vkb_widget.optimized_length = 20.0
 
     vkb_widget.e = 0.050505050505051
 
@@ -378,6 +380,8 @@ def __get_KB_mock_widgets(oe6, oe7):
     hkb_widget.e_fixed = True
     hkb_widget.M1 = 3000
     hkb_widget.ratio = 0.14
+    vkb_widget.which_length = 1
+    vkb_widget.optimized_length = 20.0
 
     return vkb_widget, hkb_widget
 
