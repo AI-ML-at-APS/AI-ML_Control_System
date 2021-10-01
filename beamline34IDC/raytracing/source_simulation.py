@@ -276,7 +276,7 @@ def __parse_arguments(arguments):
                             "Examples: \n\n" + \
                             "Run the simulation                         : python -m beamline34IDC.raytracing run -t1 -n1000000 -r0 -a0.03,0.07,50500\n" + \
                             "Run the simulation and save the source beam: python -m beamline34IDC.raytracing save -t0 -n500000 -r0 -a0.03,0.07,50500 -fbegin_geometrical.dat\n" + \
-                            "Load the source beam and run the simulation: python -m beamline34IDC.raytracing load -fbegin_geometrical.dat")
+                            "Load the source beam and run the simulation: python -m beamline34IDC.raytracing load -fbegin_geometrical.dat\n")
         elif len(arguments) > 1:
             for i in range(1, len(arguments)):
                 if "-t" == arguments[i][:2]:
