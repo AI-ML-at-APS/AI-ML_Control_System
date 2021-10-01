@@ -209,7 +209,7 @@ def run_hybrid_undulator_source_through_aperture(n_rays=500000, aperture=[0.001,
     current_good_rays = 0
 
     while(current_good_rays < target_good_rays):
-        temp_beam = run_beam_through_aperture(n_rays, aperture, distance)
+        temp_beam = run_beam_through_aperture(n_rays*5, aperture, distance)
 
         print("HYBRID UNDULATOR: ", temp_beam.get_number_of_rays(), " good rays")
 
@@ -248,7 +248,6 @@ def __run_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561,
 
     return source_beam
 
-# TODO: save the source informations for the history, in order to make hybrid work
 def __run_and_save_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561, aperture=[0.03, 0.07], distance=50500, file_name="begin.dat"):
     source_beam = __run_source(type, n_rays, random_seed, aperture, distance)
     __save_source_beam(source_beam, file_name)
