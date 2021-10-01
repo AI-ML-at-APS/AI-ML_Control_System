@@ -105,8 +105,8 @@ class MockBendableEllipsoidMirror(MockWidget):
         self.ratio_min = 0.0
         self.e_min     = 0.0
 
-        self.M1_max    = 1000.0
-        self.ratio_max = 10.0
+        self.M1_max    = 10000.0
+        self.ratio_max = 1.0
         self.e_max     = 1.0
 
     def set_output_file_name(self, output_file_name="mirror_bender.dat"):
@@ -355,11 +355,31 @@ def __get_KB_OEs(input_features):
     return oe6, oe7
 
 def __get_KB_mock_widgets(oe6, oe7):
-    hkb_widget = MockBendableEllipsoidMirror(oe6)
+    vkb_widget = MockBendableEllipsoidMirror(oe6)
+    vkb_widget.dim_x_minus = 20.95
+    vkb_widget.dim_x_plus = 20.95
+    vkb_widget.dim_y_minus = 60
+    vkb_widget.dim_y_plus = 60
+    vkb_widget.h = 6.2
+    vkb_widget.e = 0.050505050505051
+    vkb_widget.e_fixed = True
+    vkb_widget.M1 = 1000
+    vkb_widget.ratio = 0.7
 
-    vkb_widget = MockBendableEllipsoidMirror(oe7)
+    vkb_widget.e = 0.050505050505051
 
-    return hkb_widget, vkb_widget
+    hkb_widget = MockBendableEllipsoidMirror(oe7)
+    hkb_widget.dim_x_minus = 24.75
+    hkb_widget.dim_x_plus = 24.75
+    hkb_widget.dim_y_minus = 60
+    hkb_widget.dim_y_plus = 60
+    hkb_widget.h = 6.2
+    hkb_widget.e = 0.050505050505051
+    hkb_widget.e_fixed = True
+    hkb_widget.M1 = 3000
+    hkb_widget.ratio = 0.14
+
+    return vkb_widget, hkb_widget
 
 def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), use_benders=False, verbose=False):
     output_beam = __run_ML_shadow_simulation_common(input_beam, input_features, verbose)
@@ -383,22 +403,27 @@ def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), use
                                                                           nf=1,
                                                                           verbose=verbose)).nf_beam
     else:
-        hkb_widget, vkb_widget = __get_KB_mock_widgets(oe6, oe7)
+        vkb_widget, hkb_widget = __get_KB_mock_widgets(oe6, oe7)
 
-        hkb_shadow_oe, _ = bem.apply_bender_surface(hkb_widget, output_beam, ShadowOpticalElement(oe6))
+        vkb_shadow_oe, _ = bem.apply_bender_surface(vkb_widget, output_beam, ShadowOpticalElement(oe6))
+
+        if verbose: print("V-KB: ", vkb_widget.M1_out, vkb_widget.ratio_out, vkb_widget.e_out)
 
         # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
-        output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), hkb_shadow_oe, widget_class_name="EllypticalMirror")
+        output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), vkb_shadow_oe, widget_class_name="EllypticalMirror")
         output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
                                                                           diffraction_plane=1,  # Tangential
                                                                           calcType=3,  # Diffraction by Mirror Size + Errors
                                                                           nf=1,
                                                                           verbose=verbose)).nf_beam
 
-        vkb_shadow_oe, _ = bem.apply_bender_surface(vkb_widget, output_beam, ShadowOpticalElement(oe7))
+
+        hkb_shadow_oe, _ = bem.apply_bender_surface(hkb_widget, output_beam, ShadowOpticalElement(oe7))
+
+        if verbose: print("H-KB: ", hkb_widget.M1_out, hkb_widget.ratio_out, hkb_widget.e_out)
 
         # HYBRID CORRECTION TO CONSIDER MIRROR SIZE AND ERROR PROFILE
-        output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), vkb_shadow_oe, widget_class_name="EllypticalMirror")
+        output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), hkb_shadow_oe, widget_class_name="EllypticalMirror")
         output_beam = hybrid_control.hy_run(__get_hybrid_input_parameters(output_beam,
                                                                           diffraction_plane=1,  # Tangential
                                                                           calcType=3,  # Diffraction by Mirror Size + Errors
