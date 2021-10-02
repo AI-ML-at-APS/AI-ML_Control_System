@@ -238,18 +238,18 @@ def __load_source_beam(file_name="begin.dat"):
 
     return source_beam
 
-def __run_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561, aperture=[0.03, 0.07], distance=50500):
+def __run_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561, aperture=[0.03, 0.07], distance=50500, target_good_rays=500000):
     if type == SourceType.GEOMETRICAL:
         source_beam = run_geometrical_source(n_rays, random_seed, aperture, distance)
     elif type == SourceType.HYBRID_UNDULATOR:
         source_beam = run_hybrid_undulator_source(n_rays, random_seed)
     elif type == SourceType.HYBRID_UNDULATOR_APERTURE:
-        source_beam = run_hybrid_undulator_source_through_aperture(n_rays, aperture, distance, target_good_rays=n_rays)
+        source_beam = run_hybrid_undulator_source_through_aperture(n_rays, aperture, distance, target_good_rays)
 
     return source_beam
 
-def __run_and_save_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561, aperture=[0.03, 0.07], distance=50500, file_name="begin.dat"):
-    source_beam = __run_source(type, n_rays, random_seed, aperture, distance)
+def __run_and_save_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed=5676561, aperture=[0.03, 0.07], distance=50500, target_good_rays=500000, file_name="begin.dat"):
+    source_beam = __run_source(type, n_rays, random_seed, aperture, distance, target_good_rays)
     __save_source_beam(source_beam, file_name)
 
     return source_beam
@@ -257,6 +257,7 @@ def __run_and_save_source(type=SourceType.GEOMETRICAL, n_rays=50000, random_seed
 def __parse_arguments(arguments):
     type = SourceType.GEOMETRICAL
     n_rays = 100000
+    target_good_rays=500000
     random_seed = 0
     aperture = [0.03, 0.07]
     distance = 50500
@@ -265,23 +266,26 @@ def __parse_arguments(arguments):
     if not arguments is None:
         if arguments[0] == "--h":
             raise Exception("Sintax:\n" + \
-                            "python -m beamline34IDC.raytracing <action> -t<source type> -n<nr. rays> -r<random seed> -a<aperture> -f<file name>\n\n" + \
-                            "action     : run, save, load\n" + \
-                            "source type: 0 (geometrical), 1 (hybrid undulator), 2 (hybrid undulator with aperture\n" + \
-                            "nr. rays   : number of rays (integer)\n" +
-                            "random seed: integer number > 0\n" + \
-                            "aperture   : horizontal,vertical,distance (float)\n" + \
-                            "file name  : file name where to save or load the initial source raytracing\n\n" + \
+                            "python -m beamline34IDC.raytracing <action> -t<source type> -n<nr. rays> -r<random seed> -a<aperture> -N<target good rays> -f<file name>\n\n" + \
+                            "action          : run, save, load\n" + \
+                            "source type     : 0 (geometrical), 1 (hybrid undulator), 2 (hybrid undulator with aperture); action=run,save\n" + \
+                            "nr. rays        : number of rays (integer>0, action=run,save)\n" +
+                            "random seed     : shadow seed (integer>0, action=run,save)\n" + \
+                            "aperture        : horizontal,vertical,distance (float>0, action=run,save; t=0,2) \n" + \
+                            "target good rays: target total good rays (integer>0, action=run,save; t=2) \n"  \
+                            "file name       : file name with the initial source raytracing (action=save,load)\n\n" + \
                             "Examples: \n\n" + \
                             "Run the simulation                         : python -m beamline34IDC.raytracing run -t1 -n1000000 -r0 -a0.03,0.07,50500\n" + \
-                            "Run the simulation and save the source beam: python -m beamline34IDC.raytracing save -t0 -n500000 -r0 -a0.03,0.07,50500 -fbegin_geometrical.dat\n" + \
-                            "Load the source beam and run the simulation: python -m beamline34IDC.raytracing load -fbegin_geometrical.dat\n")
+                            "Run the simulation and save the source beam: python -m beamline34IDC.raytracing save -t2 -n500000 -r0 -a0.03,0.07,50500 -N100000 -fbegin_hybrid.dat\n" + \
+                            "Load the source beam and run the simulation: python -m beamline34IDC.raytracing load -fbegin_hybrid.dat\n")
         elif len(arguments) > 1:
             for i in range(1, len(arguments)):
                 if "-t" == arguments[i][:2]:
                     type = int(arguments[i][2:])
                 elif "-n" == arguments[i][:2]:
                     n_rays = int(arguments[i][2:])
+                elif "-N" == arguments[i][:2]:
+                    target_good_rays = int(arguments[i][2:])
                 elif "-r" == arguments[i][:2]:
                     random_seed = int(arguments[i][2:])
                 elif "-a" == arguments[i][:2]:
@@ -291,18 +295,18 @@ def __parse_arguments(arguments):
                 elif "-f" == arguments[i][:2]:
                     file_name = arguments[i][2:]
 
-    return type, n_rays, random_seed, aperture, distance, file_name
+    return type, n_rays, random_seed, aperture, distance, target_good_rays, file_name
 
 def get_source_beam(arguments):
-    type, n_rays, random_seed, aperture, distance, file_name = __parse_arguments(arguments)
+    type, n_rays, random_seed, aperture, distance, target_good_rays, file_name = __parse_arguments(arguments)
 
     if arguments[0] == "save":
-        source_beam = __run_and_save_source(type, n_rays, random_seed, aperture, distance, file_name)
+        source_beam = __run_and_save_source(type, n_rays, random_seed, aperture, distance, target_good_rays, file_name)
     else:
         if arguments[0] == "load":
             source_beam = __load_source_beam(file_name=file_name)
         elif arguments[0] == "run":
-            source_beam = __run_source(type, n_rays, random_seed, aperture, distance)
+            source_beam = __run_source(type, n_rays, random_seed, aperture, distance, target_good_rays)
         else:
             raise ValueError("Calculation not recognized")
 
