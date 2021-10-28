@@ -45,45 +45,36 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
-from beamline34IDC.util import clean_up
-from beamline34IDC.raytracing.source_simulation import get_source_beam
-from beamline34IDC.raytracing.beamline_simulation import run_invariant_shadow_simulation, run_ML_shadow_simulation, extract_output_parameters
+
+def rotate(origin, point, angle):
+    """
+    Rotate a point counter-clockwise by a given angle around a given origin.
+    """
+    # Convert negative angles to positive
+    angle = normalise_angle(angle)
+
+    # Convert to radians
+    angle = math.radians(angle)
+
+    # Convert to radians
+    ox, oy = origin
+    px, py = point
+
+    # Move point 'p' to origin (0,0)
+    _px = px - ox
+    _py = py - oy
+
+    # Rotate the point 'p'
+    qx = (math.cos(angle) * _px) - (math.sin(angle) * _py)
+    qy = (math.sin(angle) * _px) + (math.cos(angle) * _py)
+
+    # Move point 'p' back to origin (ox, oy)
+    qx = ox + qx
+    qy = oy + qy
+
+    return [qx, qy]
 
 
-import sys
-
-if __name__ == "__main__":
-    arguments = sys.argv[1:]
-
-    try:
-        input_beam = run_invariant_shadow_simulation(get_source_beam(arguments))
-
-        output_beam = run_ML_shadow_simulation(input_beam,
-                                               input_features=DictionaryWrapper(coh_slits_h_aperture=0.03,
-                                                                                coh_slits_h_center=0.0,
-                                                                                coh_slits_v_aperture=0.07,
-                                                                                coh_slits_v_center=0.0,
-                                                                                vkb_p_distance=221,
-                                                                                vkb_offset_x=0.0,
-                                                                                vkb_offset_y=0.0,
-                                                                                vkb_offset_z=0.0,
-                                                                                vkb_rotation_x=0.0,
-                                                                                vkb_rotation_y=0.0,
-                                                                                vkb_rotation_z=0.0,
-                                                                                hkb_p_distance=120,
-                                                                                hkb_offset_x=0.0,
-                                                                                hkb_offset_y=0.0,
-                                                                                hkb_offset_z=0.0,
-                                                                                hkb_rotation_x=0.0,
-                                                                                hkb_rotation_y=0.0,
-                                                                                hkb_rotation_z=0.0),
-                                               use_benders=False,
-                                               verbose=True)
-
-        extract_output_parameters(output_beam=output_beam, plot=True)
-
-    except Exception as e:
-        print(e)
-
-    clean_up()
+def normalise_angle(angle):
+    """ If angle is negative then convert it to positive. """
+    return (360 + angle) if ((angle != 0) & (abs(angle) == (angle * -1))) else angle

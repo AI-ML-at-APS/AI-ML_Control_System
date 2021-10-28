@@ -126,7 +126,6 @@ class MockBendableEllipsoidMirror(MockWidget):
                                            self.auto_slit_height_zaxis,
                                            self.auto_slit_center_xaxis,
                                            self.auto_slit_center_zaxis)
-        
 
 def run_invariant_shadow_simulation(source_beam):
     #####################################################
@@ -385,7 +384,7 @@ def __get_KB_mock_widgets(oe6, oe7):
 
     return vkb_widget, hkb_widget
 
-def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), use_benders=False, verbose=False, near_field=False):
+def run_ML_shadow_simulation(input_beam, input_features=DictionaryWrapper(), use_benders=False, verbose=False, near_field=True):
     output_beam = __run_ML_shadow_simulation_common(input_beam, input_features, verbose)
 
     oe6, oe7 = __get_KB_OEs(input_features)
