@@ -47,24 +47,39 @@
 
 import numpy
 
-D = 3
-thp = 0.003
-delta = 0.001
+def D_calibration():
+    D = 10
+    thp = 0.003
+    delta = 0.0005
+    F = 150
+    
+    thpd = thp - delta
 
-thpd = thp - delta
+    alphap = numpy.arctan((1-numpy.cos(thp))/numpy.sin(thp))
+    alphapd = numpy.arctan((1-numpy.cos(thpd))/numpy.sin(thpd))
+    
+    kp = numpy.sin(thp) * numpy.sin(2*thp - alphap)/numpy.cos(alphap)
+    kpd = (numpy.sin(thpd) * numpy.sin(2*thpd - alphapd)/numpy.cos(alphapd))/numpy.cos(2*delta)
+    
+    delta_s = D*(numpy.abs(kp-kpd))
+    
+    sd=F*numpy.tan(2*delta)
+    
+    print(delta_s*1000, (sd)*1000)
 
-sy = -D*numpy.sin(thp)
-sz = -D*(1-numpy.cos(thp))
+def bender():
+    sn_af = 0.7e-3
+    S_mirror = numpy.array([70e-3, 30e-3])
+    qn = numpy.array([221, 120])
+    
+    def sn_oof(x):
+        q2 = qn + x
+        return numpy.sqrt(sn_af**2 + (S_mirror*(1-qn/q2))**2)
 
-print(sy, sz)
+    print(sn_oof(1)*1e3)
+    print(sn_oof(10)*1e3)
+    print(sn_oof(100)*1e3)
 
-alphap = numpy.arctan((1-numpy.cos(thp))/numpy.sin(thp))
-alphapd = numpy.arctan((1-numpy.cos(thpd))/numpy.sin(thpd))
-
-kp = numpy.sin(thp) * numpy.sin(2*thp - alphap)/numpy.sin(alphap)
-kpd = numpy.sin(thpd) * numpy.sin(2*thpd - alphapd)/numpy.sin(alphapd)
-
-delta_s = D*(numpy.abs(kp-kpd))
-
-print(delta_s*1000)
-
+if __name__=="__main__":
+    D_calibration()
+    #bender()
