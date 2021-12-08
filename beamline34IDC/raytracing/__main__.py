@@ -59,7 +59,10 @@ if __name__ == "__main__":
     try:
         input_beam = run_invariant_shadow_simulation(get_source_beam(arguments))
 
+        #TODO: add displacement of the beam as input parameter: it simulates the real beam and let the ML system take action to compensate
+
         output_beam = run_ML_shadow_simulation(input_beam,
+                                               #TODO: remove useless parameters and convert real movement into shadow movement
                                                input_features=DictionaryWrapper(coh_slits_h_aperture=0.03,
                                                                                 coh_slits_h_center=0.0,
                                                                                 coh_slits_v_aperture=0.07,
@@ -82,6 +85,8 @@ if __name__ == "__main__":
                                                verbose=True)
 
         extract_output_parameters(output_beam=output_beam, plot=True)
+
+        # TODO: extract as output the horizontal and vertical profile + convolution with particle as option (input size)
 
     except Exception as e:
         print(e)
