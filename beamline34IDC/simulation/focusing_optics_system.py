@@ -53,6 +53,7 @@ from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 from beamline34IDC.util.common import write_bragg_file, write_reflectivity_file, write_dabam_file, \
     rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
+from orangecontrib.ml.util.data_structures import DictionaryWrapper
 
 class PreProcessorFiles:
     NO = 0
@@ -62,6 +63,20 @@ class PreProcessorFiles:
 class Movement:
     ABSOLUTE = 0
     RELATIVE = 1
+
+def get_default_input_features():
+    return DictionaryWrapper(coh_slits_h_aperture=0.03,
+                             coh_slits_h_center=0.0,
+                             coh_slits_v_aperture=0.07,
+                             coh_slits_v_center=0.0,
+                             vkb_q_distance=221,
+                             vkb_motor_4_translation=0.0,
+                             vkb_motor_3_pitch_angle=0.003,
+                             vkb_motor_3_delta_pitch_angle=0.0,
+                             hkb_q_distance=120,
+                             hkb_motor_4_translation=0.0,
+                             hkb_motor_3_pitch_angle=0.003,
+                             hkb_motor_3_delta_pitch_angle=0.0)
 
 class FocusingOpticsSystem():
 
@@ -77,9 +92,11 @@ class FocusingOpticsSystem():
 
         self.__modified_elements = None
 
+
+
     def initialize(self,
                    input_beam,
-                   input_features,
+                   input_features=get_default_input_features(),
                    rewrite_preprocessor_files=PreProcessorFiles.YES_SOURCE_RANGE,
                    rewrite_height_error_profile_files=False,
                    **kwargs):
@@ -312,10 +329,8 @@ class FocusingOpticsSystem():
         run_all = self.__modified_elements == [] or len(self.__modified_elements) == 3
 
         if run_all or self.__coherence_slits in self.__modified_elements:
-            input_beam = self.__input_beam.duplicate()
-
             # HYBRID CORRECTION TO CONSIDER DIFFRACTION FROM SLITS
-            output_beam = ShadowBeam.traceFromOE(input_beam, self.__coherence_slits, widget_class_name="ScreenSlits")
+            output_beam = ShadowBeam.traceFromOE(self.__input_beam.duplicate(), self.__coherence_slits, widget_class_name="ScreenSlits")
             output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                             diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
                                                                             calcType=1,  # Diffraction by Simple Aperture
@@ -375,9 +390,10 @@ class FocusingOpticsSystem():
 from beamline34IDC.simulation.source import  GaussianUndulatorSource, StorageRing
 from beamline34IDC.simulation.primary_optics_system import PrimaryOpticsSystem, PreProcessorFiles
 from beamline34IDC.util import clean_up
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
 
 if __name__ == "__main__":
+    clean_up()
+
     # Source -------------------------
     source = GaussianUndulatorSource()
     source.initialize(n_rays=500000, random_seed=3245345, storage_ring=StorageRing.APS)
@@ -394,21 +410,7 @@ if __name__ == "__main__":
 
     focusing_system = FocusingOpticsSystem()
 
-    input_features = DictionaryWrapper(coh_slits_h_aperture=0.03,
-                                       coh_slits_h_center=0.0,
-                                       coh_slits_v_aperture=0.07,
-                                       coh_slits_v_center=0.0,
-                                       vkb_q_distance=221,
-                                       vkb_motor_4_translation=0.0,
-                                       vkb_motor_3_pitch_angle=0.003,
-                                       vkb_motor_3_delta_pitch_angle=0.0,
-                                       hkb_q_distance=120,
-                                       hkb_motor_4_translation=0.0,
-                                       hkb_motor_3_pitch_angle=0.003,
-                                       hkb_motor_3_delta_pitch_angle=0.0)
-
     focusing_system.initialize(input_beam=input_beam,
-                               input_features=input_features,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
@@ -416,10 +418,13 @@ if __name__ == "__main__":
 
     plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
 
+    '''
+    focusing_system.modify_coherence_slits(coh_slits_h_center=0.05)
     focusing_system.move_vkb_motor_3_pitch(1e-4, movement=Movement.RELATIVE)
+    focusing_system.move_hkb_motor_4_translation(-0.1, movement=Movement.RELATIVE)
 
     output_beam = focusing_system.get_beam(verbose=False)
 
     plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
-
+    '''
     clean_up()

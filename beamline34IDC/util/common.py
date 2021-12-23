@@ -44,14 +44,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import numpy
 import Shadow
 from Shadow.ShadowTools import write_shadow_surface
 from Shadow.ShadowPreprocessorsXraylib import prerefl, bragg
-from srxraylib.metrology import profiles_simulation, dabam
+from srxraylib.metrology import dabam
 from oasys.util.error_profile_util import DabamInputParameters, calculate_dabam_profile, ErrorProfileInputParameters, calculate_heigth_profile
 from oasys.widgets import congruence
 from orangecontrib.ml.util.mocks import MockWidget
-from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
+from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement, ShadowSource, ShadowOEHistoryItem
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 import scipy.constants as codata
@@ -66,7 +67,7 @@ def rotate(origin, point, angle):
     angle = normalise_angle(angle)
 
     # Convert to radians
-    angle = math.radians(angle)
+    angle = numpy.radians(angle)
 
     # Convert to radians
     ox, oy = origin
@@ -77,8 +78,8 @@ def rotate(origin, point, angle):
     _py = py - oy
 
     # Rotate the point 'p'
-    qx = (math.cos(angle) * _px) - (math.sin(angle) * _py)
-    qy = (math.sin(angle) * _px) + (math.cos(angle) * _py)
+    qx = (numpy.cos(angle) * _px) - (numpy.sin(angle) * _py)
+    qy = (numpy.sin(angle) * _px) + (numpy.cos(angle) * _py)
 
     # Move point 'p' back to origin (ox, oy)
     qx = ox + qx
@@ -104,10 +105,22 @@ def fix_Intensity(beam_out, polarization=0):
 ####################################################
 
 def get_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, xrange=[-2.0, +2.0], yrange=[-2.0, +2.0]):
-    return shadow_beam._beam.histo2(1, 3, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
+    ticket = shadow_beam._beam.histo2(1, 3, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange)
+
+    hh = ticket['bin_h_center']
+    vv = ticket['bin_v_center']
+    data_2D = ticket["histogram"]
+
+    return hh, vv, data_2D
 
 def get_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, xrange=[-1e-3, +1e-3], yrange=[-1e-3, +1e-3]):
-    return shadow_beam._beam.histo2(4, 6, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
+    ticket = shadow_beam._beam.histo2(4, 6, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange)
+
+    hh = ticket['bin_h_center']
+    vv = ticket['bin_v_center']
+    data_2D = ticket["histogram"]
+
+    return hh, vv, data_2D
 
 def plot_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, title="X,Z", xrange=[-2.0, +2.0], yrange=[-2.0, +2.0]):
     return Shadow.ShadowTools.plotxy(shadow_beam._beam, 1, 3, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
@@ -115,20 +128,37 @@ def plot_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, titl
 def plot_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, title="X',Z'", xrange=[-1e-3, +1e-3], yrange=[-1e-3, +1e-3]):
     return Shadow.ShadowTools.plotxy(shadow_beam._beam, 4, 6, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
 
-def save_source_beam(source_beam, file_name="begin.dat"):
-    source_beam.getOEHistory(0)._shadow_source_end.src.write("source_" + file_name)
+def save_source_beam(source_beam, file_name="source_beam.dat"):
+    source_beam.getOEHistory(0)._shadow_source_start.src.write("parameters_start_" + file_name)
+    source_beam.getOEHistory(0)._shadow_source_end.src.write("parameters_end_" + file_name)
     source_beam.writeToFile(file_name)
 
-def load_source_beam(file_name="begin.dat"):
+def load_source_beam(file_name="source_beam.dat"):
     source_beam = ShadowBeam()
     source_beam.loadFromFile(file_name)
 
-    shadow_source = ShadowSource.create_src_from_file("source_" + file_name)
-    source_beam.history.append(ShadowOEHistoryItem(shadow_source_start=shadow_source,
-                                                   shadow_source_end=shadow_source,
+    shadow_source_start = ShadowSource.create_src_from_file("parameters_start_" + file_name)
+    shadow_source_end   = ShadowSource.create_src_from_file("parameters_end_" + file_name)
+    source_beam.history.append(ShadowOEHistoryItem(shadow_source_start=shadow_source_start,
+                                                   shadow_source_end=shadow_source_end,
                                                    widget_class_name="UndeterminedSource"))
 
     return source_beam
+
+def save_shadow_beam(shadow_beam, file_name="shadow_beam.dat"):
+    shadow_beam.getOEHistory(-1)._shadow_oe_start._oe.write("parameters_start_" + file_name)
+    shadow_beam.getOEHistory(-1)._shadow_oe_end._oe.write("parameters_end_" + file_name)
+    shadow_beam.writeToFile(file_name)
+
+def load_shadow_beam(file_name="shadow_beam.dat"):
+    shadow_beam = ShadowBeam()
+    shadow_beam.loadFromFile(file_name)
+
+    shadow_oe_start = ShadowOpticalElement.create_oe_from_file("parameters_start_" + file_name)
+    shadow_oe_end   = ShadowOpticalElement.create_oe_from_file("parameters_end_" + file_name)
+    shadow_beam.history.append(ShadowOEHistoryItem(shadow_oe_start=shadow_oe_start,
+                                                   shadow_oe_end=shadow_oe_end,
+                                                   widget_class_name="UndeterminedOpticalElement"))
 
 ####################################################
 
