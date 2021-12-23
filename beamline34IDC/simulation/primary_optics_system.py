@@ -50,12 +50,7 @@ import Shadow
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 
-from beamline34IDC.util.common import write_bragg_file, write_reflectivity_file
-
-class PreProcessorFiles:
-    NO = 0
-    YES_FULL_RANGE = 1
-    YES_SOURCE_RANGE = 2
+from beamline34IDC.util.common import write_bragg_file, write_reflectivity_file, PreProcessorFiles
 
 class PrimaryOpticsSystem():
     def __init__(self):
@@ -68,7 +63,7 @@ class PrimaryOpticsSystem():
         energies = ShadowPhysics.getEnergyFromShadowK(self.__source_beam._beam.rays[:, 10])
 
         central_energy = numpy.average(energies)
-        energy_range = [numpy.min(energies), numpy.max(energies)]
+        energy_range = [max(numpy.min(energies)-100.0, 0.0), numpy.max(energies)+100.0]
 
         if rewrite_preprocessor_files==PreProcessorFiles.YES_FULL_RANGE:
             reflectivity_file = write_reflectivity_file()
@@ -181,19 +176,3 @@ class PrimaryOpticsSystem():
             if not is_last_element: input_beam = output_beam.duplicate()
 
         return output_beam
-
-
-from beamline34IDC.simulation.source import  GaussianUndulatorSource, StorageRing
-from beamline34IDC.util.common import plot_shadow_beam_spatial_distribution
-
-if __name__ == "__main__":
-    source = GaussianUndulatorSource()
-    source.initialize(n_rays=50000, random_seed=3245345, storage_ring=StorageRing.APS)
-    source.set_angular_acceptance_from_aperture(aperture=[1, 1], distance=25000)
-    source.set_energy(energy_range=[10000], photon_energy_distribution=GaussianUndulatorSource.PhotonEnergyDistributions.SINGLE_LINE)
-
-    primary_system = PrimaryOpticsSystem()
-    #primary_system.initialize(source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.YES_FULL_RANGE)
-    primary_system.initialize(source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.NO)
-
-    plot_shadow_beam_spatial_distribution(primary_system.get_beam(), xrange=None, yrange=None)

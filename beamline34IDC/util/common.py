@@ -49,9 +49,11 @@ import Shadow
 from Shadow.ShadowTools import write_shadow_surface
 from Shadow.ShadowPreprocessorsXraylib import prerefl, bragg
 from srxraylib.metrology import dabam
+from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
 from oasys.util.error_profile_util import DabamInputParameters, calculate_dabam_profile, ErrorProfileInputParameters, calculate_heigth_profile
 from oasys.widgets import congruence
 from orangecontrib.ml.util.mocks import MockWidget
+from orangecontrib.ml.util.data_structures import DictionaryWrapper
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement, ShadowSource, ShadowOEHistoryItem
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
@@ -104,28 +106,50 @@ def fix_Intensity(beam_out, polarization=0):
 
 ####################################################
 
-def get_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, xrange=[-2.0, +2.0], yrange=[-2.0, +2.0]):
-    ticket = shadow_beam._beam.histo2(1, 3, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange)
+class ShadowHistogram():
+    def __init__(self, hh, vv, data_2D):
+        self.hh = hh
+        self.vv = vv
+        self.data_2D = data_2D
+
+def get_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None):
+    return __shadow_beam_get_distribution_info(shadow_beam._beam.histo2(1, 3, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange))
+
+def get_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None):
+    return __shadow_beam_get_distribution_info(shadow_beam._beam.histo2(4, 6, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange))
+
+def __shadow_beam_get_distribution_info(ticket):
+    ticket['fwhm_h'], ticket['fwhm_quote_h'], ticket['fwhm_coordinates_h'] = get_fwhm(ticket['histogram_h'], ticket['bin_h_center'])
+    ticket['fwhm_v'], ticket['fwhm_quote_v'], ticket['fwhm_coordinates_v'] = get_fwhm(ticket['histogram_v'], ticket['bin_v_center'])
+    ticket['sigma_h'] = get_sigma(ticket['histogram_h'], ticket['bin_h_center'])
+    ticket['sigma_v'] = get_sigma(ticket['histogram_v'], ticket['bin_v_center'])
+    ticket['centroid_h'] = get_average(ticket['histogram_h'], ticket['bin_h_center'])
+    ticket['centroid_v'] = get_average(ticket['histogram_v'], ticket['bin_v_center'])
+
+    histogram = ticket["histogram"]
+
+    peak_intensity = numpy.average(histogram[numpy.where(histogram >= numpy.max(histogram) * 0.90)])
+    integral_intensity = numpy.sum(histogram)
 
     hh = ticket['bin_h_center']
     vv = ticket['bin_v_center']
-    data_2D = ticket["histogram"]
 
-    return hh, vv, data_2D
+    return ShadowHistogram(hh, vv, histogram), \
+           DictionaryWrapper(
+               h_sigma=ticket['sigma_h'],
+               h_fwhm=ticket['fwhm_h'],
+               h_centroid=ticket['centroid_h'],
+               v_sigma=ticket['sigma_v'],
+               v_fwhm=ticket['fwhm_v'],
+               v_centroid=ticket['centroid_v'],
+               integral_intensity=integral_intensity,
+               peak_intensity=peak_intensity
+    )
 
-def get_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, xrange=[-1e-3, +1e-3], yrange=[-1e-3, +1e-3]):
-    ticket = shadow_beam._beam.histo2(4, 6, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange)
-
-    hh = ticket['bin_h_center']
-    vv = ticket['bin_v_center']
-    data_2D = ticket["histogram"]
-
-    return hh, vv, data_2D
-
-def plot_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, title="X,Z", xrange=[-2.0, +2.0], yrange=[-2.0, +2.0]):
+def plot_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, title="X,Z", xrange=None, yrange=None):
     return Shadow.ShadowTools.plotxy(shadow_beam._beam, 1, 3, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
 
-def plot_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, title="X',Z'", xrange=[-1e-3, +1e-3], yrange=[-1e-3, +1e-3]):
+def plot_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, title="X',Z'", xrange=None, yrange=None):
     return Shadow.ShadowTools.plotxy(shadow_beam._beam, 4, 6, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
 
 def save_source_beam(source_beam, file_name="source_beam.dat"):
@@ -137,8 +161,12 @@ def load_source_beam(file_name="source_beam.dat"):
     source_beam = ShadowBeam()
     source_beam.loadFromFile(file_name)
 
-    shadow_source_start = ShadowSource.create_src_from_file("parameters_start_" + file_name)
-    shadow_source_end   = ShadowSource.create_src_from_file("parameters_end_" + file_name)
+    # commented because of a shadow3 bug to be determined
+    #shadow_source_start = ShadowSource.create_src_from_file(congruence.checkFile("parameters_start_" + file_name))
+    #shadow_source_end   = ShadowSource.create_src_from_file(congruence.checkFile("parameters_end_" + file_name))
+    shadow_source_start = __load_shadow_source(ShadowSource.create_src(), congruence.checkFile("parameters_start_" + file_name))
+    shadow_source_end   = __load_shadow_source(ShadowSource.create_src(), congruence.checkFile("parameters_end_" + file_name))
+
     source_beam.history.append(ShadowOEHistoryItem(shadow_source_start=shadow_source_start,
                                                    shadow_source_end=shadow_source_end,
                                                    widget_class_name="UndeterminedSource"))
@@ -154,15 +182,49 @@ def load_shadow_beam(file_name="shadow_beam.dat"):
     shadow_beam = ShadowBeam()
     shadow_beam.loadFromFile(file_name)
 
-    shadow_oe_start = ShadowOpticalElement.create_oe_from_file("parameters_start_" + file_name)
-    shadow_oe_end   = ShadowOpticalElement.create_oe_from_file("parameters_end_" + file_name)
+    # commented because of a shadow3 bug to be determined
+    #shadow_oe_start = ShadowOpticalElement.create_oe_from_file(congruence.checkFile("parameters_start_" + file_name))
+    #shadow_oe_end   = ShadowOpticalElement.create_oe_from_file(congruence.checkFile("parameters_end_" + file_name))
+    shadow_oe_start = __load_shadow_oe(ShadowOpticalElement.create_empty_oe(), congruence.checkFile("parameters_start_" + file_name))
+    shadow_oe_end   = __load_shadow_oe(ShadowOpticalElement.create_empty_oe(), congruence.checkFile("parameters_end_" + file_name))
+
     shadow_beam.history.append(ShadowOEHistoryItem(shadow_oe_start=shadow_oe_start,
                                                    shadow_oe_end=shadow_oe_end,
                                                    widget_class_name="UndeterminedOpticalElement"))
+    return shadow_beam
+
+from configparser import RawConfigParser
+
+def __load_shadow_source(shadow_source, file_name):
+    __load_shadow_file(shadow_source.src, file_name)
+    return shadow_source
+
+def __load_shadow_oe(shadow_oe, file_name):
+    __load_shadow_file(shadow_oe._oe, file_name)
+    return shadow_oe
+
+def __load_shadow_file(shadow_element, file_name):
+    with open(file_name) as f: file_content = '[dummy_section]\n' + f.read()
+
+    config_parser = RawConfigParser()
+    config_parser.optionxform = str
+    config_parser.read_string(file_content)
+
+    for name, value in config_parser.items("dummy_section"):
+        if value.isdigit(): value = int(value)
+        elif value.replace('.','',1).replace('-','',1).replace('E','',1).isdigit(): value = float(value)
+        else: value = value.encode()
+
+        setattr(shadow_element, name, value)
+
+class PreProcessorFiles:
+    NO = 0
+    YES_FULL_RANGE = 1
+    YES_SOURCE_RANGE = 2
 
 ####################################################
 
-def write_reflectivity_file(symbol="Pt", shadow_file_name="Pt.dat", energy_range=[5000, 15000], energy_step=1.0):
+def write_reflectivity_file(symbol="Pt", shadow_file_name="Pt.dat", energy_range=[4000, 16000], energy_step=1.0):
     symbol = symbol.strip()
     density = ShadowPhysics.getMaterialDensity(symbol)
 
@@ -176,7 +238,7 @@ def write_reflectivity_file(symbol="Pt", shadow_file_name="Pt.dat", energy_range
 
     return shadow_file_name
 
-def write_bragg_file(crystal="Si", miller_indexes=[1, 1, 1], shadow_file_name="Si111.dat", energy_range=[5000, 15000], energy_step=1.0):
+def write_bragg_file(crystal="Si", miller_indexes=[1, 1, 1], shadow_file_name="Si111.dat", energy_range=[4000, 16000], energy_step=1.0):
     bragg(interactive=False,
           DESCRIPTOR=crystal.strip(),
           H_MILLER_INDEX=miller_indexes[0],

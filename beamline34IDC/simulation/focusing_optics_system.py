@@ -51,14 +51,9 @@ import Shadow
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
-from beamline34IDC.util.common import write_bragg_file, write_reflectivity_file, write_dabam_file, \
+from beamline34IDC.util.common import PreProcessorFiles, write_reflectivity_file, write_dabam_file, \
     rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
 from orangecontrib.ml.util.data_structures import DictionaryWrapper
-
-class PreProcessorFiles:
-    NO = 0
-    YES_FULL_RANGE = 1
-    YES_SOURCE_RANGE = 2
 
 class Movement:
     ABSOLUTE = 0
@@ -92,15 +87,14 @@ class FocusingOpticsSystem():
 
         self.__modified_elements = None
 
-
-
     def initialize(self,
                    input_beam,
                    input_features=get_default_input_features(),
                    rewrite_preprocessor_files=PreProcessorFiles.YES_SOURCE_RANGE,
                    rewrite_height_error_profile_files=False,
                    **kwargs):
-        self.__input_beam = input_beam
+        self.__input_beam         = input_beam.duplicate()
+        self.__initial_input_beam = input_beam.duplicate()
 
         energies = ShadowPhysics.getEnergyFromShadowK(self.__input_beam._beam.rays[:, 10])
 
@@ -222,7 +216,19 @@ class FocusingOpticsSystem():
         self.__hkb             =  ShadowOpticalElement(hkb)
 
         self.__modified_elements = [self.__coherence_slits, self.__vkb, self.__hkb]
-    
+
+    def perturbate_input_beam(self, shift_h=None, shift_v=None):
+        if self.__input_beam is None: raise ValueError("Focusing Optical System is not initialized")
+
+        good_only = numpy.where(self.__input_beam._beam.rays[:, 9] == 1)
+
+        if not shift_h is None: self.__input_beam._beam.rays[good_only, 0] += shift_h
+        if not shift_v is None: self.__input_beam._beam.rays[good_only, 2] += shift_v
+
+    def restore_input_beam(self):
+        if self.__input_beam is None: raise ValueError("Focusing Optical System is not initialized")
+        self.__input_beam = self.__initial_input_beam.duplicate()
+
     #####################################################################################
     # This methods represent the run-time interface, to interact with the optical system 
     # in real time, like in the real beamline
@@ -239,6 +245,11 @@ class FocusingOpticsSystem():
         if not self.__vkb             in self.__modified_elements: self.__modified_elements.append(self.__vkb)
         if not self.__hkb             in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
+    def get_coherence_slits_parameters(self): # center x, center z, aperture x, aperture z
+        if self.__coherence_slits is None: raise ValueError("Initialize Focusing Optics System first")
+
+        return self.__coherence_slits._oe.CX_SLIT, self.__coherence_slits._oe.CZ_SLIT, self.__coherence_slits._oe.RX_SLIT, self.__coherence_slits._oe.RZ_SLIT
+
     # V-KB -----------------------
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE):
@@ -247,17 +258,26 @@ class FocusingOpticsSystem():
         if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
+    def get_vkb_motor_3_pitch(self):
+        return FocusingOpticsSystem.__get_motor_3_pitch(self.__vkb)
+
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE):
         FocusingOpticsSystem.__move_motor_4_transation(self.__vkb, translation, movement)
 
         if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
+    def get_hkb_motor_4_translation(self):
+        return FocusingOpticsSystem.__get_motor_4_translation(self.__vkb)
+
     def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE):
         FocusingOpticsSystem.__change_shape(self.__vkb, q_distance, movement)
 
         if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
+
+    def get_vkb_q_distance(self):
+        return FocusingOpticsSystem.__get_q_distance(self.__vkb)
 
     # H-KB -----------------------
 
@@ -266,15 +286,24 @@ class FocusingOpticsSystem():
 
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
+    def get_hkb_motor_3_pitch(self):
+        return FocusingOpticsSystem.__get_motor_3_pitch(self.__hkb)
+
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE):
         FocusingOpticsSystem.__move_motor_4_transation(self.__hkb, translation, movement)
 
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
+    def get_hkb_motor_4_translation(self):
+        return FocusingOpticsSystem.__get_motor_4_translation(self.__hkb)
+
     def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE):
         FocusingOpticsSystem.__change_shape(self.__hkb, q_distance, movement)
 
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
+
+    def get_hkb_q_distance(self):
+        return FocusingOpticsSystem.__get_q_distance(self.__hkb)
 
     # PRIVATE -----------------------
 
@@ -313,6 +342,24 @@ class FocusingOpticsSystem():
         if movement == Movement.ABSOLUTE:   element._oe.SIMAG = q_distance
         elif movement == Movement.RELATIVE: element._oe.SIMAG += q_distance
         else: raise ValueError("Movement not recognized")
+
+    @classmethod
+    def __get_motor_3_pitch(cls, element):
+        if element is None: raise ValueError("Initialize Focusing Optics System first")
+
+        return numpy.radians(90 - element._oe.T_INCIDENCE), numpy.radians(element._oe.X_ROT)
+
+    def __get_motor_4_translation(cls, element):
+        if element is None: raise ValueError("Initialize Focusing Optics System first")
+
+        total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + element._oe.X_ROT)
+
+        return numpy.average([element._oe.OFFY/numpy.sin(total_pitch_angle), element._oe.OFFZ/numpy.cos(total_pitch_angle)])
+
+    def __get_q_distance(cls, element):
+        if element is None: raise ValueError("Initialize Focusing Optics System first")
+
+        return element._oe.SIMAG
 
     #####################################################################################
     # Run the simulation
@@ -386,45 +433,3 @@ class FocusingOpticsSystem():
         self.__modified_elements = []
 
         return rotate_axis_system(output_beam, rotation_angle=270.0)
-
-from beamline34IDC.simulation.source import  GaussianUndulatorSource, StorageRing
-from beamline34IDC.simulation.primary_optics_system import PrimaryOpticsSystem, PreProcessorFiles
-from beamline34IDC.util import clean_up
-
-if __name__ == "__main__":
-    clean_up()
-
-    # Source -------------------------
-    source = GaussianUndulatorSource()
-    source.initialize(n_rays=500000, random_seed=3245345, storage_ring=StorageRing.APS)
-    source.set_angular_acceptance_from_aperture(aperture=[0.035, 0.075], distance=50500)
-    source.set_energy(energy_range=[5000], photon_energy_distribution=GaussianUndulatorSource.PhotonEnergyDistributions.SINGLE_LINE)
-
-    # Primary Optics System -------------------------
-    primary_system = PrimaryOpticsSystem()
-    primary_system.initialize(source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.NO)
-
-    input_beam = primary_system.get_beam()
-
-    # Focusing Optics System -------------------------
-
-    focusing_system = FocusingOpticsSystem()
-
-    focusing_system.initialize(input_beam=input_beam,
-                               rewrite_preprocessor_files=PreProcessorFiles.NO,
-                               rewrite_height_error_profile_files=False)
-
-    output_beam = focusing_system.get_beam(verbose=False, near_field_calculation=False, debug_mode=False)
-
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
-
-    '''
-    focusing_system.modify_coherence_slits(coh_slits_h_center=0.05)
-    focusing_system.move_vkb_motor_3_pitch(1e-4, movement=Movement.RELATIVE)
-    focusing_system.move_hkb_motor_4_translation(-0.1, movement=Movement.RELATIVE)
-
-    output_beam = focusing_system.get_beam(verbose=False)
-
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
-    '''
-    clean_up()

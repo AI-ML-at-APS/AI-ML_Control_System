@@ -375,28 +375,5 @@ class HybridUndulatorSource(AbstractSource):
             self.kind_of_sampler = 1
             self.save_srw_result = 0
 
-from beamline34IDC.util.common import plot_shadow_beam_spatial_distribution, get_shadow_beam_spatial_distribution
-
-if __name__=="__main__":
-    source = GaussianUndulatorSource()
-    source.initialize(n_rays=50000, random_seed=3245345, storage_ring=StorageRing.APS)
-    source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
-    source.set_energy(energy_range=[6000], photon_energy_distribution=GaussianUndulatorSource.PhotonEnergyDistributions.SINGLE_LINE)
-
-    source_beam = source.get_source_beam()
-
-    plot_shadow_beam_spatial_distribution(source_beam, xrange=[-1, 1], yrange=[-0.05, 0.05])
-    hh, vv, data_2D = get_shadow_beam_spatial_distribution(source_beam, xrange=[-1, 1], yrange=[-0.05, 0.05])
-
-
-    source = HybridUndulatorSource()
-    source.initialize(n_rays=50000, random_seed=3245345, verbose=True, storage_ring=StorageRing.APS)
-
-    source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
-    source.set_K_on_specific_harmonic(harmonic_energy=6000, harmonic_number=1, which=HybridUndulatorSource.KDirection.VERTICAL)
-    source.set_energy(photon_energy_distribution=HybridUndulatorSource.PhotonEnergyDistributions.ON_HARMONIC, harmonic_number=1)
-
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(ignore_aperture=True), xrange=[-1, 1], yrange=[-0.05, 0.05])
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-1, 1], yrange=[-0.05, 0.05])
 
 
