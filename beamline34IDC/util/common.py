@@ -45,9 +45,13 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import Shadow
+from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 
 import scipy.constants as codata
 m2ev = codata.c * codata.h / codata.e
+
+from Shadow.ShadowPreprocessorsXraylib import prerefl, bragg
+from oasys.widgets import congruence
 
 def rotate(origin, point, angle):
     """
@@ -101,3 +105,31 @@ def plot_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, titl
 
 def plot_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, title="X',Z'", xrange=[-1e-3, +1e-3], yrange=[-1e-3, +1e-3]):
     return Shadow.ShadowTools.plotxy(shadow_beam._beam, 4, 6, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
+
+def write_reflectivity_file(symbol="Pt", shadow_file_name="Pt.dat", energy_range=[5000, 15000], energy_step=1.0):
+    symbol = symbol.strip()
+    density = ShadowPhysics.getMaterialDensity(symbol)
+
+    prerefl(interactive=False,
+            SYMBOL=symbol,
+            DENSITY=density,
+            E_MIN=energy_range[0],
+            E_MAX=energy_range[1],
+            E_STEP=energy_step,
+            FILE=congruence.checkFileName(shadow_file_name))
+
+    return shadow_file_name
+
+def write_bragg_file(crystal="Si", miller_indexes=[1, 1, 1], shadow_file_name="Si111.dat", energy_range=[5000, 15000], energy_step=1.0):
+    bragg(interactive=False,
+          DESCRIPTOR=crystal.strip(),
+          H_MILLER_INDEX=miller_indexes[0],
+          K_MILLER_INDEX=miller_indexes[1],
+          L_MILLER_INDEX=miller_indexes[2],
+          TEMPERATURE_FACTOR=1.0,
+          E_MIN=energy_range[0],
+          E_MAX=energy_range[1],
+          E_STEP=energy_step,
+          SHADOW_FILE=congruence.checkFileName(shadow_file_name))
+
+    return shadow_file_name

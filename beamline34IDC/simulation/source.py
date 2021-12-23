@@ -47,13 +47,12 @@
 import Shadow
 import numpy
 
-from beamline34IDC.util.common import fix_Intensity, m2ev, plot_shadow_beam_spatial_distribution
+from beamline34IDC.util.common import fix_Intensity, m2ev
 from orangecontrib.ml.util.mocks import MockWidget
 
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, ShadowOEHistoryItem, ShadowOpticalElement
 from orangecontrib.shadow_advanced_tools.widgets.sources.attributes.hybrid_undulator_attributes import HybridUndulatorAttributes
 import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as HU
-
 
 class StorageRing:
     APS = 0
@@ -63,7 +62,6 @@ class ElectronBeamAPS:
     energy_in_GeV = 7.0
     energy_spread = 0.00098
     ring_current = 0.1
-
     sigma_x = 0.0002805
     sigma_z = 1.02e-05
     sigdi_x = 1.18e-05
@@ -83,7 +81,7 @@ class AbstractSource():
     def set_angular_acceptance(self, divergence=[1e-4, 1e-4]): raise NotImplementedError()
     def set_angular_acceptance_from_aperture(self, aperture=[0.03, 0.07], distance=50500): raise NotImplementedError()
     def set_energy(self, energy_range=[4999.0, 5001.0], **kwargs): raise NotImplementedError()
-    def get_source_beam(self): raise NotImplementedError()
+    def get_source_beam(self, **kwargs): raise NotImplementedError()
 
 def save_source_beam(source_beam, file_name="begin.dat"):
     source_beam.getOEHistory(0)._shadow_source_end.src.write("source_" + file_name)
@@ -127,8 +125,6 @@ class GaussianUndulatorSource(AbstractSource):
 
         self.set_angular_acceptance_from_aperture() # defaults
         self.set_energy() # defaults
-
-
 
     def set_angular_acceptance(self, divergence=[1e-4, 1e-4]):
         print("Initializa geometrical source with limited divergence: ", divergence, "rad")
@@ -176,12 +172,10 @@ class GaussianUndulatorSource(AbstractSource):
         s_phot = 2.740 / (4e0 * numpy.pi) * numpy.sqrt(self.__undulator_length * harmonic_wavelength)
         sp_phot = 0.69 * numpy.sqrt(harmonic_wavelength / self.__undulator_length)
 
-        user_unit_to_m = 1e-3
-
         self.__shadow_source.src.F_OPD = 1
         self.__shadow_source.src.F_SR_TYPE = 0
-        self.__shadow_source.src.SIGMAX = numpy.sqrt(numpy.power(sigma_x * user_unit_to_m, 2) + numpy.power(s_phot, 2)) / user_unit_to_m
-        self.__shadow_source.src.SIGMAZ = numpy.sqrt(numpy.power(sigma_z * user_unit_to_m, 2) + numpy.power(s_phot, 2)) / user_unit_to_m
+        self.__shadow_source.src.SIGMAX = numpy.sqrt(numpy.power(sigma_x, 2) + numpy.power(s_phot, 2)) * 1e3 # to mm
+        self.__shadow_source.src.SIGMAZ = numpy.sqrt(numpy.power(sigma_z, 2) + numpy.power(s_phot, 2)) * 1e3 # to mm
         self.__shadow_source.src.SIGDIX = numpy.sqrt(numpy.power(sigdi_x, 2) + numpy.power(sp_phot, 2))
         self.__shadow_source.src.SIGDIZ = numpy.sqrt(numpy.power(sigdi_z, 2) + numpy.power(sp_phot, 2))
 
@@ -262,18 +256,21 @@ class HybridSource(AbstractSource):
             self.__widget.energy_to = energy_range[1]
             self.__widget.energy_points = energy_points
 
-    def get_source_beam(self):
+    def get_source_beam(self, **kwargs):
         if self.__widget is None: raise ValueError("Source has not been initialized")
 
-        if self.__aperture is None:
+        try: ignore_aperture = kwargs["ignore_aperture"]
+        except: ignore_aperture = False
+
+        if self.__aperture is None or ignore_aperture:
             source_beam, _ = HU.run_hybrid_undulator_simulation(self.__widget)
         else:
             if self.__distance is None: raise ValueError("Aperture distance must be specified")
 
             current_good_rays = 0
 
-            while (current_good_rays < target_good_rays):
-                temp_beam = run_beam_through_aperture(self.__widget.number_of_rays, self.__aperture, self.__distance)
+            while (current_good_rays < self.__widget.number_of_rays):
+                temp_beam = self.__run_beam_through_aperture(self.__widget.number_of_rays, self.__aperture, self.__distance)
 
                 if self.__widget.is_verbose(): print("HYBRID UNDULATOR: ", temp_beam.get_number_of_rays(), " good rays")
 
@@ -282,38 +279,41 @@ class HybridSource(AbstractSource):
 
                 current_good_rays = source_beam.get_number_of_rays()
 
-                if self.__widget.is_verbose(): print("TOTAL: ", current_good_rays, " good rays on ", target_good_rays)
+                if self.__widget.is_verbose(): print("TOTAL: ", current_good_rays, " good rays on ", self.__widget.number_of_rays)
+
+            source_beam._beam.rays = source_beam._beam.rays[:self.__widget.number_of_rays, :]
 
         return source_beam
 
-    @classmethod
-    def ___run_beam_through_aperture(cls, n_rays, aperture, distance):
-        oe1 = Shadow.OE()
+    def __run_beam_through_aperture(self, n_rays, aperture, distance):
+        slits_oe = Shadow.OE()
+        slits_oe.DUMMY = 0.1 # mm
+        slits_oe.FWRITE = 3
+        slits_oe.F_REFRAC = 2
+        slits_oe.F_SCREEN = 1
+        slits_oe.I_SLIT = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        slits_oe.N_SCREEN = 1
+        slits_oe.RX_SLIT = numpy.array([aperture[0], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        slits_oe.RZ_SLIT = numpy.array([aperture[1], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        slits_oe.T_IMAGE = 0.0
+        slits_oe.T_INCIDENCE = 0.0
+        slits_oe.T_REFLECTION = 180.0
+        slits_oe.T_SOURCE = distance
 
-        # WB SLITS
-        oe1.DUMMY = 0.1
-        oe1.FWRITE = 3
-        oe1.F_REFRAC = 2
-        oe1.F_SCREEN = 1
-        oe1.I_SLIT = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-        oe1.N_SCREEN = 1
-        oe1.RX_SLIT = numpy.array([aperture[0], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        oe1.RZ_SLIT = numpy.array([aperture[1], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        oe1.T_IMAGE = 0.0
-        oe1.T_INCIDENCE = 0.0
-        oe1.T_REFLECTION = 180.0
-        oe1.T_SOURCE = distance
+        random_seed = self.__widget.seed
 
-        output_beam = ShadowBeam.traceFromOE(run_hybrid_undulator_source(n_rays, 0),  # seed to 0 to ensure a new beam every time
-                                             ShadowOpticalElement(oe1),
-                                             widget_class_name="ScreenSlits")
-        output_beam._beam.retrace(0.0)  # back to source position
+        self.__widget.seed = 0 # seed to 0 to ensure a new beam every time
+        source_beam = self.get_source_beam(ignore_aperture=True)
+        self.__widget.seed = random_seed # restore user seed
+
+        slits_beam = ShadowBeam.traceFromOE(source_beam, ShadowOpticalElement(slits_oe), widget_class_name="ScreenSlits")
 
         # good only
-        good_only = numpy.where(output_beam._beam.rays[:, 9] == 1)
-        output_beam._beam.rays = output_beam._beam.rays[good_only]
+        good_only = numpy.where(slits_beam._beam.rays[:, 9] == 1)
 
-        return output_beam
+        source_beam._beam.rays = source_beam._beam.rays[good_only]
+
+        return source_beam
 
     class __MockUndulatorHybrid(MockWidget, HybridUndulatorAttributes):
         def __init__(self, storage_ring=StorageRing.APS, verbose=False):
@@ -390,19 +390,24 @@ class HybridSource(AbstractSource):
             self.kind_of_sampler = 1
             self.save_srw_result = 0
 
+from beamline34IDC.util.common import plot_shadow_beam_spatial_distribution
+
 if __name__=="__main__":
     source = GaussianUndulatorSource()
     source.initialize(n_rays=50000, random_seed=3245345, storage_ring=StorageRing.APS)
-    source.set_angular_acceptance_from_aperture(aperture=[0.1, 0.1], distance=25000)
+    source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
     source.set_energy(energy_range=[6000], photon_energy_distribution=GaussianUndulatorSource.PhotonEnergyDistributions.SINGLE_LINE)
 
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=None, yrange=None)
+    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-1, 1], yrange=[-0.05, 0.05])
 
     source = HybridSource()
     source.initialize(n_rays=50000, random_seed=3245345, verbose=True, storage_ring=StorageRing.APS)
+
+    source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
     source.set_K_on_specific_harmonic(harmonic_energy=6000, harmonic_number=1, which=HybridSource.KDirection.VERTICAL)
     source.set_energy(photon_energy_distribution=HybridSource.PhotonEnergyDistributions.ON_HARMONIC, harmonic_number=1)
 
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=None, yrange=None)
+    plot_shadow_beam_spatial_distribution(source.get_source_beam(ignore_aperture=True), xrange=[-1, 1], yrange=[-0.05, 0.05])
+    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-1, 1], yrange=[-0.05, 0.05])
 
 

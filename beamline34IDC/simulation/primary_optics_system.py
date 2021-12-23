@@ -44,3 +44,156 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import numpy
+import Shadow
+
+from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
+from orangecontrib.shadow.util.shadow_util import ShadowPhysics
+
+from beamline34IDC.util.common import write_bragg_file, write_reflectivity_file
+
+class PreProcessorFiles:
+    NO = 0
+    YES_FULL_RANGE = 1
+    YES_SOURCE_RANGE = 2
+
+class PrimaryOpticsSystem():
+    def __init__(self):
+        self.__source_beam = None
+        self.__optical_system = None
+
+    def initialize(self, source_beam, rewrite_preprocessor_files=PreProcessorFiles.YES_SOURCE_RANGE, **kwargs):
+        self.__source_beam = source_beam
+
+        energies = ShadowPhysics.getEnergyFromShadowK(self.__source_beam._beam.rays[:, 10])
+
+        central_energy = numpy.average(energies)
+        energy_range = [numpy.min(energies), numpy.max(energies)]
+
+        if rewrite_preprocessor_files==PreProcessorFiles.YES_FULL_RANGE:
+            reflectivity_file = write_reflectivity_file()
+            bragg_file        = write_bragg_file()
+        elif rewrite_preprocessor_files==PreProcessorFiles.YES_SOURCE_RANGE:
+            reflectivity_file = write_reflectivity_file(energy_range=energy_range)
+            bragg_file        = write_bragg_file(energy_range=energy_range)
+        elif rewrite_preprocessor_files==PreProcessorFiles.NO:
+            reflectivity_file = "Pt.dat"
+            bragg_file        = "Si111.dat"
+
+        print("System initialized to central energy: " + str(central_energy))
+
+        #####################################################
+        # SHADOW 3 INITIALIZATION
+
+        #
+        # Define variables. See meaning of variables in:
+        #  https://raw.githubusercontent.com/srio/shadow3/master/docs/source.nml
+        #  https://raw.githubusercontent.com/srio/shadow3/master/docs/oe.nml
+        #
+
+        # WB SLITS
+        white_beam_slits = Shadow.OE()
+        white_beam_slits.DUMMY = 0.1
+        white_beam_slits.FWRITE = 3
+        white_beam_slits.F_REFRAC = 2
+        white_beam_slits.F_SCREEN = 1
+        white_beam_slits.I_SLIT = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        white_beam_slits.N_SCREEN = 1
+        white_beam_slits.RX_SLIT = numpy.array([0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        white_beam_slits.RZ_SLIT = numpy.array([10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        white_beam_slits.T_IMAGE = 0.0
+        white_beam_slits.T_INCIDENCE = 0.0
+        white_beam_slits.T_REFLECTION = 180.0
+        white_beam_slits.T_SOURCE = 26800.0
+
+        # PLANE MIRROR
+        mirror_1 = Shadow.OE()
+        mirror_1.DUMMY = 0.1
+        mirror_1.FHIT_C = 1
+        mirror_1.FILE_REFL = reflectivity_file.encode()
+        mirror_1.FWRITE = 1
+        mirror_1.F_REFLEC = 1
+        mirror_1.RLEN1 = 250.0
+        mirror_1.RLEN2 = 250.0
+        mirror_1.RWIDX1 = 10.0
+        mirror_1.RWIDX2 = 10.0
+        mirror_1.T_IMAGE = 0.0
+        mirror_1.T_INCIDENCE = 89.7135211024
+        mirror_1.T_REFLECTION = 89.7135211024
+        mirror_1.T_SOURCE = 2800.0
+
+        # DCM-1
+        dcm_1 = Shadow.OE()
+        dcm_1.DUMMY = 0.1
+        dcm_1.FHIT_C = 1
+        dcm_1.FILE_REFL = bragg_file.encode()
+        dcm_1.FWRITE = 1
+        dcm_1.F_CENTRAL = 1
+        dcm_1.F_CRYSTAL = 1
+        dcm_1.F_PHOT_CENT = 0
+        dcm_1.PHOT_CENT = central_energy
+        dcm_1.RLEN1 = 50.0
+        dcm_1.RLEN2 = 50.0
+        dcm_1.RWIDX1 = 50.0
+        dcm_1.RWIDX2 = 50.0
+        dcm_1.T_IMAGE = 0.0
+        dcm_1.T_INCIDENCE = 0.0
+        dcm_1.T_REFLECTION = 0.0
+        dcm_1.T_SOURCE = 15400.0
+
+        # DCM-2
+        dcm_2 = Shadow.OE()
+        dcm_2.ALPHA = 180.0
+        dcm_2.DUMMY = 0.1
+        dcm_2.FHIT_C = 1
+        dcm_2.FILE_REFL = bragg_file.encode()
+        dcm_2.FWRITE = 1
+        dcm_2.F_CENTRAL = 1
+        dcm_2.F_CRYSTAL = 1
+        dcm_2.F_PHOT_CENT = 0
+        dcm_2.PHOT_CENT = central_energy
+        dcm_2.RLEN1 = 50.0
+        dcm_2.RLEN2 = 50.0
+        dcm_2.RWIDX1 = 50.0
+        dcm_2.RWIDX2 = 50.0
+        dcm_2.T_IMAGE = 5490.0
+        dcm_2.T_INCIDENCE = 0.0
+        dcm_2.T_REFLECTION = 0.0
+        dcm_2.T_SOURCE = 10
+
+        self.__optical_system = [[ShadowOpticalElement(white_beam_slits), "ScreenSlits", False],
+                                 [ShadowOpticalElement(mirror_1), "PlaneMirror", False],
+                                 [ShadowOpticalElement(dcm_1), "PlaneCrystal", False],
+                                 [ShadowOpticalElement(dcm_2), "PlaneCrystal", True]]
+
+    def get_beam(self, **kwargs):
+        if self.__source_beam is None: raise ValueError("Primary Optical System is not initialized")
+
+        input_beam = self.__source_beam.duplicate()
+
+        for optical_element_data in self.__optical_system:
+            optical_element   = optical_element_data[0]
+            widget_class_name = optical_element_data[1]
+            is_last_element   = optical_element_data[2]
+
+            output_beam = ShadowBeam.traceFromOE(input_beam, optical_element, widget_class_name=widget_class_name)
+
+            if not is_last_element: input_beam = output_beam.duplicate()
+
+        return output_beam
+
+
+from beamline34IDC.simulation.source import  GaussianUndulatorSource, StorageRing
+from beamline34IDC.util.common import plot_shadow_beam_spatial_distribution
+
+if __name__ == "__main__":
+    source = GaussianUndulatorSource()
+    source.initialize(n_rays=50000, random_seed=3245345, storage_ring=StorageRing.APS)
+    source.set_angular_acceptance_from_aperture(aperture=[1, 1], distance=25000)
+    source.set_energy(energy_range=[10000], photon_energy_distribution=GaussianUndulatorSource.PhotonEnergyDistributions.SINGLE_LINE)
+
+    primary_system = PrimaryOpticsSystem()
+    #primary_system.initialize(source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.YES_FULL_RANGE)
+    primary_system.initialize(source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.NO)
+
+    plot_shadow_beam_spatial_distribution(primary_system.get_beam(), xrange=None, yrange=None)
