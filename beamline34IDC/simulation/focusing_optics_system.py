@@ -52,19 +52,30 @@ from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalEl
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 from beamline34IDC.util.common import write_bragg_file, write_reflectivity_file, write_dabam_file, \
-    rotate_axis_system, get_hybrid_input_parameters
+    rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
 
 class PreProcessorFiles:
     NO = 0
     YES_FULL_RANGE = 1
     YES_SOURCE_RANGE = 2
 
+class Movement:
+    ABSOLUTE = 0
+    RELATIVE = 1
+
 class FocusingOpticsSystem():
+
     def __init__(self):
         self.__input_beam = None
+        self.__slits_beam = None
+        self.__vkb_beam = None
+        self.__hkb_beam = None
+
         self.__coherence_slits = None
         self.__vkb = None
         self.__hkb = None
+
+        self.__modified_elements = None
 
     def initialize(self,
                    input_beam,
@@ -114,8 +125,11 @@ class FocusingOpticsSystem():
         # V-KB
         vkb = Shadow.OE()
 
-        vkb_motor_3_pitch_angle = input_features.get_parameter("vkb_motor_3_pitch_angle")
-        vkb_pitch_angle_shadow  = 90 - numpy.degrees(vkb_motor_3_pitch_angle)
+        vkb_motor_3_pitch_angle             = input_features.get_parameter("vkb_motor_3_pitch_angle")
+        vkb_pitch_angle_shadow              = 90 - numpy.degrees(vkb_motor_3_pitch_angle)
+        vkb_motor_3_delta_pitch_angle       = input_features.get_parameter("vkb_motor_3_delta_pitch_angle")
+        vkb_pitch_angle_displacement_shadow = numpy.degrees(vkb_motor_3_delta_pitch_angle)
+
         vkb_motor_4_translation = input_features.get_parameter("vkb_motor_4_translation")
 
         vkb.ALPHA = 180.0
@@ -134,24 +148,27 @@ class FocusingOpticsSystem():
         vkb.RLEN2 = 50.0
         vkb.RWIDX1 = 10.0
         vkb.RWIDX2 = 10.0
-        vkb.SIMAG = input_features.get_parameter("vkb_p_distance")
+        vkb.SIMAG = input_features.get_parameter("vkb_q_distance")
         vkb.SSOUR = 50667.983
         vkb.THETA = vkb_pitch_angle_shadow
         vkb.T_IMAGE = 101.0
         vkb.T_INCIDENCE = vkb_pitch_angle_shadow
         vkb.T_REFLECTION = vkb_pitch_angle_shadow
         vkb.T_SOURCE = 150.0
-        # DISPLACEMENT
+        # DISPLACEMENTS
         vkb.F_MOVE = 1
-        vkb.OFFY = vkb_motor_4_translation*numpy.sin(vkb_motor_3_pitch_angle)
-        vkb.OFFZ = vkb_motor_4_translation*numpy.cos(vkb_motor_3_pitch_angle)
-        vkb.X_ROT = input_features.get_parameter("vkb_motor_3_delta_pitch_angle")
+        vkb.OFFY = vkb_motor_4_translation*numpy.sin(vkb_motor_3_pitch_angle + vkb_motor_3_delta_pitch_angle)
+        vkb.OFFZ = vkb_motor_4_translation*numpy.cos(vkb_motor_3_pitch_angle + vkb_motor_3_delta_pitch_angle)
+        vkb.X_ROT = vkb_pitch_angle_displacement_shadow
 
         # H-KB
         hkb = Shadow.OE()
 
-        hkb_motor_3_pitch_angle = input_features.get_parameter("hkb_motor_3_pitch_angle")
-        hkb_pitch_angle_shadow  = 90 - numpy.degrees(hkb_motor_3_pitch_angle)
+        hkb_motor_3_pitch_angle             = input_features.get_parameter("hkb_motor_3_pitch_angle")
+        hkb_pitch_angle_shadow              = 90 - numpy.degrees(hkb_motor_3_pitch_angle)
+        hkb_motor_3_delta_pitch_angle       = input_features.get_parameter("hkb_motor_3_delta_pitch_angle")
+        hkb_pitch_angle_displacement_shadow = numpy.degrees(hkb_motor_3_delta_pitch_angle)
+
         hkb_motor_4_translation = input_features.get_parameter("hkb_motor_4_translation")
 
         hkb.ALPHA = 90.0
@@ -170,7 +187,7 @@ class FocusingOpticsSystem():
         hkb.RLEN2 = 50.0
         hkb.RWIDX1 = 10.0
         hkb.RWIDX2 = 10.0
-        hkb.SIMAG = input_features.get_parameter("hkb_p_distance")
+        hkb.SIMAG = input_features.get_parameter("hkb_q_distance")
         hkb.SSOUR = 50768.983
         hkb.THETA = hkb_pitch_angle_shadow
         hkb.T_IMAGE = 120.0
@@ -179,76 +196,230 @@ class FocusingOpticsSystem():
         hkb.T_SOURCE = 0.0
         # DISPLACEMENT
         hkb.F_MOVE = 1
-        hkb.OFFY = hkb_motor_4_translation*numpy.sin(hkb_motor_3_pitch_angle)
-        hkb.OFFZ = hkb_motor_4_translation*numpy.cos(hkb_motor_3_pitch_angle)
-        hkb.X_ROT = input_features.get_parameter("hkb_motor_3_delta_pitch_angle")
+        hkb.X_ROT = hkb_pitch_angle_displacement_shadow
+        hkb.OFFY  = hkb_motor_4_translation*numpy.sin(hkb_motor_3_pitch_angle + hkb_motor_3_delta_pitch_angle)
+        hkb.OFFZ  = hkb_motor_4_translation*numpy.cos(hkb_motor_3_pitch_angle + hkb_motor_3_delta_pitch_angle)
 
         self.__coherence_slits = ShadowOpticalElement(coherence_slits)
         self.__vkb             =  ShadowOpticalElement(vkb)
         self.__hkb             =  ShadowOpticalElement(hkb)
 
+        self.__modified_elements = [self.__coherence_slits, self.__vkb, self.__hkb]
+    
+    #####################################################################################
+    # This methods represent the run-time interface, to interact with the optical system 
+    # in real time, like in the real beamline
+    
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None):
+        if self.__coherence_slits is None: raise ValueError("Initialize Focusing Optics System first")
+
+        if not coh_slits_h_center   is None: self.__coherence_slits._oe.CX_SLIT = numpy.array([coh_slits_h_center, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        if not coh_slits_v_center   is None: self.__coherence_slits._oe.CZ_SLIT = numpy.array([coh_slits_v_center, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        if not coh_slits_h_aperture is None: self.__coherence_slits._oe.RX_SLIT = numpy.array([coh_slits_h_aperture, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        if not coh_slits_v_aperture is None: self.__coherence_slits._oe.RZ_SLIT = numpy.array([coh_slits_v_aperture, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+        if not self.__coherence_slits in self.__modified_elements: self.__modified_elements.append(self.__coherence_slits)
+        if not self.__vkb             in self.__modified_elements: self.__modified_elements.append(self.__vkb)
+        if not self.__hkb             in self.__modified_elements: self.__modified_elements.append(self.__hkb)
+
+    # V-KB -----------------------
+
+    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE):
+        FocusingOpticsSystem.__move_motor_3_pitch(self.__vkb, angle, movement)
+        
+        if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
+        if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
+
+    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE):
+        FocusingOpticsSystem.__move_motor_4_transation(self.__vkb, translation, movement)
+
+        if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
+        if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
+
+    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE):
+        FocusingOpticsSystem.__change_shape(self.__vkb, q_distance, movement)
+
+        if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
+        if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
+
+    # H-KB -----------------------
+
+    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE):
+        FocusingOpticsSystem.__move_motor_3_pitch(self.__hkb, angle, movement)
+
+        if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
+
+    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE):
+        FocusingOpticsSystem.__move_motor_4_transation(self.__hkb, translation, movement)
+
+        if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
+
+    def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE):
+        FocusingOpticsSystem.__change_shape(self.__hkb, q_distance, movement)
+
+        if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
+
+    # PRIVATE -----------------------
+
+    @classmethod
+    def __move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE):
+        if element is None: raise ValueError("Initialize Focusing Optics System first")
+
+        if movement == Movement.ABSOLUTE:
+            delta_pitch_angle = numpy.degrees(angle - numpy.radians(90 - element._oe.T_INCIDENCE))
+        elif movement == Movement.RELATIVE:
+            delta_pitch_angle = numpy.degrees(angle)
+        else:
+            raise ValueError("Movement not recognized")
+
+        element._oe.X_ROT = delta_pitch_angle
+
+    @classmethod
+    def __move_motor_4_transation(cls, element, translation, movement=Movement.ABSOLUTE):
+        if element is None: raise ValueError("Initialize Focusing Optics System first")
+
+        total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + element._oe.X_ROT)
+
+        if movement == Movement.ABSOLUTE:
+            element._oe.OFFY = translation * numpy.sin(total_pitch_angle)
+            element._oe.OFFZ = translation * numpy.cos(total_pitch_angle)
+        elif movement == Movement.RELATIVE:
+            element._oe.OFFY += translation * numpy.sin(total_pitch_angle)
+            element._oe.OFFZ += translation * numpy.cos(total_pitch_angle)
+        else:
+            raise ValueError("Movement not recognized")
+
+    @classmethod
+    def __change_shape(cls, element, q_distance, movement=Movement.ABSOLUTE):
+        if element is None: raise ValueError("Initialize Focusing Optics System first")
+
+        if movement == Movement.ABSOLUTE:   element._oe.SIMAG = q_distance
+        elif movement == Movement.RELATIVE: element._oe.SIMAG += q_distance
+        else: raise ValueError("Movement not recognized")
+
+    #####################################################################################
+    # Run the simulation
+    
     def get_beam(self, verbose=False, **kwargs):
         if self.__input_beam is None: raise ValueError("Focusing Optical System is not initialized")
 
-        input_beam = self.__input_beam.duplicate()
+        try: debug_mode = kwargs["debug_mode"]
+        except: debug_mode = False
 
-        # HYBRID CORRECTION TO CONSIDER DIFFRACTION FROM SLITS
-        output_beam = ShadowBeam.traceFromOE(input_beam, self.__coherence_slits, widget_class_name="ScreenSlits")
-        output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                        diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
-                                                                        calcType=1,  # Diffraction by Simple Aperture
-                                                                        verbose=verbose)).ff_beam
+        try: near_field_calculation = kwargs["near_field_calculation"]
+        except: near_field_calculation = False
 
-        output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), self.__vkb, widget_class_name="EllypticalMirror")
-        output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                        diffraction_plane=1,  # Tangential
-                                                                        calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                        nf=1,
-                                                                        verbose=verbose)).nf_beam
+        run_all = self.__modified_elements == [] or len(self.__modified_elements) == 3
 
-        output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), self.__hkb, widget_class_name="EllypticalMirror")
-        output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                        diffraction_plane=1,  # Tangential
-                                                                        calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                        nf=1,
-                                                                        verbose=verbose)).nf_beam
+        if run_all or self.__coherence_slits in self.__modified_elements:
+            input_beam = self.__input_beam.duplicate()
 
-        return output_beam
+            # HYBRID CORRECTION TO CONSIDER DIFFRACTION FROM SLITS
+            output_beam = ShadowBeam.traceFromOE(input_beam, self.__coherence_slits, widget_class_name="ScreenSlits")
+            output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                            diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
+                                                                            calcType=1,  # Diffraction by Simple Aperture
+                                                                            verbose=verbose)).ff_beam
 
+
+            if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="Coherence Slits", xrange=None, yrange=None)
+
+            self.__slits_beam = output_beam
+
+        if run_all or self.__vkb in self.__modified_elements:
+            output_beam = ShadowBeam.traceFromOE(self.__slits_beam.duplicate(), self.__vkb, widget_class_name="EllypticalMirror")
+
+            if not near_field_calculation:
+                output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                                diffraction_plane=2,  # Tangential
+                                                                                calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                                verbose=verbose)).ff_beam
+            else:
+                output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                                diffraction_plane=2,  # Tangential
+                                                                                calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                                nf=1,
+                                                                                focal_length=self.__vkb._oe.SIMAG, # at focus
+                                                                                image_distance=self.__vkb._oe.SIMAG, # at focus
+                                                                                verbose=verbose)).nf_beam
+                output_beam._beam.retrace(self.__vkb._oe.T_IMAGE - self.__vkb._oe.SIMAG)
+
+            if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="VKB", xrange=None, yrange=None)
+
+            self.__vkb_beam = output_beam
+
+        if run_all or self.__hkb in self.__modified_elements:
+            output_beam = ShadowBeam.traceFromOE(self.__vkb_beam.duplicate(), self.__hkb, widget_class_name="EllypticalMirror")
+
+            if not near_field_calculation:
+                output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                                diffraction_plane=2,  # Tangential
+                                                                                calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                                verbose=verbose)).ff_beam
+            else:
+                output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                                diffraction_plane=2,  # Tangential
+                                                                                calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                                nf=1,
+                                                                                verbose=verbose)).nf_beam
+
+            if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="HKB", xrange=None, yrange=None)
+
+            self.__hkb_beam = output_beam
+
+        # after every run, we assume to start again from scratch
+        self.__modified_elements = []
+
+        return rotate_axis_system(output_beam, rotation_angle=270.0)
 
 from beamline34IDC.simulation.source import  GaussianUndulatorSource, StorageRing
 from beamline34IDC.simulation.primary_optics_system import PrimaryOpticsSystem, PreProcessorFiles
-from beamline34IDC.util.common import plot_shadow_beam_spatial_distribution
+from beamline34IDC.util import clean_up
 from orangecontrib.ml.util.data_structures import DictionaryWrapper
 
 if __name__ == "__main__":
+    # Source -------------------------
     source = GaussianUndulatorSource()
     source.initialize(n_rays=500000, random_seed=3245345, storage_ring=StorageRing.APS)
-    source.set_angular_acceptance_from_aperture(aperture=[0.03, 0.07], distance=50500)
+    source.set_angular_acceptance_from_aperture(aperture=[0.035, 0.075], distance=50500)
     source.set_energy(energy_range=[5000], photon_energy_distribution=GaussianUndulatorSource.PhotonEnergyDistributions.SINGLE_LINE)
 
+    # Primary Optics System -------------------------
     primary_system = PrimaryOpticsSystem()
     primary_system.initialize(source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.NO)
 
     input_beam = primary_system.get_beam()
 
+    # Focusing Optics System -------------------------
+
+    focusing_system = FocusingOpticsSystem()
+
     input_features = DictionaryWrapper(coh_slits_h_aperture=0.03,
                                        coh_slits_h_center=0.0,
                                        coh_slits_v_aperture=0.07,
                                        coh_slits_v_center=0.0,
-                                       vkb_p_distance=221,
+                                       vkb_q_distance=221,
                                        vkb_motor_4_translation=0.0,
                                        vkb_motor_3_pitch_angle=0.003,
                                        vkb_motor_3_delta_pitch_angle=0.0,
-                                       hkb_p_distance=120,
+                                       hkb_q_distance=120,
                                        hkb_motor_4_translation=0.0,
                                        hkb_motor_3_pitch_angle=0.003,
                                        hkb_motor_3_delta_pitch_angle=0.0)
 
-    focusing_system = FocusingOpticsSystem()
-    focusing_system.initialize(input_beam=input_beam, input_features=input_features,
-                               rewrite_preprocessor_files=PreProcessorFiles.NO, rewrite_height_error_profile_files=False)
+    focusing_system.initialize(input_beam=input_beam,
+                               input_features=input_features,
+                               rewrite_preprocessor_files=PreProcessorFiles.NO,
+                               rewrite_height_error_profile_files=False)
 
-    output_beam = focusing_system.get_beam(verbose=True)
+    output_beam = focusing_system.get_beam(verbose=False, near_field_calculation=False, debug_mode=False)
 
     plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
+
+    focusing_system.move_vkb_motor_3_pitch(1e-4, movement=Movement.RELATIVE)
+
+    output_beam = focusing_system.get_beam(verbose=False)
+
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
+
+    clean_up()

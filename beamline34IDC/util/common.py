@@ -48,19 +48,15 @@ import Shadow
 from Shadow.ShadowTools import write_shadow_surface
 from Shadow.ShadowPreprocessorsXraylib import prerefl, bragg
 from srxraylib.metrology import profiles_simulation, dabam
-
 from oasys.util.error_profile_util import DabamInputParameters, calculate_dabam_profile, ErrorProfileInputParameters, calculate_heigth_profile
 from oasys.widgets import congruence
-
 from orangecontrib.ml.util.mocks import MockWidget
-
+from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
-
 import scipy.constants as codata
+
 m2ev = codata.c * codata.h / codata.e
-
-
 
 def rotate(origin, point, angle):
     """
@@ -171,7 +167,7 @@ def write_dabam_file(dabam_entry_number=20, heigth_profile_file_name="KB.dat", s
     server.load(dabam_entry_number)
 
     input_parameters = DabamInputParameters(dabam_server=server)
-    input_parameters.s
+    input_parameters.si_to_user_units = 1000.0
     input_parameters.center_y = 1
     input_parameters.modify_y = 2
     input_parameters.new_length_y = 100.0
@@ -189,21 +185,27 @@ def write_dabam_file(dabam_entry_number=20, heigth_profile_file_name="KB.dat", s
 
     xx, yy, zz = calculate_dabam_profile(input_parameters)
 
-    ST.write_shadow_surface(zz, xx, yy, heigth_profile_file_name)
+    write_shadow_surface(zz, xx, yy, heigth_profile_file_name)
 
     return heigth_profile_file_name
 
 ####################################################
-
-def get_hybrid_input_parameters(shadow_beam, diffraction_plane=1, calcType=1, nf=0, verbose=False):
+#
+# diffraction_plane: 1- Sagittal, 2- Tangential, 3- Both (2D), 4- Both (1D+1D)
+# calcType: 1- Slits, 2-Mirror/Grating Size, 3-Mirror Size + Error, 4-Grating Size + Error
+# nf: Near Field Calculation 0- No, 1- Yes
+# focal_length: Focal Distance of the Wavefront for the Near Field calculation (-1 for the default)
+# image_distance: Image Distance of the Beam after the Near Field calculation (-1 for the default)
+#
+def get_hybrid_input_parameters(shadow_beam, diffraction_plane=2, calcType=1, nf=0, focal_length=-1, image_distance=-1, verbose=False):
     input_parameters = hybrid_control.HybridInputParameters()
     input_parameters.ghy_lengthunit = 2
     input_parameters.widget = MockWidget(verbose=verbose)
     input_parameters.shadow_beam = shadow_beam
     input_parameters.ghy_diff_plane = diffraction_plane
     input_parameters.ghy_calcType = calcType
-    input_parameters.ghy_distance = -1
-    input_parameters.ghy_focallength = -1
+    input_parameters.ghy_distance = image_distance
+    input_parameters.ghy_focallength = focal_length
     input_parameters.ghy_nf = nf
     input_parameters.ghy_nbins_x = 100
     input_parameters.ghy_nbins_z = 100
@@ -215,15 +217,15 @@ def get_hybrid_input_parameters(shadow_beam, diffraction_plane=1, calcType=1, nf
     return input_parameters
 
 def rotate_axis_system(input_beam, rotation_angle=270.0):
-    oe8 = Shadow.OE()
+    empty_element = Shadow.OE()
 
-    oe8.ALPHA = rotation_angle
-    oe8.DUMMY = 0.1
-    oe8.FWRITE = 3
-    oe8.F_REFRAC = 2
-    oe8.T_IMAGE = 0.0
-    oe8.T_INCIDENCE = 0.0
-    oe8.T_REFLECTION = 180.0
-    oe8.T_SOURCE = 0.0
+    empty_element.ALPHA = rotation_angle
+    empty_element.DUMMY = 0.1
+    empty_element.FWRITE = 3
+    empty_element.F_REFRAC = 2
+    empty_element.T_IMAGE = 0.0
+    empty_element.T_INCIDENCE = 0.0
+    empty_element.T_REFLECTION = 180.0
+    empty_element.T_SOURCE = 0.0
 
-    return ShadowBeam.traceFromOE(input_beam.duplicate(), ShadowOpticalElement(oe8), widget_class_name="EmptyElement")
+    return ShadowBeam.traceFromOE(input_beam.duplicate(), ShadowOpticalElement(empty_element), widget_class_name="EmptyElement")
