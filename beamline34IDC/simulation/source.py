@@ -83,21 +83,6 @@ class AbstractSource():
     def set_energy(self, energy_range=[4999.0, 5001.0], **kwargs): raise NotImplementedError()
     def get_source_beam(self, **kwargs): raise NotImplementedError()
 
-def save_source_beam(source_beam, file_name="begin.dat"):
-    source_beam.getOEHistory(0)._shadow_source_end.src.write("source_" + file_name)
-    source_beam.writeToFile(file_name)
-
-def load_source_beam(file_name="begin.dat"):
-    source_beam = ShadowBeam()
-    source_beam.loadFromFile(file_name)
-
-    shadow_source = ShadowSource.create_src_from_file("source_" + file_name)
-    source_beam.history.append(ShadowOEHistoryItem(shadow_source_start=shadow_source,
-                                                   shadow_source_end=shadow_source,
-                                                   widget_class_name="UndeterminedSource"))
-
-    return source_beam
-
 #############################################################################
 # GEOMETRICAL SOURCE
 #
@@ -183,7 +168,7 @@ class GaussianUndulatorSource(AbstractSource):
 # HYBRID SOURCE
 #
 
-class HybridSource(AbstractSource):
+class HybridUndulatorSource(AbstractSource):
     class KDirection:
         VERTICAL = 1
         HORIZONTAL = 2
@@ -203,7 +188,7 @@ class HybridSource(AbstractSource):
         try: verbose = kwargs["verbose"]
         except: verbose = False
 
-        self.__widget = HybridSource.__MockUndulatorHybrid(storage_ring=storage_ring, verbose=verbose)
+        self.__widget = HybridUndulatorSource.__MockUndulatorHybrid(storage_ring=storage_ring, verbose=verbose)
         self.__widget.number_of_rays = n_rays
         self.__widget.seed = random_seed
 
@@ -223,13 +208,13 @@ class HybridSource(AbstractSource):
         wavelength = harmonic_number*m2ev/harmonic_energy
         K = round(numpy.sqrt(2*(((wavelength*2*HU.gamma(self.__widget)**2)/self.__widget.undulator_period)-1)), 6)
 
-        if which == HybridSource.KDirection.VERTICAL:
+        if which == HybridUndulatorSource.KDirection.VERTICAL:
             self.__widget.Kv = K
             self.__widget.Kh = 0.0
-        elif which == HybridSource.KDirection.HORIZONTAL:
+        elif which == HybridUndulatorSource.KDirection.HORIZONTAL:
             self.__widget.Kh = K
             self.__widget.Kv = 0.0
-        elif which == HybridSource.KDirection.BOTH:
+        elif which == HybridUndulatorSource.KDirection.BOTH:
             Kboth = round(K / numpy.sqrt(2), 6)
             self.__widget.Kv = Kboth
             self.__widget.Kh = Kboth
@@ -244,13 +229,13 @@ class HybridSource(AbstractSource):
         try: energy_points = kwargs["energy_points"]
         except: energy_points = 11
 
-        if photon_energy_distribution == HybridSource.PhotonEnergyDistributions.ON_HARMONIC:
+        if photon_energy_distribution == HybridUndulatorSource.PhotonEnergyDistributions.ON_HARMONIC:
             self.__widget.use_harmonic = 0
             self.__widget.harmonic_number = harmonic_number
-        elif photon_energy_distribution == HybridSource.PhotonEnergyDistributions.SINGLE_ENERGY:
+        elif photon_energy_distribution == HybridUndulatorSource.PhotonEnergyDistributions.SINGLE_ENERGY:
             self.__widget.use_harmonic = 1
             self.__widget.energy = energy_range[0]
-        elif photon_energy_distribution == HybridSource.PhotonEnergyDistributions.RANGE:
+        elif photon_energy_distribution == HybridUndulatorSource.PhotonEnergyDistributions.RANGE:
             self.__widget.use_harmonic = 2
             self.__widget.energy = energy_range[0]
             self.__widget.energy_to = energy_range[1]
@@ -400,12 +385,12 @@ if __name__=="__main__":
 
     plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-1, 1], yrange=[-0.05, 0.05])
 
-    source = HybridSource()
+    source = HybridUndulatorSource()
     source.initialize(n_rays=50000, random_seed=3245345, verbose=True, storage_ring=StorageRing.APS)
 
     source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
-    source.set_K_on_specific_harmonic(harmonic_energy=6000, harmonic_number=1, which=HybridSource.KDirection.VERTICAL)
-    source.set_energy(photon_energy_distribution=HybridSource.PhotonEnergyDistributions.ON_HARMONIC, harmonic_number=1)
+    source.set_K_on_specific_harmonic(harmonic_energy=6000, harmonic_number=1, which=HybridUndulatorSource.KDirection.VERTICAL)
+    source.set_energy(photon_energy_distribution=HybridUndulatorSource.PhotonEnergyDistributions.ON_HARMONIC, harmonic_number=1)
 
     plot_shadow_beam_spatial_distribution(source.get_source_beam(ignore_aperture=True), xrange=[-1, 1], yrange=[-0.05, 0.05])
     plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-1, 1], yrange=[-0.05, 0.05])

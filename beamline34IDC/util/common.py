@@ -45,13 +45,22 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import Shadow
+from Shadow.ShadowTools import write_shadow_surface
+from Shadow.ShadowPreprocessorsXraylib import prerefl, bragg
+from srxraylib.metrology import profiles_simulation, dabam
+
+from oasys.util.error_profile_util import DabamInputParameters, calculate_dabam_profile, ErrorProfileInputParameters, calculate_heigth_profile
+from oasys.widgets import congruence
+
+from orangecontrib.ml.util.mocks import MockWidget
+
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
+from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 
 import scipy.constants as codata
 m2ev = codata.c * codata.h / codata.e
 
-from Shadow.ShadowPreprocessorsXraylib import prerefl, bragg
-from oasys.widgets import congruence
+
 
 def rotate(origin, point, angle):
     """
@@ -85,6 +94,8 @@ def normalise_angle(angle):
     """ If angle is negative then convert it to positive. """
     return (360 + angle) if ((angle != 0) & (abs(angle) == (angle * -1))) else angle
 
+####################################################
+
 # WEIRD MEMORY INITIALIZATION BY FORTRAN. JUST A FIX.
 def fix_Intensity(beam_out, polarization=0):
     if polarization == 0:
@@ -93,6 +104,8 @@ def fix_Intensity(beam_out, polarization=0):
         beam_out._beam.rays[:, 17] = 0
 
     return beam_out
+
+####################################################
 
 def get_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, xrange=[-2.0, +2.0], yrange=[-2.0, +2.0]):
     return shadow_beam._beam.histo2(1, 3, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
@@ -105,6 +118,23 @@ def plot_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, titl
 
 def plot_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, title="X',Z'", xrange=[-1e-3, +1e-3], yrange=[-1e-3, +1e-3]):
     return Shadow.ShadowTools.plotxy(shadow_beam._beam, 4, 6, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
+
+def save_source_beam(source_beam, file_name="begin.dat"):
+    source_beam.getOEHistory(0)._shadow_source_end.src.write("source_" + file_name)
+    source_beam.writeToFile(file_name)
+
+def load_source_beam(file_name="begin.dat"):
+    source_beam = ShadowBeam()
+    source_beam.loadFromFile(file_name)
+
+    shadow_source = ShadowSource.create_src_from_file("source_" + file_name)
+    source_beam.history.append(ShadowOEHistoryItem(shadow_source_start=shadow_source,
+                                                   shadow_source_end=shadow_source,
+                                                   widget_class_name="UndeterminedSource"))
+
+    return source_beam
+
+####################################################
 
 def write_reflectivity_file(symbol="Pt", shadow_file_name="Pt.dat", energy_range=[5000, 15000], energy_step=1.0):
     symbol = symbol.strip()
@@ -133,3 +163,67 @@ def write_bragg_file(crystal="Si", miller_indexes=[1, 1, 1], shadow_file_name="S
           SHADOW_FILE=congruence.checkFileName(shadow_file_name))
 
     return shadow_file_name
+
+def write_dabam_file(dabam_entry_number=20, heigth_profile_file_name="KB.dat", seed=8787):
+    server = dabam.dabam()
+    server.set_input_silent(True)
+    server.set_server(dabam.default_server)
+    server.load(dabam_entry_number)
+
+    input_parameters = DabamInputParameters(dabam_server=server)
+    input_parameters.s
+    input_parameters.center_y = 1
+    input_parameters.modify_y = 2
+    input_parameters.new_length_y = 100.0
+    input_parameters.filler_value_y = 0.0
+    input_parameters.renormalize_y = 1
+    input_parameters.error_type_y = 0
+    input_parameters.rms_y = 3.5
+    input_parameters.kind_of_profile_x = 0
+    input_parameters.dimension_x = 20.0
+    input_parameters.step_x = 1.0
+    input_parameters.power_law_exponent_beta_x = 2.0
+    input_parameters.montecarlo_seed_x = seed
+    input_parameters.error_type_x = 0
+    input_parameters.rms_x = 0.5
+
+    xx, yy, zz = calculate_dabam_profile(input_parameters)
+
+    ST.write_shadow_surface(zz, xx, yy, heigth_profile_file_name)
+
+    return heigth_profile_file_name
+
+####################################################
+
+def get_hybrid_input_parameters(shadow_beam, diffraction_plane=1, calcType=1, nf=0, verbose=False):
+    input_parameters = hybrid_control.HybridInputParameters()
+    input_parameters.ghy_lengthunit = 2
+    input_parameters.widget = MockWidget(verbose=verbose)
+    input_parameters.shadow_beam = shadow_beam
+    input_parameters.ghy_diff_plane = diffraction_plane
+    input_parameters.ghy_calcType = calcType
+    input_parameters.ghy_distance = -1
+    input_parameters.ghy_focallength = -1
+    input_parameters.ghy_nf = nf
+    input_parameters.ghy_nbins_x = 100
+    input_parameters.ghy_nbins_z = 100
+    input_parameters.ghy_npeak = 20
+    input_parameters.ghy_fftnpts = 50000
+    input_parameters.file_to_write_out = 0
+    input_parameters.ghy_automatic = 0
+
+    return input_parameters
+
+def rotate_axis_system(input_beam, rotation_angle=270.0):
+    oe8 = Shadow.OE()
+
+    oe8.ALPHA = rotation_angle
+    oe8.DUMMY = 0.1
+    oe8.FWRITE = 3
+    oe8.F_REFRAC = 2
+    oe8.T_IMAGE = 0.0
+    oe8.T_INCIDENCE = 0.0
+    oe8.T_REFLECTION = 180.0
+    oe8.T_SOURCE = 0.0
+
+    return ShadowBeam.traceFromOE(input_beam.duplicate(), ShadowOpticalElement(oe8), widget_class_name="EmptyElement")
