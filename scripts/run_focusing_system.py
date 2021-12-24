@@ -46,8 +46,8 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from beamline34IDC.simulation.focusing_optics_system import FocusingOpticsSystem
-from beamline34IDC.util.common import PreProcessorFiles, plot_shadow_beam_spatial_distribution, save_shadow_beam, load_shadow_beam
+from beamline34IDC.simulation.focusing_optics_system import FocusingOpticsSystem, Movement
+from beamline34IDC.util.common import PreProcessorFiles, plot_shadow_beam_spatial_distribution, load_shadow_beam
 from beamline34IDC.util import clean_up
 
 if __name__ == "__main__":
@@ -69,18 +69,22 @@ if __name__ == "__main__":
     focusing_system.perturbate_input_beam(shift_h=0.0, shift_v=0.0)
 
     output_beam = focusing_system.get_beam(verbose=False, near_field_calculation=False, debug_mode=False)
+    #save_shadow_beam(output_beam, "focusing_optics_system_beam.dat")
 
     plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
 
-    save_shadow_beam(output_beam, "focusing_optics_system_beam.dat")
+    #--------------------------------------------------
+    # interaction with the beamline
+    focusing_system.change_vkb_shape(10, movement=Movement.RELATIVE)
 
-    '''
-    focusing_system.modify_coherence_slits(coh_slits_h_center=0.05)
+    plot_shadow_beam_spatial_distribution(focusing_system.get_beam(verbose=False), xrange=None, yrange=None)
+
     focusing_system.move_vkb_motor_3_pitch(1e-4, movement=Movement.RELATIVE)
-    focusing_system.move_hkb_motor_4_translation(-0.1, movement=Movement.RELATIVE)
 
-    output_beam = focusing_system.get_beam(verbose=False)
+    plot_shadow_beam_spatial_distribution(focusing_system.get_beam(verbose=False), xrange=None, yrange=None)
 
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
-    '''
+    focusing_system.move_vkb_motor_4_translation(0.005, movement=Movement.RELATIVE)
+
+    plot_shadow_beam_spatial_distribution(focusing_system.get_beam(verbose=False), xrange=None, yrange=None)
+
     clean_up()

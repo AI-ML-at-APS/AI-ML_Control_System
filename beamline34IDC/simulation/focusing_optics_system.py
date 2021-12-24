@@ -377,7 +377,7 @@ class FocusingOpticsSystem():
 
         if run_all or self.__coherence_slits in self.__modified_elements:
             # HYBRID CORRECTION TO CONSIDER DIFFRACTION FROM SLITS
-            output_beam = ShadowBeam.traceFromOE(self.__input_beam.duplicate(), self.__coherence_slits, widget_class_name="ScreenSlits")
+            output_beam = ShadowBeam.traceFromOE(self.__input_beam.duplicate(), self.__coherence_slits.duplicate(), widget_class_name="ScreenSlits")
             output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                             diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
                                                                             calcType=1,  # Diffraction by Simple Aperture
@@ -386,10 +386,10 @@ class FocusingOpticsSystem():
 
             if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="Coherence Slits", xrange=None, yrange=None)
 
-            self.__slits_beam = output_beam
+            self.__slits_beam = output_beam.duplicate()
 
         if run_all or self.__vkb in self.__modified_elements:
-            output_beam = ShadowBeam.traceFromOE(self.__slits_beam.duplicate(), self.__vkb, widget_class_name="EllypticalMirror")
+            output_beam = ShadowBeam.traceFromOE(self.__slits_beam.duplicate(), self.__vkb.duplicate(), widget_class_name="EllypticalMirror")
 
             if not near_field_calculation:
                 output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
@@ -411,7 +411,7 @@ class FocusingOpticsSystem():
             self.__vkb_beam = output_beam
 
         if run_all or self.__hkb in self.__modified_elements:
-            output_beam = ShadowBeam.traceFromOE(self.__vkb_beam.duplicate(), self.__hkb, widget_class_name="EllypticalMirror")
+            output_beam = ShadowBeam.traceFromOE(self.__vkb_beam.duplicate(), self.__hkb.duplicate(), widget_class_name="EllypticalMirror")
 
             if not near_field_calculation:
                 output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
@@ -433,3 +433,32 @@ class FocusingOpticsSystem():
         self.__modified_elements = []
 
         return rotate_axis_system(output_beam, rotation_angle=270.0)
+
+from beamline34IDC.util.common import PreProcessorFiles, plot_shadow_beam_spatial_distribution, load_shadow_beam
+from beamline34IDC.util import clean_up
+
+if __name__ == "__main__":
+
+    clean_up()
+
+    input_beam = load_shadow_beam("primary_optics_system_beam.dat")
+
+    # Focusing Optics System -------------------------
+
+    focusing_system = FocusingOpticsSystem()
+
+    focusing_system.initialize(input_beam=input_beam,
+                               rewrite_preprocessor_files=PreProcessorFiles.NO,
+                               rewrite_height_error_profile_files=False)
+
+    focusing_system.perturbate_input_beam(shift_h=0.01, shift_v=0.01)
+
+    output_beam = focusing_system.get_beam(verbose=False, near_field_calculation=False, debug_mode=False)
+
+    focusing_system.move_vkb_motor_3_pitch(1e-4, movement=Movement.RELATIVE)
+
+    output_beam = focusing_system.get_beam(verbose=False)
+
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
+
+    clean_up()
