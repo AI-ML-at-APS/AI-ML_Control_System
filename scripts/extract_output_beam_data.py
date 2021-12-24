@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     os.chdir("../work_directory")
 
-    shadow_beam = load_shadow_beam("focusing_optics_system_beam.dat")
+    shadow_beam = load_shadow_beam("primary_optics_system_beam.dat")
 
     # default plot
     plot_shadow_beam_spatial_distribution(shadow_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])

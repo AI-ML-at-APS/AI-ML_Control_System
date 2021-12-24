@@ -217,13 +217,25 @@ class FocusingOpticsSystem():
 
         self.__modified_elements = [self.__coherence_slits, self.__vkb, self.__hkb]
 
-    def perturbate_input_beam(self, shift_h=None, shift_v=None):
+    def perturbate_input_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None):
         if self.__input_beam is None: raise ValueError("Focusing Optical System is not initialized")
 
         good_only = numpy.where(self.__input_beam._beam.rays[:, 9] == 1)
 
         if not shift_h is None: self.__input_beam._beam.rays[good_only, 0] += shift_h
         if not shift_v is None: self.__input_beam._beam.rays[good_only, 2] += shift_v
+
+        v_out = [self.__input_beam._beam.rays[good_only, 3],
+                 self.__input_beam._beam.rays[good_only, 4],
+                 self.__input_beam._beam.rays[good_only, 5]]
+
+        if not rotation_h is None: v_out = ShadowMath.vector_rotate([0, 0, 1], rotation_h, v_out)
+        if not rotation_v is None: v_out = ShadowMath.vector_rotate([1, 0, 0], rotation_v, v_out)
+
+        if not (rotation_h is None and rotation_v is None):
+            self.__input_beam._beam.rays[good_only, 3] = v_out[0]
+            self.__input_beam._beam.rays[good_only, 4] = v_out[1]
+            self.__input_beam._beam.rays[good_only, 5] = v_out[2]
 
     def restore_input_beam(self):
         if self.__input_beam is None: raise ValueError("Focusing Optical System is not initialized")

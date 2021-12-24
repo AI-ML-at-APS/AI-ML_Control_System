@@ -66,15 +66,18 @@ if __name__ == "__main__":
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
+    # ----------------------------------------------------------------
+    # perturbation of the incident beam to make adjustements necessary
+
     focusing_system.perturbate_input_beam(shift_h=0.0, shift_v=0.0)
 
     output_beam = focusing_system.get_beam(verbose=False, near_field_calculation=False, debug_mode=False)
-    #save_shadow_beam(output_beam, "focusing_optics_system_beam.dat")
 
     plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
 
     #--------------------------------------------------
     # interaction with the beamline
+
     focusing_system.change_vkb_shape(10, movement=Movement.RELATIVE)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_beam(verbose=False), xrange=None, yrange=None)
