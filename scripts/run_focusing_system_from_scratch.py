@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
 
-    save_shadow_beam("focusing_optics_system.dat")
+    save_shadow_beam(output_beam, "focusing_optics_system.dat")
 
     '''
     focusing_system.modify_coherence_slits(coh_slits_h_center=0.05)
