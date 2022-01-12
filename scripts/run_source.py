@@ -70,7 +70,7 @@ if __name__ == "__main__":
     plot_shadow_beam_spatial_distribution(source_beam)
     plot_shadow_beam_divergence_distribution(source_beam)
 
-    hh, vv, data_2D = get_shadow_beam_spatial_distribution(source_beam, xrange=[-1, 1], yrange=[-0.05, 0.05])
+    shadow_histogram = get_shadow_beam_spatial_distribution(source_beam, xrange=[-1, 1], yrange=[-0.05, 0.05])
 
     source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.UNDULATOR)
     source.initialize(n_rays=50000, random_seed=3245345, verbose=True, storage_ring=StorageRing.APS)
