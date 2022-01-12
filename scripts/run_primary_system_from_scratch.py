@@ -46,7 +46,8 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from beamline34IDC.simulation.source_interface import  __ShadowGaussianUndulatorSource, StorageRing
+from beamline34IDC.simulation.interfaces.source_interface import Sources, StorageRing
+from beamline34IDC.simulation.source_factory import source_factory_method, Implementors
 from beamline34IDC.simulation.primary_optics_system import PrimaryOpticsSystem, PreProcessorFiles
 from beamline34IDC.util.common import save_shadow_beam
 from beamline34IDC.util import clean_up
@@ -59,10 +60,10 @@ if __name__ == "__main__":
     clean_up()
 
     # Source -------------------------
-    source = __ShadowGaussianUndulatorSource()
+    source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.GAUSSIAN)
     source.initialize(n_rays=500000, random_seed=3245345, storage_ring=StorageRing.APS)
     source.set_angular_acceptance_from_aperture(aperture=[0.05, 0.09], distance=50500)
-    source.set_energy(energy_range=[4999.0, 5001.0], photon_energy_distribution=__ShadowGaussianUndulatorSource.PhotonEnergyDistributions.UNIFORM)
+    source.set_energy(energy_range=[4999.0, 5001.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
 
     # Primary Optics System -------------------------
     primary_system = PrimaryOpticsSystem()
