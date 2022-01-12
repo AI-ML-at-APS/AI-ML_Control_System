@@ -50,44 +50,22 @@ import numpy
 from beamline34IDC.util.common import fix_Intensity, m2ev
 from orangecontrib.ml.util.mocks import MockWidget
 
-from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, ShadowOEHistoryItem, ShadowOpticalElement
+from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, ShadowOpticalElement
 from orangecontrib.shadow_advanced_tools.widgets.sources.attributes.hybrid_undulator_attributes import HybridUndulatorAttributes
 import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as HU
 
-class StorageRing:
-    APS = 0
-    APS_U = 1
+from beamline34IDC.simulation.interfaces.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
 
-class ElectronBeamAPS:
-    energy_in_GeV = 7.0
-    energy_spread = 0.00098
-    ring_current = 0.1
-    sigma_x = 0.0002805
-    sigma_z = 1.02e-05
-    sigdi_x = 1.18e-05
-    sigdi_z = 3.4e-06
+def shadow_source_factory_method(kind_of_source=Sources.GAUSSIAN):
+    if kind_of_source == Sources.GAUSSIAN:
+        return __ShadowGaussianUndulatorSource()
+    elif kind_of_source == Sources.UNDULATOR:
+        return __ShadowHybridUndulatorSource()
+    else:
+        raise ValueError("Kind of Source not recognized")
 
-class ElectronBeamAPS_U:
-    energy_in_GeV = 6.0
-    energy_spread = 0.00138
-    ring_current = 0.2
-    sigma_x = 1.48e-05
-    sigma_z = 3.7e-06
-    sigdi_x = 2.8e-06
-    sigdi_z = 1.5e-06
+class __ShadowGaussianUndulatorSource(AbstractSource):
 
-class AbstractSource():
-    def initialize(self, n_rays=500000, random_seed=5676561, storage_ring=StorageRing.APS, **kwargs): raise NotImplementedError()
-    def set_angular_acceptance(self, divergence=[1e-4, 1e-4]): raise NotImplementedError()
-    def set_angular_acceptance_from_aperture(self, aperture=[0.03, 0.07], distance=50500): raise NotImplementedError()
-    def set_energy(self, energy_range=[4999.0, 5001.0], **kwargs): raise NotImplementedError()
-    def get_source_beam(self, **kwargs): raise NotImplementedError()
-
-#############################################################################
-# GEOMETRICAL SOURCE
-#
-
-class GaussianUndulatorSource(AbstractSource):
     class PhotonEnergyDistributions:
         SINGLE_LINE = 1
         UNIFORM = 3
@@ -95,7 +73,14 @@ class GaussianUndulatorSource(AbstractSource):
     def __init__(self):
         self.__shadow_source = None
 
-    def initialize(self, n_rays=500000, random_seed=5676561, undulator_length=2.376, storage_ring=StorageRing.APS, **kwargs):
+    def initialize(self, storage_ring=StorageRing.APS, **kwargs):
+        try: n_rays = kwargs["n_rays"]
+        except: n_rays = 500000
+        try: random_seed = kwargs["random_seed"]
+        except: random_seed = 5676561
+        try: undulator_length = kwargs["undulator_length"]
+        except: undulator_length = 2.376
+
         #####################################################
         # SHADOW 3 INITIALIZATION
         #
@@ -168,7 +153,7 @@ class GaussianUndulatorSource(AbstractSource):
 # HYBRID SOURCE
 #
 
-class HybridUndulatorSource(AbstractSource):
+class __ShadowHybridUndulatorSource(AbstractSource):
     class KDirection:
         VERTICAL = 1
         HORIZONTAL = 2
@@ -184,11 +169,15 @@ class HybridUndulatorSource(AbstractSource):
         self.__aperture = None
         self.__distance = None
 
-    def initialize(self, n_rays=500000, random_seed=5676561, storage_ring=StorageRing.APS, **kwargs):
+    def initialize(self, storage_ring=StorageRing.APS, **kwargs):
+        try: n_rays = kwargs["n_rays"]
+        except: n_rays = 500000
+        try: random_seed = kwargs["random_seed"]
+        except: random_seed = 5676561
         try: verbose = kwargs["verbose"]
         except: verbose = False
 
-        self.__widget = HybridUndulatorSource.__MockUndulatorHybrid(storage_ring=storage_ring, verbose=verbose)
+        self.__widget = self.__MockUndulatorHybrid(storage_ring=storage_ring, verbose=verbose)
         self.__widget.number_of_rays = n_rays
         self.__widget.seed = random_seed
 
@@ -208,13 +197,13 @@ class HybridUndulatorSource(AbstractSource):
         wavelength = harmonic_number*m2ev/harmonic_energy
         K = round(numpy.sqrt(2*(((wavelength*2*HU.gamma(self.__widget)**2)/self.__widget.undulator_period)-1)), 6)
 
-        if which == HybridUndulatorSource.KDirection.VERTICAL:
+        if which == self.KDirection.VERTICAL:
             self.__widget.Kv = K
             self.__widget.Kh = 0.0
-        elif which == HybridUndulatorSource.KDirection.HORIZONTAL:
+        elif which == self.KDirection.HORIZONTAL:
             self.__widget.Kh = K
             self.__widget.Kv = 0.0
-        elif which == HybridUndulatorSource.KDirection.BOTH:
+        elif which == self.KDirection.BOTH:
             Kboth = round(K / numpy.sqrt(2), 6)
             self.__widget.Kv = Kboth
             self.__widget.Kh = Kboth
@@ -229,13 +218,13 @@ class HybridUndulatorSource(AbstractSource):
         try: energy_points = kwargs["energy_points"]
         except: energy_points = 11
 
-        if photon_energy_distribution == HybridUndulatorSource.PhotonEnergyDistributions.ON_HARMONIC:
+        if photon_energy_distribution == self.PhotonEnergyDistributions.ON_HARMONIC:
             self.__widget.use_harmonic = 0
             self.__widget.harmonic_number = harmonic_number
-        elif photon_energy_distribution == HybridUndulatorSource.PhotonEnergyDistributions.SINGLE_ENERGY:
+        elif photon_energy_distribution == self.PhotonEnergyDistributions.SINGLE_ENERGY:
             self.__widget.use_harmonic = 1
             self.__widget.energy = energy_range[0]
-        elif photon_energy_distribution == HybridUndulatorSource.PhotonEnergyDistributions.RANGE:
+        elif photon_energy_distribution == self.PhotonEnergyDistributions.RANGE:
             self.__widget.use_harmonic = 2
             self.__widget.energy = energy_range[0]
             self.__widget.energy_to = energy_range[1]
@@ -374,6 +363,3 @@ class HybridUndulatorSource(AbstractSource):
 
             self.kind_of_sampler = 1
             self.save_srw_result = 0
-
-
-

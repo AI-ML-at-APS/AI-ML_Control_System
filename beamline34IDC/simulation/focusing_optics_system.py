@@ -49,7 +49,7 @@ import numpy
 import Shadow
 
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
-from orangecontrib.shadow.util.shadow_util import ShadowPhysics
+from orangecontrib.shadow.util.shadow_util import ShadowPhysics, ShadowMath
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 from beamline34IDC.util.common import PreProcessorFiles, write_reflectivity_file, write_dabam_file, \
     rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
@@ -279,7 +279,7 @@ class FocusingOpticsSystem():
         if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
-    def get_hkb_motor_4_translation(self):
+    def get_vkb_motor_4_translation(self):
         return FocusingOpticsSystem.__get_motor_4_translation(self.__vkb)
 
     def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE):

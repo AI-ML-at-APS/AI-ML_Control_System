@@ -44,32 +44,39 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os
+class StorageRing:
+    APS = 0
+    APS_U = 1
 
-from beamline34IDC.simulation.source_interface import  __ShadowGaussianUndulatorSource, StorageRing
-from beamline34IDC.simulation.primary_optics_system import PrimaryOpticsSystem, PreProcessorFiles
-from beamline34IDC.util.common import save_shadow_beam
-from beamline34IDC.util import clean_up
+class ElectronBeamAPS:
+    energy_in_GeV = 7.0
+    energy_spread = 0.00098
+    ring_current = 0.1
+    sigma_x = 0.0002805
+    sigma_z = 1.02e-05
+    sigdi_x = 1.18e-05
+    sigdi_z = 3.4e-06
+
+class ElectronBeamAPS_U:
+    energy_in_GeV = 6.0
+    energy_spread = 0.00138
+    ring_current = 0.2
+    sigma_x = 1.48e-05
+    sigma_z = 3.7e-06
+    sigdi_x = 2.8e-06
+    sigdi_z = 1.5e-06
 
 
-if __name__ == "__main__":
+class Sources:
+    GAUSSIAN = 0
+    UNDULATOR = 1
 
-    os.chdir("../work_directory")
+class AbstractSource():
+    def initialize(self, storage_ring=StorageRing.APS, **kwargs): raise NotImplementedError()
+    def set_angular_acceptance(self, divergence=[1e-4, 1e-4]): raise NotImplementedError()
+    def set_angular_acceptance_from_aperture(self, aperture=[0.03, 0.07], distance=50500): raise NotImplementedError()
+    def set_energy(self, energy_range=[4999.0, 5001.0], **kwargs): raise NotImplementedError()
+    def get_source_beam(self, **kwargs): raise NotImplementedError()
 
-    clean_up()
 
-    # Source -------------------------
-    source = __ShadowGaussianUndulatorSource()
-    source.initialize(n_rays=500000, random_seed=3245345, storage_ring=StorageRing.APS)
-    source.set_angular_acceptance_from_aperture(aperture=[0.05, 0.09], distance=50500)
-    source.set_energy(energy_range=[4999.0, 5001.0], photon_energy_distribution=__ShadowGaussianUndulatorSource.PhotonEnergyDistributions.UNIFORM)
 
-    # Primary Optics System -------------------------
-    primary_system = PrimaryOpticsSystem()
-    primary_system.initialize(source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.NO)
-
-    input_beam = primary_system.get_beam()
-
-    save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
-
-    clean_up()
