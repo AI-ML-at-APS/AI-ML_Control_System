@@ -51,29 +51,13 @@ import Shadow
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics, ShadowMath
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
-from beamline34IDC.util.common import PreProcessorFiles, write_reflectivity_file, write_dabam_file, \
-    rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from beamline34IDC.util.shadow.common import PreProcessorFiles, write_reflectivity_file, write_dabam_file, rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
+from beamline34IDC.simulation.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, get_default_input_features
 
-class Movement:
-    ABSOLUTE = 0
-    RELATIVE = 1
+def shadow_focusing_optics_factory_method():
+    return __FocusingOptics()
 
-def get_default_input_features():
-    return DictionaryWrapper(coh_slits_h_aperture=0.03,
-                             coh_slits_h_center=0.0,
-                             coh_slits_v_aperture=0.07,
-                             coh_slits_v_center=0.0,
-                             vkb_q_distance=221,
-                             vkb_motor_4_translation=0.0,
-                             vkb_motor_3_pitch_angle=0.003,
-                             vkb_motor_3_delta_pitch_angle=0.0,
-                             hkb_q_distance=120,
-                             hkb_motor_4_translation=0.0,
-                             hkb_motor_3_pitch_angle=0.003,
-                             hkb_motor_3_delta_pitch_angle=0.0)
-
-class FocusingOpticsSystem():
+class __FocusingOptics(AbstractFocusingOptics):
 
     def __init__(self):
         self.__input_beam = None
@@ -88,25 +72,23 @@ class FocusingOpticsSystem():
         self.__modified_elements = None
 
     def initialize(self,
-                   input_beam,
+                   input_photon_beam,
                    input_features=get_default_input_features(),
-                   rewrite_preprocessor_files=PreProcessorFiles.YES_SOURCE_RANGE,
-                   rewrite_height_error_profile_files=False,
                    **kwargs):
-        self.__input_beam         = input_beam.duplicate()
-        self.__initial_input_beam = input_beam.duplicate()
+        try:    rewrite_preprocessor_files = kwargs["rewrite_preprocessor_files"]
+        except: rewrite_preprocessor_files = PreProcessorFiles.YES_SOURCE_RANGE
+        try:    rewrite_height_error_profile_files = kwargs["rewrite_height_error_profile_files"]
+        except: rewrite_height_error_profile_files = False
 
-        energies = ShadowPhysics.getEnergyFromShadowK(self.__input_beam._beam.rays[:, 10])
+        self.__input_beam         = input_photon_beam.duplicate()
+        self.__initial_input_beam = input_photon_beam.duplicate()
 
-        central_energy = numpy.average(energies)
+        energies     = ShadowPhysics.getEnergyFromShadowK(self.__input_beam._beam.rays[:, 10])
         energy_range = [numpy.min(energies), numpy.max(energies)]
 
-        if rewrite_preprocessor_files==PreProcessorFiles.YES_FULL_RANGE:
-            reflectivity_file = write_reflectivity_file()
-        elif rewrite_preprocessor_files==PreProcessorFiles.YES_SOURCE_RANGE:
-            reflectivity_file = write_reflectivity_file(energy_range=energy_range)
-        elif rewrite_preprocessor_files==PreProcessorFiles.NO:
-            reflectivity_file = "Pt.dat"
+        if   rewrite_preprocessor_files==PreProcessorFiles.YES_FULL_RANGE:   reflectivity_file = write_reflectivity_file()
+        elif rewrite_preprocessor_files==PreProcessorFiles.YES_SOURCE_RANGE: reflectivity_file = write_reflectivity_file(energy_range=energy_range)
+        elif rewrite_preprocessor_files==PreProcessorFiles.NO:               reflectivity_file = "Pt.dat"
 
         if rewrite_height_error_profile_files==True:
             vkb_error_profile_file = write_dabam_file(dabam_entry_number=92, heigth_profile_file_name="VKB-LTP.dat", seed=8787)
@@ -217,7 +199,7 @@ class FocusingOpticsSystem():
 
         self.__modified_elements = [self.__coherence_slits, self.__vkb, self.__hkb]
 
-    def perturbate_input_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None):
+    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None):
         if self.__input_beam is None: raise ValueError("Focusing Optical System is not initialized")
 
         good_only = numpy.where(self.__input_beam._beam.rays[:, 9] == 1)
@@ -237,7 +219,7 @@ class FocusingOpticsSystem():
             self.__input_beam._beam.rays[good_only, 4] = v_out[1]
             self.__input_beam._beam.rays[good_only, 5] = v_out[2]
 
-    def restore_input_beam(self):
+    def restore_input_photon_beam(self):
         if self.__input_beam is None: raise ValueError("Focusing Optical System is not initialized")
         self.__input_beam = self.__initial_input_beam.duplicate()
 
@@ -265,57 +247,57 @@ class FocusingOpticsSystem():
     # V-KB -----------------------
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE):
-        FocusingOpticsSystem.__move_motor_3_pitch(self.__vkb, angle, movement)
+        self.__move_motor_3_pitch(self.__vkb, angle, movement)
         
         if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
     def get_vkb_motor_3_pitch(self):
-        return FocusingOpticsSystem.__get_motor_3_pitch(self.__vkb)
+        return self.__get_motor_3_pitch(self.__vkb)
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE):
-        FocusingOpticsSystem.__move_motor_4_transation(self.__vkb, translation, movement)
+        self.__move_motor_4_transation(self.__vkb, translation, movement)
 
         if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
     def get_vkb_motor_4_translation(self):
-        return FocusingOpticsSystem.__get_motor_4_translation(self.__vkb)
+        return self.__get_motor_4_translation(self.__vkb)
 
     def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE):
-        FocusingOpticsSystem.__change_shape(self.__vkb, q_distance, movement)
+        self.__change_shape(self.__vkb, q_distance, movement)
 
         if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
     def get_vkb_q_distance(self):
-        return FocusingOpticsSystem.__get_q_distance(self.__vkb)
+        return self.__get_q_distance(self.__vkb)
 
     # H-KB -----------------------
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE):
-        FocusingOpticsSystem.__move_motor_3_pitch(self.__hkb, angle, movement)
+        self.__move_motor_3_pitch(self.__hkb, angle, movement)
 
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
     def get_hkb_motor_3_pitch(self):
-        return FocusingOpticsSystem.__get_motor_3_pitch(self.__hkb)
+        return self.__get_motor_3_pitch(self.__hkb)
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE):
-        FocusingOpticsSystem.__move_motor_4_transation(self.__hkb, translation, movement)
+        self.__move_motor_4_transation(self.__hkb, translation, movement)
 
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
     def get_hkb_motor_4_translation(self):
-        return FocusingOpticsSystem.__get_motor_4_translation(self.__hkb)
+        return self.__get_motor_4_translation(self.__hkb)
 
     def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE):
-        FocusingOpticsSystem.__change_shape(self.__hkb, q_distance, movement)
+        self.__change_shape(self.__hkb, q_distance, movement)
 
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
     def get_hkb_q_distance(self):
-        return FocusingOpticsSystem.__get_q_distance(self.__hkb)
+        return self.__get_q_distance(self.__hkb)
 
     # PRIVATE -----------------------
 
@@ -361,6 +343,7 @@ class FocusingOpticsSystem():
 
         return numpy.radians(90 - element._oe.T_INCIDENCE), numpy.radians(element._oe.X_ROT)
 
+    @classmethod
     def __get_motor_4_translation(cls, element):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
@@ -368,6 +351,7 @@ class FocusingOpticsSystem():
 
         return numpy.average([element._oe.OFFY/numpy.sin(total_pitch_angle), element._oe.OFFZ/numpy.cos(total_pitch_angle)])
 
+    @classmethod
     def __get_q_distance(cls, element):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
@@ -376,14 +360,13 @@ class FocusingOpticsSystem():
     #####################################################################################
     # Run the simulation
     
-    def get_beam(self, verbose=False, **kwargs):
-        if self.__input_beam is None: raise ValueError("Focusing Optical System is not initialized")
-
-        try: debug_mode = kwargs["debug_mode"]
+    def get_photon_beam(self, near_field_calculation=False, **kwargs):
+        try:    verbose = kwargs["verbose"]
+        except: verbose = False
+        try:    debug_mode = kwargs["debug_mode"]
         except: debug_mode = False
 
-        try: near_field_calculation = kwargs["near_field_calculation"]
-        except: near_field_calculation = False
+        if self.__input_beam is None: raise ValueError("Focusing Optical System is not initialized")
 
         run_all = self.__modified_elements == [] or len(self.__modified_elements) == 3
 
@@ -445,32 +428,3 @@ class FocusingOpticsSystem():
         self.__modified_elements = []
 
         return rotate_axis_system(output_beam, rotation_angle=270.0)
-
-from beamline34IDC.util.common import PreProcessorFiles, plot_shadow_beam_spatial_distribution, load_shadow_beam
-from beamline34IDC.util import clean_up
-
-if __name__ == "__main__":
-
-    clean_up()
-
-    input_beam = load_shadow_beam("primary_optics_system_beam.dat")
-
-    # Focusing Optics System -------------------------
-
-    focusing_system = FocusingOpticsSystem()
-
-    focusing_system.initialize(input_beam=input_beam,
-                               rewrite_preprocessor_files=PreProcessorFiles.NO,
-                               rewrite_height_error_profile_files=False)
-
-    focusing_system.perturbate_input_beam(shift_h=0.01, shift_v=0.01)
-
-    output_beam = focusing_system.get_beam(verbose=False, near_field_calculation=False, debug_mode=False)
-
-    focusing_system.move_vkb_motor_3_pitch(1e-4, movement=Movement.RELATIVE)
-
-    output_beam = focusing_system.get_beam(verbose=False)
-
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
-
-    clean_up()

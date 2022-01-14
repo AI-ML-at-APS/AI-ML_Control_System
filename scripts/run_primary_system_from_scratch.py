@@ -46,10 +46,10 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from beamline34IDC.simulation.interfaces.source_interface import Sources, StorageRing
-from beamline34IDC.simulation.source_factory import source_factory_method, Implementors
-from beamline34IDC.simulation.primary_optics_system import PrimaryOpticsSystem, PreProcessorFiles
-from beamline34IDC.util.common import save_shadow_beam
+from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
+from beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
+from beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
+from beamline34IDC.util.shadow.common import save_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
 
 
@@ -59,17 +59,20 @@ if __name__ == "__main__":
 
     clean_up()
 
+    implementor    = Implementors.SHADOW
+    kind_of_source = Sources.GAUSSIAN
+
     # Source -------------------------
-    source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.GAUSSIAN)
-    source.initialize(n_rays=500000, random_seed=3245345, storage_ring=StorageRing.APS)
+    source = source_factory_method(implementor=implementor, kind_of_source=kind_of_source)
+    source.initialize(storage_ring=StorageRing.APS, n_rays=500000, random_seed=3245345)
     source.set_angular_acceptance_from_aperture(aperture=[0.05, 0.09], distance=50500)
     source.set_energy(energy_range=[4999.0, 5001.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
 
     # Primary Optics System -------------------------
-    primary_system = PrimaryOpticsSystem()
-    primary_system.initialize(source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.NO)
+    primary_system = primary_optics_factory_method(implementor=implementor)
+    primary_system.initialize(source_photon_beam=source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.NO)
 
-    input_beam = primary_system.get_beam()
+    input_beam = primary_system.get_photon_beam()
 
     save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
 
