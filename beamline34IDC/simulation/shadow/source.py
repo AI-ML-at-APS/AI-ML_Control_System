@@ -47,14 +47,14 @@
 import Shadow
 import numpy
 
-from beamline34IDC.util.common import fix_Intensity, m2ev
+from beamline34IDC.util.shadow.common import fix_Intensity, m2ev
 from orangecontrib.ml.util.mocks import MockWidget
 
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, ShadowOpticalElement
 from orangecontrib.shadow_advanced_tools.widgets.sources.attributes.hybrid_undulator_attributes import HybridUndulatorAttributes
 import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as HU
 
-from beamline34IDC.simulation.interfaces.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
+from beamline34IDC.simulation.facade.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
 
 def shadow_source_factory_method(kind_of_source=Sources.GAUSSIAN):
     if kind_of_source == Sources.GAUSSIAN:

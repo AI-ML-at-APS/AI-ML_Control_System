@@ -47,9 +47,7 @@
 
 import numpy
 
-from beamline34IDC.util.common import m2ev
-
-from beamline34IDC.simulation.interfaces.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
+from beamline34IDC.simulation.facade.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
 
 def srw_source_factory_method(kind_of_source=Sources.GAUSSIAN):
     if kind_of_source == Sources.GAUSSIAN:
@@ -79,7 +77,7 @@ class __SRWUndulatorSource(AbstractSource):
         self.__aperture = None
         self.__distance = None
 
-    def initialize(self, torage_ring=StorageRing.APS, **kwargs):
+    def initialize(self, storage_ring=StorageRing.APS, **kwargs):
         try: verbose = kwargs["verbose"]
         except: verbose = False
 

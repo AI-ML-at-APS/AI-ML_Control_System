@@ -44,23 +44,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-from beamline34IDC.simulation.shadow.source import shadow_source_factory_method
-from beamline34IDC.simulation.srw.source import srw_source_factory_method
-from beamline34IDC.simulation.interfaces.source_interface import Sources
 
-class Implementors:
-    SHADOW = 0
-    SRW = 1
-
-#############################################################################
-# DESIGN PATTERN: FACTORY METHOD
-#
-
-def source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.GAUSSIAN):
-    if implementor==Implementors.SHADOW:
-        return shadow_source_factory_method(kind_of_source=kind_of_source)
-    elif implementor==Implementors.SRW:
-        return srw_source_factory_method(kind_of_source=kind_of_source)
-    else:
-        raise ValueError("Implementor not recognized")
-
+class AbstractPrimaryOptics():
+    def initialize(self, source_photon_beam, **kwargs): raise NotImplementedError()
+    def get_photon_beam(self, **kwargs): raise NotImplementedError()
