@@ -252,7 +252,7 @@ def write_bragg_file(crystal="Si", miller_indexes=[1, 1, 1], shadow_file_name="S
 
     return shadow_file_name
 
-def write_dabam_file(dabam_entry_number=20, heigth_profile_file_name="KB.dat", seed=8787):
+def write_dabam_file(figure_error_rms=None, dabam_entry_number=20, heigth_profile_file_name="KB.dat", seed=8787):
     server = dabam.dabam()
     server.set_input_silent(True)
     server.set_server(dabam.default_server)
@@ -264,9 +264,12 @@ def write_dabam_file(dabam_entry_number=20, heigth_profile_file_name="KB.dat", s
     input_parameters.modify_y = 2
     input_parameters.new_length_y = 100.0
     input_parameters.filler_value_y = 0.0
-    input_parameters.renormalize_y = 1
-    input_parameters.error_type_y = 0
-    input_parameters.rms_y = 3.5
+    if figure_error_rms is None:
+        input_parameters.renormalize_y = 0
+    else:
+        input_parameters.renormalize_y = 1
+        input_parameters.error_type_y = 0
+        input_parameters.rms_y = 3.5
     input_parameters.kind_of_profile_x = 0
     input_parameters.dimension_x = 20.0
     input_parameters.step_x = 1.0

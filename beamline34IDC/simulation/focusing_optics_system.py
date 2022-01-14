@@ -109,11 +109,11 @@ class FocusingOpticsSystem():
             reflectivity_file = "Pt.dat"
 
         if rewrite_height_error_profile_files==True:
-            vkb_error_profile_file = write_dabam_file(dabam_entry_number=20, heigth_profile_file_name="VKB.dat", seed=8787)
-            hkb_error_profile_file = write_dabam_file(dabam_entry_number=62, heigth_profile_file_name="HKB.dat", seed=2345345)
+            vkb_error_profile_file = write_dabam_file(dabam_entry_number=92, heigth_profile_file_name="VKB-LTP.dat", seed=8787)
+            hkb_error_profile_file = write_dabam_file(dabam_entry_number=93, heigth_profile_file_name="HKB-LTP.dat", seed=2345345)
         else:
-            vkb_error_profile_file = "VKB.dat"
-            hkb_error_profile_file = "HKB.dat"
+            vkb_error_profile_file = "VKB-LTP.dat"
+            hkb_error_profile_file = "HKB-LTP.dat"
 
         coherence_slits = Shadow.OE()
 
