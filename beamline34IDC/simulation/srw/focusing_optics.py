@@ -44,32 +44,42 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os
 
-from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
-from beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
-from beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
-from beamline34IDC.util.shadow.common import load_source_beam, save_shadow_beam, plot_shadow_beam_spatial_distribution, PreProcessorFiles
-from beamline34IDC.util import clean_up
+from beamline34IDC.simulation.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, get_default_input_features
 
+def srw_focusing_optics_factory_method():
+    return __FocusingOpticsSystem()
 
-if __name__ == "__main__":
+class __FocusingOpticsSystem(AbstractFocusingOptics):
+    def __init__(self):
+        pass
+    
+    def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs): pass
 
-    os.chdir("../work_directory")
+    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): pass
+    def restore_input_photon_beam(self): pass
 
-    clean_up()
+    #####################################################################################
+    # This methods represent the run-time interface, to interact with the optical system 
+    # in real time, like in the real beamline
 
-    # Source -------------------------
-    source_beam = load_source_beam("gaussian_undulator_source.dat")
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): pass
+    def get_coherence_slits_parameters(self): return None # center x, center z, aperture x, aperture z
 
-    # Primary Optics System -------------------------
-    primary_system = primary_optics_factory_method(implementor=Implementors.SHADOW)
-    primary_system.initialize(source_photon_beam=source_beam, rewrite_preprocessor_files=PreProcessorFiles.YES_SOURCE_RANGE)
+    # V-KB -----------------------
 
-    input_beam = primary_system.get_photon_beam()
+    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE): pass
+    def get_vkb_motor_3_pitch(self): return None
+    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
+    def get_vkb_motor_4_translation(self): return None
+    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE): pass
+    def get_vkb_q_distance(self): return None
 
-    save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
+    # H-KB -----------------------
 
-    plot_shadow_beam_spatial_distribution(input_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
-
-    clean_up()
+    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE): pass
+    def get_hkb_motor_3_pitch(self): return None
+    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
+    def get_hkb_motor_4_translation(self): return None
+    def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): pass
+    def get_hkb_q_distance(self): return None

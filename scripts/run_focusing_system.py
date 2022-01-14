@@ -46,11 +46,15 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from beamline34IDC.simulation.focusing_optics_system import FocusingOpticsSystem, Movement
-from beamline34IDC.util.common import PreProcessorFiles, plot_shadow_beam_spatial_distribution, load_shadow_beam
+from beamline34IDC.simulation.facade import Implementors
+from beamline34IDC.simulation.facade.focusing_optics_factory import focusing_optics_factory_method
+from beamline34IDC.simulation.facade.focusing_optics_interface import Movement
+
+from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
 
 if __name__ == "__main__":
+    verbose = False
 
     os.chdir("../work_directory")
 
@@ -60,18 +64,18 @@ if __name__ == "__main__":
 
     # Focusing Optics System -------------------------
 
-    focusing_system = FocusingOpticsSystem()
+    focusing_system = focusing_optics_factory_method(implementor=Implementors.SHADOW)
 
-    focusing_system.initialize(input_beam=input_beam,
+    focusing_system.initialize(input_photon_beam=input_beam,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
     # ----------------------------------------------------------------
     # perturbation of the incident beam to make adjustements necessary
 
-    focusing_system.perturbate_input_beam(shift_h=0.0, shift_v=0.0)
+    focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
 
-    output_beam = focusing_system.get_beam(verbose=False, near_field_calculation=False, debug_mode=False)
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False)
 
     plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
 
@@ -80,14 +84,14 @@ if __name__ == "__main__":
 
     focusing_system.change_vkb_shape(10, movement=Movement.RELATIVE)
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_beam(verbose=False), xrange=None, yrange=None)
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose), xrange=None, yrange=None)
 
     focusing_system.move_vkb_motor_3_pitch(1e-4, movement=Movement.RELATIVE)
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_beam(verbose=False), xrange=None, yrange=None)
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose), xrange=None, yrange=None)
 
     focusing_system.move_vkb_motor_4_translation(0.005, movement=Movement.RELATIVE)
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_beam(verbose=False), xrange=None, yrange=None)
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose), xrange=None, yrange=None)
 
     clean_up()

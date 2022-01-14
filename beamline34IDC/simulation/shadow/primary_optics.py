@@ -50,15 +50,22 @@ import Shadow
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 
-from beamline34IDC.util.common import write_bragg_file, write_reflectivity_file, PreProcessorFiles
+from beamline34IDC.simulation.facade.primary_optics_interface import AbstractPrimaryOptics
+from beamline34IDC.util.shadow.common import write_bragg_file, write_reflectivity_file, PreProcessorFiles
 
-class PrimaryOpticsSystem():
+def shadow_primary_optics_factory_method():
+    return __PrimaryOptics()
+
+class __PrimaryOptics(AbstractPrimaryOptics):
     def __init__(self):
         self.__source_beam = None
         self.__optical_system = None
 
-    def initialize(self, source_beam, rewrite_preprocessor_files=PreProcessorFiles.YES_SOURCE_RANGE, **kwargs):
-        self.__source_beam = source_beam
+    def initialize(self, source_photon_beam, **kwargs):
+        try:    rewrite_preprocessor_files = kwargs["rewrite_preprocessor_files"]
+        except: rewrite_preprocessor_files = PreProcessorFiles.YES_SOURCE_RANGE
+
+        self.__source_beam = source_photon_beam
 
         energies = ShadowPhysics.getEnergyFromShadowK(self.__source_beam._beam.rays[:, 10])
 
@@ -161,7 +168,7 @@ class PrimaryOpticsSystem():
                                  [ShadowOpticalElement(dcm_1), "PlaneCrystal", False],
                                  [ShadowOpticalElement(dcm_2), "PlaneCrystal", True]]
 
-    def get_beam(self, **kwargs):
+    def get_photon_beam(self, **kwargs):
         if self.__source_beam is None: raise ValueError("Primary Optical System is not initialized")
 
         input_beam = self.__source_beam.duplicate()

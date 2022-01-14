@@ -44,32 +44,59 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os
 
-from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
-from beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
-from beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
-from beamline34IDC.util.shadow.common import load_source_beam, save_shadow_beam, plot_shadow_beam_spatial_distribution, PreProcessorFiles
-from beamline34IDC.util import clean_up
+from orangecontrib.ml.util.data_structures import DictionaryWrapper
 
+class Movement:
+    ABSOLUTE = 0
+    RELATIVE = 1
 
-if __name__ == "__main__":
+def get_default_input_features():
+    return DictionaryWrapper(coh_slits_h_aperture=0.03,
+                             coh_slits_h_center=0.0,
+                             coh_slits_v_aperture=0.07,
+                             coh_slits_v_center=0.0,
+                             vkb_q_distance=221,
+                             vkb_motor_4_translation=0.0,
+                             vkb_motor_3_pitch_angle=0.003,
+                             vkb_motor_3_delta_pitch_angle=0.0,
+                             hkb_q_distance=120,
+                             hkb_motor_4_translation=0.0,
+                             hkb_motor_3_pitch_angle=0.003,
+                             hkb_motor_3_delta_pitch_angle=0.0)
 
-    os.chdir("../work_directory")
+class AbstractFocusingOptics():
+    def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs): raise NotImplementedError()
 
-    clean_up()
+    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): raise NotImplementedError()
+    def restore_input_photon_beam(self): raise NotImplementedError()
 
-    # Source -------------------------
-    source_beam = load_source_beam("gaussian_undulator_source.dat")
+    #####################################################################################
+    # This methods represent the run-time interface, to interact with the optical system
+    # in real time, like in the real beamline
 
-    # Primary Optics System -------------------------
-    primary_system = primary_optics_factory_method(implementor=Implementors.SHADOW)
-    primary_system.initialize(source_photon_beam=source_beam, rewrite_preprocessor_files=PreProcessorFiles.YES_SOURCE_RANGE)
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): raise NotImplementedError()
+    def get_coherence_slits_parameters(self): raise NotImplementedError() # center x, center z, aperture x, aperture z
 
-    input_beam = primary_system.get_photon_beam()
+    # V-KB -----------------------
 
-    save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
+    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_vkb_motor_3_pitch(self): raise NotImplementedError()
+    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_vkb_motor_4_translation(self): raise NotImplementedError()
+    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_vkb_q_distance(self): raise NotImplementedError()
 
-    plot_shadow_beam_spatial_distribution(input_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+    # H-KB -----------------------
 
-    clean_up()
+    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_hkb_motor_3_pitch(self): raise NotImplementedError()
+    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_hkb_motor_4_translation(self): raise NotImplementedError()
+    def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_hkb_q_distance(self): raise NotImplementedError()
+
+    #####################################################################################
+    # Run the simulation
+
+    def get_photon_beam(self, **kwargs): raise NotImplementedError()
