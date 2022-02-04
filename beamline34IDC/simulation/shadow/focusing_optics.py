@@ -49,9 +49,9 @@ import numpy
 import Shadow
 
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
-from orangecontrib.shadow.util.shadow_util import ShadowPhysics, ShadowMath
+from orangecontrib.shadow.util.shadow_util import ShadowPhysics, ShadowMath, ShadowCongruence
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
-from beamline34IDC.util.shadow.common import PreProcessorFiles, write_reflectivity_file, write_dabam_file, rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
+from beamline34IDC.util.shadow.common import EmptyBeamException, PreProcessorFiles, write_reflectivity_file, write_dabam_file, rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
 from beamline34IDC.simulation.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, get_default_input_features
 
 def shadow_focusing_optics_factory_method():
@@ -360,23 +360,29 @@ class __FocusingOptics(AbstractFocusingOptics):
     #####################################################################################
     # Run the simulation
     
-    def get_photon_beam(self, near_field_calculation=False, **kwargs):
+    def get_photon_beam(self, near_field_calculation=False, remove_lost_rays=True, **kwargs):
         try:    verbose = kwargs["verbose"]
         except: verbose = False
         try:    debug_mode = kwargs["debug_mode"]
         except: debug_mode = False
+        try:    random_seed = kwargs["random_seed"]
+        except: random_seed = None
 
         if self.__input_beam is None: raise ValueError("Focusing Optical System is not initialized")
+
+        self.__check_beam(self.__input_beam, "Primary Optical System", remove_lost_rays)
 
         run_all = self.__modified_elements == [] or len(self.__modified_elements) == 3
 
         if run_all or self.__coherence_slits in self.__modified_elements:
             # HYBRID CORRECTION TO CONSIDER DIFFRACTION FROM SLITS
-            output_beam = ShadowBeam.traceFromOE(self.__input_beam.duplicate(), self.__coherence_slits.duplicate(), widget_class_name="ScreenSlits")
+            output_beam = self.__check_beam(ShadowBeam.traceFromOE(self.__input_beam.duplicate(), self.__coherence_slits.duplicate(), widget_class_name="ScreenSlits"), "Coherence Slits", remove_lost_rays)
+
             output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                             diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
                                                                             calcType=1,  # Diffraction by Simple Aperture
-                                                                            verbose=verbose)).ff_beam
+                                                                            verbose=verbose,
+                                                                            random_seed=random_seed)).ff_beam
 
 
             if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="Coherence Slits", xrange=None, yrange=None)
@@ -384,13 +390,14 @@ class __FocusingOptics(AbstractFocusingOptics):
             self.__slits_beam = output_beam.duplicate()
 
         if run_all or self.__vkb in self.__modified_elements:
-            output_beam = ShadowBeam.traceFromOE(self.__slits_beam.duplicate(), self.__vkb.duplicate(), widget_class_name="EllypticalMirror")
+            output_beam = self.__check_beam(ShadowBeam.traceFromOE(self.__slits_beam.duplicate(), self.__vkb.duplicate(), widget_class_name="EllypticalMirror"), "V-KB", remove_lost_rays)
 
             if not near_field_calculation:
                 output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                                 diffraction_plane=2,  # Tangential
                                                                                 calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                                verbose=verbose)).ff_beam
+                                                                                verbose=verbose,
+                                                                                random_seed=random_seed)).ff_beam
             else:
                 output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                                 diffraction_plane=2,  # Tangential
@@ -398,7 +405,8 @@ class __FocusingOptics(AbstractFocusingOptics):
                                                                                 nf=1,
                                                                                 focal_length=self.__vkb._oe.SIMAG, # at focus
                                                                                 image_distance=self.__vkb._oe.SIMAG, # at focus
-                                                                                verbose=verbose)).nf_beam
+                                                                                verbose=verbose,
+                                                                                random_seed=random_seed)).nf_beam
                 output_beam._beam.retrace(self.__vkb._oe.T_IMAGE - self.__vkb._oe.SIMAG)
 
             if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="VKB", xrange=None, yrange=None)
@@ -406,19 +414,21 @@ class __FocusingOptics(AbstractFocusingOptics):
             self.__vkb_beam = output_beam
 
         if run_all or self.__hkb in self.__modified_elements:
-            output_beam = ShadowBeam.traceFromOE(self.__vkb_beam.duplicate(), self.__hkb.duplicate(), widget_class_name="EllypticalMirror")
+            output_beam = self.__check_beam(ShadowBeam.traceFromOE(self.__vkb_beam.duplicate(), self.__hkb.duplicate(), widget_class_name="EllypticalMirror"), "H-KB", remove_lost_rays)
 
             if not near_field_calculation:
                 output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                                 diffraction_plane=2,  # Tangential
                                                                                 calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                                verbose=verbose)).ff_beam
+                                                                                verbose=verbose,
+                                                                                random_seed=random_seed)).ff_beam
             else:
                 output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                                 diffraction_plane=2,  # Tangential
                                                                                 calcType=3,  # Diffraction by Mirror Size + Errors
                                                                                 nf=1,
-                                                                                verbose=verbose)).nf_beam
+                                                                                verbose=verbose,
+                                                                                random_seed=random_seed)).nf_beam
 
             if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="HKB", xrange=None, yrange=None)
 
@@ -428,3 +438,13 @@ class __FocusingOptics(AbstractFocusingOptics):
         self.__modified_elements = []
 
         return rotate_axis_system(output_beam, rotation_angle=270.0)
+
+    def __check_beam(self, output_beam, oe, remove_lost_rays):
+        if ShadowCongruence.checkEmptyBeam(output_beam):
+            if ShadowCongruence.checkGoodBeam(output_beam):
+                if remove_lost_rays:
+                    output_beam._beam.rays = output_beam._beam.rays[numpy.where(output_beam._beam.rays[:, 9] == 1)]
+
+                return output_beam
+            else: raise EmptyBeamException(oe)
+        else: raise EmptyBeamException(oe)
