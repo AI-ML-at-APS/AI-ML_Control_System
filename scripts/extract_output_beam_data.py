@@ -54,7 +54,7 @@ try:
 except:
     pass
 
-from beamline34IDC.util.common import get_shadow_beam_spatial_distribution, plot_shadow_beam_spatial_distribution, load_shadow_beam
+from beamline34IDC.util.shadow.common import get_shadow_beam_spatial_distribution, plot_shadow_beam_spatial_distribution, load_shadow_beam
 
 def plot_3D(xx, yy, zz):
     figure = plt.figure(figsize=(10, 7))
@@ -90,9 +90,9 @@ if __name__ == "__main__":
     plot_shadow_beam_spatial_distribution(shadow_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
 
     # extracting data 2D and statistical information
-    shadow_histogram, statistical_data = get_shadow_beam_spatial_distribution(shadow_beam)
+    shadow_histogram, statistical_data = get_shadow_beam_spatial_distribution(shadow_beam, do_gaussian_fit=True)
 
     plot_3D(shadow_histogram.hh, shadow_histogram.vv, shadow_histogram.data_2D)
 
-    print(statistical_data)
+    print(statistical_data.get_parameter("gaussian_fit"))
 

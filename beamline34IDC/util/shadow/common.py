@@ -59,6 +59,8 @@ from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 import scipy.constants as codata
 
+from ..gaussian_fit import calculate_gaussian_fit
+
 m2ev = codata.c * codata.h / codata.e
 
 ####################################################
@@ -74,19 +76,23 @@ def fix_Intensity(beam_out, polarization=0):
 
 ####################################################
 
+class EmptyBeamException(Exception):
+    def __init__(self, oe="OE"):
+        super().__init__("Shadow beam after" + oe + "contains no good rays")
+
 class ShadowHistogram():
     def __init__(self, hh, vv, data_2D):
         self.hh = hh
         self.vv = vv
         self.data_2D = data_2D
 
-def get_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None):
-    return __shadow_beam_get_distribution_info(shadow_beam._beam.histo2(1, 3, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange))
+def get_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
+    return __shadow_beam_get_distribution_info(shadow_beam._beam.histo2(1, 3, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange), do_gaussian_fit=do_gaussian_fit)
 
-def get_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None):
-    return __shadow_beam_get_distribution_info(shadow_beam._beam.histo2(4, 6, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange))
+def get_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
+    return __shadow_beam_get_distribution_info(shadow_beam._beam.histo2(4, 6, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange), do_gaussian_fit=do_gaussian_fit)
 
-def __shadow_beam_get_distribution_info(ticket):
+def __shadow_beam_get_distribution_info(ticket, do_gaussian_fit=False):
     ticket['fwhm_h'], ticket['fwhm_quote_h'], ticket['fwhm_coordinates_h'] = get_fwhm(ticket['histogram_h'], ticket['bin_h_center'])
     ticket['fwhm_v'], ticket['fwhm_quote_v'], ticket['fwhm_coordinates_v'] = get_fwhm(ticket['histogram_v'], ticket['bin_v_center'])
     ticket['sigma_h'] = get_sigma(ticket['histogram_h'], ticket['bin_h_center'])
@@ -102,6 +108,8 @@ def __shadow_beam_get_distribution_info(ticket):
     hh = ticket['bin_h_center']
     vv = ticket['bin_v_center']
 
+    if do_gaussian_fit: gaussian_fit = calculate_gaussian_fit(data_2D=histogram, x=hh, y=vv)
+
     return ShadowHistogram(hh, vv, histogram), \
            DictionaryWrapper(
                h_sigma=ticket['sigma_h'],
@@ -111,7 +119,8 @@ def __shadow_beam_get_distribution_info(ticket):
                v_fwhm=ticket['fwhm_v'],
                v_centroid=ticket['centroid_v'],
                integral_intensity=integral_intensity,
-               peak_intensity=peak_intensity
+               peak_intensity=peak_intensity,
+               gaussian_fit=gaussian_fit
     )
 
 def plot_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, title="X,Z", xrange=None, yrange=None):
@@ -260,7 +269,7 @@ def write_dabam_file(figure_error_rms=None, dabam_entry_number=20, heigth_profil
 # focal_length: Focal Distance of the Wavefront for the Near Field calculation (-1 for the default)
 # image_distance: Image Distance of the Beam after the Near Field calculation (-1 for the default)
 #
-def get_hybrid_input_parameters(shadow_beam, diffraction_plane=2, calcType=1, nf=0, focal_length=-1, image_distance=-1, verbose=False):
+def get_hybrid_input_parameters(shadow_beam, diffraction_plane=2, calcType=1, nf=0, focal_length=-1, image_distance=-1, verbose=False, random_seed=None):
     input_parameters = hybrid_control.HybridInputParameters()
     input_parameters.ghy_lengthunit = 2
     input_parameters.widget = MockWidget(verbose=verbose)
@@ -276,6 +285,7 @@ def get_hybrid_input_parameters(shadow_beam, diffraction_plane=2, calcType=1, nf
     input_parameters.ghy_fftnpts = 50000
     input_parameters.file_to_write_out = 0
     input_parameters.ghy_automatic = 0
+    input_parameters.random_seed = random_seed
 
     return input_parameters
 
