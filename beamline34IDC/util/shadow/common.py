@@ -108,7 +108,10 @@ def __shadow_beam_get_distribution_info(ticket, do_gaussian_fit=False):
     hh = ticket['bin_h_center']
     vv = ticket['bin_v_center']
 
-    if do_gaussian_fit: gaussian_fit = calculate_gaussian_fit(data_2D=histogram, x=hh, y=vv)
+    if do_gaussian_fit:
+        try:    gaussian_fit = calculate_gaussian_fit(data_2D=histogram, x=hh, y=vv)
+        except: gaussian_fit = {}
+    else:       gaussian_fit = {}
 
     return ShadowHistogram(hh, vv, histogram), \
            DictionaryWrapper(
