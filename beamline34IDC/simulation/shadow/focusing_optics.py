@@ -382,7 +382,7 @@ class __FocusingOptics(AbstractFocusingOptics):
                                                                             diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
                                                                             calcType=1,  # Diffraction by Simple Aperture
                                                                             verbose=verbose,
-                                                                            random_seed=random_seed)).ff_beam
+                                                                            random_seed=None if random_seed is None else (random_seed + 100))).ff_beam
 
 
             if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="Coherence Slits", xrange=None, yrange=None)
@@ -397,7 +397,7 @@ class __FocusingOptics(AbstractFocusingOptics):
                                                                                 diffraction_plane=2,  # Tangential
                                                                                 calcType=3,  # Diffraction by Mirror Size + Errors
                                                                                 verbose=verbose,
-                                                                                random_seed=random_seed)).ff_beam
+                                                                                random_seed=None if random_seed is None else (random_seed + 200))).ff_beam
             else:
                 output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                                 diffraction_plane=2,  # Tangential
@@ -406,7 +406,7 @@ class __FocusingOptics(AbstractFocusingOptics):
                                                                                 focal_length=self.__vkb._oe.SIMAG, # at focus
                                                                                 image_distance=self.__vkb._oe.SIMAG, # at focus
                                                                                 verbose=verbose,
-                                                                                random_seed=random_seed)).nf_beam
+                                                                                random_seed=None if random_seed is None else (random_seed + 200))).nf_beam
                 output_beam._beam.retrace(self.__vkb._oe.T_IMAGE - self.__vkb._oe.SIMAG)
 
             if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="VKB", xrange=None, yrange=None)
@@ -421,14 +421,14 @@ class __FocusingOptics(AbstractFocusingOptics):
                                                                                 diffraction_plane=2,  # Tangential
                                                                                 calcType=3,  # Diffraction by Mirror Size + Errors
                                                                                 verbose=verbose,
-                                                                                random_seed=random_seed)).ff_beam
+                                                                                random_seed=None if random_seed is None else (random_seed + 300))).ff_beam
             else:
                 output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                                 diffraction_plane=2,  # Tangential
                                                                                 calcType=3,  # Diffraction by Mirror Size + Errors
                                                                                 nf=1,
                                                                                 verbose=verbose,
-                                                                                random_seed=random_seed)).nf_beam
+                                                                                random_seed=None if random_seed is None else (random_seed + 300))).nf_beam
 
             if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="HKB", xrange=None, yrange=None)
 
