@@ -11,6 +11,7 @@ from beamline34IDC.util import clean_up
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
+from beamline34IDC.util.redirect_shadow_output import redirected_output
 
 #%%
 def getPeakIntensity(focusing_system):
@@ -25,12 +26,14 @@ def loss_function(focusing_system, trans, move_type = Movement.RELATIVE):
     return peak
 
 def reinitialize():
+    clean_up()
     focusing_system = focusing_optics_factory_method(implementor=Implementors.SHADOW)
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
-    output_beam = focusing_system.get_photon_beam(random_seed=101, remove_lost_rays=True)
+    with redirected_output():
+        output_beam = focusing_system.get_photon_beam(random_seed=101, remove_lost_rays=True)
     return focusing_system, output_beam
 
 def runs(focusing_system, n_runs=3, translation=None,
@@ -63,7 +66,8 @@ def runs(focusing_system, n_runs=3, translation=None,
             else:
                 raise ValueError
             focusing_system.move_vkb_motor_4_translation(translation_this, translation_type)
-        out_beam = focusing_system.get_photon_beam(remove_lost_rays=True, random_seed=random_seed)
+        with redirected_output():
+            out_beam = focusing_system.get_photon_beam(remove_lost_rays=True, random_seed=random_seed)
         hist, dw = get_shadow_beam_spatial_distribution(out_beam)
         hists_all.append(hist)
         dws_all.append(dw)

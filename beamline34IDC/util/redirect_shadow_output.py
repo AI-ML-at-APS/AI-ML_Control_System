@@ -8,10 +8,10 @@ def redirected_output(stdout_fname='stdout.txt', stderr_fname='stderr.txt'):
 
     e.g.:
 
+    with redirected_output():
+        out_beam = focusing_system.get_photon_beam()
 
-    with stdchannel_redirected(sys.stderr, os.devnull):
-        if compiler.has_function('clock_gettime', libraries=['rt']):
-            libraries.append('rt')
+    Pass stdout_fname=os.devnull and/or stderr_fname=os.devnull if saving to a file is not desired.
     """
 
     try:
