@@ -10,20 +10,9 @@ from beamline34IDC.util.shadow.common import \
 from beamline34IDC.util import clean_up
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy
 from beamline34IDC.util.redirect_shadow_output import redirected_output
 
 #%%
-def getPeakIntensity(focusing_system):
-    out_beam = focusing_system.get_beam()
-    _, dw = get_shadow_beam_spatial_distribution(out_beam)
-    peak = dw.get_parameter('peak_intensity')
-    return out_beam, peak
-
-def loss_function(focusing_system, trans, move_type = Movement.RELATIVE):
-    focusing_system.move_vkb_motor_4_translation(trans, movement=move_type)
-    _, peak = getPeakIntensity(focusing_system)
-    return peak
 
 def reinitialize():
     clean_up()
@@ -36,10 +25,11 @@ def reinitialize():
         output_beam = focusing_system.get_photon_beam(random_seed=101, remove_lost_rays=True)
     return focusing_system, output_beam
 
-def runs(focusing_system, n_runs=3, translation=None,
+def runs(n_runs=3, translation=None,
          translation_type=Movement.RELATIVE,
          fig_save_prefix=None,
          random_seed=None):
+    global focusing_system
     hists_all = []
     dws_all = []
 
@@ -113,11 +103,38 @@ input_beam = load_shadow_beam("primary_optics_system_beam.dat")
 focusing_system, out_beam = reinitialize()
 
 #%%
-plot_shadow_beam_spatial_distribution(out_beam)
-plt.show(block=True)
+hist1, dws1 = runs(5, fig_save_prefix='figures/no_trans_no_seed')
 
 #%%
-hist, dw = get_shadow_beam_spatial_distribution(out_beam, do_gaussian_fit=True)
+
+hists2, dws2 = runs( 3, random_seed=101, fig_save_prefix='figures/no_trans_seed_101')
+hists3, dws3 = runs( 3, random_seed=1, fig_save_prefix='figures/no_trans_seed_1')
+hists4, dws4 = runs( 3, random_seed=1, translation=0, fig_save_prefix='figures/trans_0_seed_1')
+
+#%%
+# Since I am using the same random seed (1) in the last two runs without translation and this run with some
+# translation, I get identical peak intensities for dw3, dw4, and dw5.
+hists5, dws5 = runs( 5, translation=[0, -0.05, 0.025, 0.025, 0], random_seed=1,
+                    fig_save_prefix='figures/trans_seed_1')
+
+#%%
+print(dws4[2].get_parameter('peak_intensity'),
+      dws5[0].get_parameter('peak_intensity'),
+      dws5[4].get_parameter('peak_intensity'))
+
+#%%
+# Now I am going run an experiment that changes the random seed, then go back to seed 1.
+hists6, dws6 = runs( 3, random_seed=101, fig_save_prefix='figures/no_trans_seed_101_2')
+hists7, dws7 = runs(3, random_seed=1, fig_save_prefix='figures/no_trans_seed_1_2')
+
+#%%
+# Now I am going run an experiment that changes the random seed, then go back to seed 1 WITH translations.
+hists8, dws8 = runs(3, random_seed=101, fig_save_prefix='figures/no_trans_seed_101_3')
+hists9, dws9 = runs(5, random_seed=1, translation=[0, -0.05, 0.025, 0.025, 0],
+                    fig_save_prefix='figures/trans_seed_1_3')
+#%%
+# These should be the same, but they produce different values. There's some oddity (or memory leak?) going on somewhere
+print(dws7[0].get_parameter('peak_intensity'), dws9[0].get_parameter('peak_intensity'))
 
 #%%
 print(getPeakIntensity(focusing_system))
