@@ -44,6 +44,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os
 import numpy
 import Shadow
 from Shadow.ShadowTools import write_shadow_surface
@@ -62,6 +63,21 @@ import scipy.constants as codata
 from ..gaussian_fit import calculate_gaussian_fit
 
 m2ev = codata.c * codata.h / codata.e
+
+class TTYInibitor:
+    def __init__(self):
+        self.__out_stream     = None
+        self.__fortran_stream = None
+
+    def start(self):
+        self.__out_stream     = os.open(os.devnull, os.O_RDWR)
+        self.__fortran_stream = os.dup(1)
+        os.dup2(self.__out_stream, 1)
+
+    def stop(self):
+        if not self.__fortran_stream: return
+        os.dup2(self.__fortran_stream, 1)
+
 
 ####################################################
 

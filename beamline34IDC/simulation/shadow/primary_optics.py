@@ -51,7 +51,7 @@ from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalEl
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 
 from beamline34IDC.simulation.facade.primary_optics_interface import AbstractPrimaryOptics
-from beamline34IDC.util.shadow.common import write_bragg_file, write_reflectivity_file, PreProcessorFiles
+from beamline34IDC.util.shadow.common import write_bragg_file, write_reflectivity_file, PreProcessorFiles, TTYInibitor
 
 def shadow_primary_optics_factory_method():
     return __PrimaryOptics()
@@ -169,17 +169,37 @@ class __PrimaryOptics(AbstractPrimaryOptics):
                                  [ShadowOpticalElement(dcm_2), "PlaneCrystal", True]]
 
     def get_photon_beam(self, **kwargs):
+        try:    verbose = kwargs["verbose"]
+        except: verbose = False
+
         if self.__source_beam is None: raise ValueError("Primary Optical System is not initialized")
 
         input_beam = self.__source_beam.duplicate()
 
-        for optical_element_data in self.__optical_system:
-            optical_element   = optical_element_data[0]
-            widget_class_name = optical_element_data[1]
-            is_last_element   = optical_element_data[2]
+        if not verbose:
+            fortran_suppressor = TTYInibitor()
+            fortran_suppressor.start()
 
-            output_beam = ShadowBeam.traceFromOE(input_beam, optical_element, widget_class_name=widget_class_name)
+        output_beam = None
 
-            if not is_last_element: input_beam = output_beam.duplicate()
+        try:
+            for optical_element_data in self.__optical_system:
+                optical_element   = optical_element_data[0]
+                widget_class_name = optical_element_data[1]
+                is_last_element   = optical_element_data[2]
+
+                output_beam = ShadowBeam.traceFromOE(input_beam, optical_element, widget_class_name=widget_class_name)
+
+                if not is_last_element: input_beam = output_beam.duplicate()
+        except Exception as e:
+            if not verbose:
+                try: fortran_suppressor.stop()
+                except: pass
+
+            raise e
+        else:
+            if not verbose:
+                try: fortran_suppressor.stop()
+                except: pass
 
         return output_beam
