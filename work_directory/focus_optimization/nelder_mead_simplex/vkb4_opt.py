@@ -119,8 +119,6 @@ os.chdir(work_dir)
 input_beam = load_shadow_beam("primary_optics_system_beam.dat")
 
 #%%
-
-#%%
 # Focusing Optics System -------------------------
 
 focusing_system, out_beam = reinitialize()
