@@ -53,6 +53,8 @@ from beamline34IDC.util import clean_up
 
 if __name__ == "__main__":
 
+    verbose = False
+
     os.chdir("../work_directory")
 
     clean_up()
@@ -63,7 +65,7 @@ if __name__ == "__main__":
     source.set_angular_acceptance_from_aperture(aperture=[0.05, 0.09], distance=50500)
     source.set_energy(energy_range=[4999.0, 5001.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
 
-    source_beam = source.get_source_beam()
+    source_beam = source.get_source_beam(verbose=verbose)
 
     save_source_beam(source_beam, "gaussian_undulator_source.dat")
 

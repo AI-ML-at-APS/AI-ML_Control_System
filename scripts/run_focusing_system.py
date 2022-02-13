@@ -73,7 +73,7 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------
     # perturbation of the incident beam to make adjustements necessary
 
-    random_seed = 100 # for repeatability
+    random_seed = 2120 # for repeatability
 
     focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
 
@@ -86,18 +86,18 @@ if __name__ == "__main__":
 
     focusing_system.change_vkb_shape(10, movement=Movement.RELATIVE)
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose),
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
 
     focusing_system.move_vkb_motor_3_pitch(1e-4, movement=Movement.RELATIVE)
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose),
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
 
     focusing_system.move_vkb_motor_4_translation(0.005, movement=Movement.RELATIVE)
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose),
-                                          xrange=None, yrange=None)
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
+                                          range=None, yrange=None)
 
     # ----------------------------------------------------------------
 

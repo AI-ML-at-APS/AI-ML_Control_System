@@ -55,6 +55,7 @@ from orangecontrib.shadow_advanced_tools.widgets.sources.attributes.hybrid_undul
 import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as HU
 
 from beamline34IDC.simulation.facade.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
+from beamline34IDC.util.shadow.common import TTYInibitor
 
 def shadow_source_factory_method(kind_of_source=Sources.GAUSSIAN):
     if kind_of_source == Sources.GAUSSIAN:
@@ -97,7 +98,6 @@ class __ShadowGaussianUndulatorSource(AbstractSource):
         self.set_energy() # defaults
 
     def set_angular_acceptance(self, divergence=[1e-4, 1e-4]):
-        print("Initializa geometrical source with limited divergence: ", divergence, "rad")
         self.__shadow_source.src.FDISTR = 3 # gaussian
 
         self.__shadow_source.src.HDIV1 = divergence[0]/2
@@ -117,8 +117,31 @@ class __ShadowGaussianUndulatorSource(AbstractSource):
 
         self.__set_photon_sizes()
 
-    def get_source_beam(self):
-        return fix_Intensity(ShadowBeam.traceFromSource(self.__shadow_source))
+    def get_source_beam(self, **kwargs):
+        try:    verbose = kwargs["verbose"]
+        except: verbose = False
+
+        if not verbose:
+            fortran_suppressor = TTYInibitor()
+            fortran_suppressor.start()
+
+        output_beam = None
+
+        try:
+           output_beam = fix_Intensity(ShadowBeam.traceFromSource(self.__shadow_source))
+        except Exception as e:
+            if not verbose:
+                try: fortran_suppressor.stop()
+                except: pass
+
+            raise e
+        else:
+            if not verbose:
+                try: fortran_suppressor.stop()
+                except: pass
+
+        return output_beam
+
 
     def __set_photon_sizes(self):
         if self.__storage_ring == StorageRing.APS:

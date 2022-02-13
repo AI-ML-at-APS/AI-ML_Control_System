@@ -54,6 +54,7 @@ from beamline34IDC.util import clean_up
 
 
 if __name__ == "__main__":
+    verbose = False
 
     os.chdir("../work_directory")
 
@@ -70,9 +71,9 @@ if __name__ == "__main__":
 
     # Primary Optics System -------------------------
     primary_system = primary_optics_factory_method(implementor=implementor)
-    primary_system.initialize(source_photon_beam=source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.NO)
+    primary_system.initialize(source_photon_beam=source.get_source_beam(verbose=verbose), rewrite_preprocessor_files=PreProcessorFiles.NO)
 
-    input_beam = primary_system.get_photon_beam()
+    input_beam = primary_system.get_photon_beam(verbose=verbose)
 
     save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
 

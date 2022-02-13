@@ -63,6 +63,7 @@ if __name__ == "__main__":
     clean_up()
 
     verbose = False
+
     implementor    = Implementors.SHADOW
     kind_of_source = Sources.GAUSSIAN
 
@@ -74,13 +75,13 @@ if __name__ == "__main__":
 
     # Primary Optics System -------------------------
     primary_system = primary_optics_factory_method(implementor=implementor)
-    primary_system.initialize(source_photon_beam=source.get_source_beam(), rewrite_preprocessor_files=PreProcessorFiles.YES_FULL_RANGE)
+    primary_system.initialize(source_photon_beam=source.get_source_beam(verbose=verbose), rewrite_preprocessor_files=PreProcessorFiles.YES_FULL_RANGE)
 
     # Focusing Optics System -------------------------
 
     focusing_system = focusing_optics_factory_method(implementor=implementor)
 
-    focusing_system.initialize(input_photon_beam=primary_system.get_photon_beam(),
+    focusing_system.initialize(input_photon_beam=primary_system.get_photon_beam(verbose=verbose),
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
