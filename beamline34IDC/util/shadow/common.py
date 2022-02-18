@@ -116,7 +116,7 @@ def __shadow_beam_get_distribution_info(ticket, do_gaussian_fit=False):
     ticket['centroid_h'] = get_average(ticket['histogram_h'], ticket['bin_h_center'])
     ticket['centroid_v'] = get_average(ticket['histogram_v'], ticket['bin_v_center'])
 
-    histogram = ticket["histogram"]
+    histogram = ticket["histogram"].T # must be transposed to avoid confusion
 
     peak_intensity = numpy.average(histogram[numpy.where(histogram >= numpy.max(histogram) * 0.90)])
     integral_intensity = numpy.sum(histogram)

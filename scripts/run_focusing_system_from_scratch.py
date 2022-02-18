@@ -51,6 +51,7 @@ from beamline34IDC.simulation.facade.source_interface import Sources, StorageRin
 from beamline34IDC.simulation.facade.source_factory import source_factory_method
 from beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
 from beamline34IDC.simulation.facade.focusing_optics_factory import focusing_optics_factory_method
+from beamline34IDC.simulation.facade.focusing_optics_interface import AngularUnits
 
 from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, save_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
@@ -95,7 +96,7 @@ if __name__ == "__main__":
 
     '''
     focusing_system.modify_coherence_slits(coh_slits_h_center=0.05)
-    focusing_system.move_vkb_motor_3_pitch(1e-4, movement=Movement.RELATIVE)
+    focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, AngularUnits.MILLIRADIANS)
     focusing_system.move_hkb_motor_4_translation(-0.1, movement=Movement.RELATIVE)
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose)

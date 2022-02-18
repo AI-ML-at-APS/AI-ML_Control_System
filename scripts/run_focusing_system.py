@@ -48,7 +48,7 @@ import os
 
 from beamline34IDC.simulation.facade import Implementors
 from beamline34IDC.simulation.facade.focusing_optics_factory import focusing_optics_factory_method
-from beamline34IDC.simulation.facade.focusing_optics_interface import Movement
+from beamline34IDC.simulation.facade.focusing_optics_interface import Movement, AngularUnits
 
 from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
@@ -83,13 +83,13 @@ if __name__ == "__main__":
 
     #--------------------------------------------------
     # interaction with the beamline
-
+    '''
     focusing_system.change_vkb_shape(10, movement=Movement.RELATIVE)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
 
-    focusing_system.move_vkb_motor_3_pitch(1e-4, movement=Movement.RELATIVE)
+    focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
@@ -97,7 +97,25 @@ if __name__ == "__main__":
     focusing_system.move_vkb_motor_4_translation(0.005, movement=Movement.RELATIVE)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          range=None, yrange=None)
+                                          xrange=None, yrange=None)
+    '''
+    #--------------------------------------------------
+
+    focusing_system.change_hkb_shape(5, movement=Movement.RELATIVE)
+
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
+                                          xrange=None, yrange=None)
+
+    focusing_system.move_hkb_motor_3_pitch(0.2, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
+
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
+                                          xrange=None, yrange=None)
+
+    focusing_system.move_hkb_motor_4_translation(-0.001, movement=Movement.RELATIVE)
+
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
+                                          xrange=None, yrange=None)
+
 
     # ----------------------------------------------------------------
 
