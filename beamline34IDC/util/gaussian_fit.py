@@ -121,7 +121,7 @@ def differential_evolution_gaussian_fit(data_2D: np.ndarray, x: np.ndarray = Non
                         xdata,
                         data_2D.flatten(),
                         bounds=[bounds_min, bounds_max])
-    amplitude, center_x, center_y, sigma_x, sigma_y, theta, offset = popt
+    amplitude, center_x, center_y, sigma_x, sigma_y, theta, offset = result
     gaussian_fit = {"amplitude": amplitude,
                     "center_x": center_x,
                     "center_y": center_y,

@@ -54,73 +54,8 @@ from beamline34IDC.util.shadow.common import get_shadow_beam_spatial_distributio
 from beamline34IDC.util import clean_up
 import numpy as np
 import scipy
-
-MOTOR_TYPES = ['vkb_4', 'hkb_4']
-
-def getBeam(focusing_system, random_seed=None, remove_lost_rays=True):
-    out_beam = focusing_system.get_photon_beam(random_seed=random_seed, remove_lost_rays=remove_lost_rays)
-    return out_beam
-
-
-def getPeakIntensity(focusing_system, random_seed=None):
-    try:
-        out_beam = getBeam(focusing_system, random_seed=random_seed)
-    except EmptyBeamException:
-        # Assuming that the beam is outside the screen and returning 0 as a default value.
-        return 0
-    hist, dw = get_shadow_beam_spatial_distribution(out_beam)
-    peak = dw.get_parameter('peak_intensity')
-    return peak, out_beam, hist, dw
-
-
-def getCentroidDistance(focusing_system, random_seed=None):
-    try:
-        out_beam = getBeam(focusing_system, random_seed=random_seed)
-    except EmptyBeamException:
-        # Assuming that the centroid is outside the screen and returning 0.5 microns as a default value.
-        return 0.5,
-    hist, dw = get_shadow_beam_spatial_distribution(out_beam)
-    h_centroid = dw.get_parameter('h_centroid')
-    v_centroid = dw.get_parameter('v_centroid')
-    centroid_distance = (h_centroid ** 2 + v_centroid ** 2) ** 0.5
-    return centroid_distance, out_beam, hist, dw
-
-
-def moveHkb4(focusing_system, trans, movement=Movement.RELATIVE):
-    focusing_system.move_hkb_motor_4_translation(trans, movement=movement)
-    return focusing_system
-
-def moveVkb4(focusing_system, trans, movement=Movement.RELATIVE):
-    focusing_system.move_vkb_motor_4_translation(trans, movement=movement)
-    return focusing_system
-
-def moveMotors(focusing_system,  motor_types, translations, movement='relative'):
-    if movement == 'relative' or movement == Movement.RELATIVE:
-        movement = Movement.RELATIVE
-    elif movement == 'absolute' or movement == Movement.ABSOLUTE:
-        movement = Movement.ABSOLUTE
-    else:
-        raise ValueError
-    if np.ndim(motor_types) == 0:
-        motor_types = [motor_types]
-    if np.ndim(translations) == 0:
-        translations = [translations]
-    for tdx, motor_type in zip(translations, motor_types):
-        if motor_type == 'vkb_4':
-            focusing_system = moveVkb4(focusing_system, tdx, movement=movement)
-        elif motor_type == 'hkb_4':
-            focusing_system = moveHkb4(focusing_system, tdx, movement=movement)
-        else:
-            raise ValueError
-    return focusing_system
-
-def lossFunction(focusing_system, motor_types, translations, random_seed=None, movement='relative', verbose=True):
-    focusing_system = moveMotors(focusing_system,  motor_types, translations, movement)
-    centroid_distance, *__ = getCentroidDistance(focusing_system,
-                                                 random_seed=random_seed)
-    if verbose:
-        print("motors", motor_types, "trans", translations, "current loss", centroid_distance)
-    return focusing_system, centroid_distance
+import beamline34IDC.optimization.movers as movers
+import skopt
 
 
 def reinitialize(input_beam_path, random_seed=None, remove_lost_rays=True):
@@ -132,46 +67,139 @@ def reinitialize(input_beam_path, random_seed=None, remove_lost_rays=True):
     focusing_system.initialize(input_photon_beam=input_beam,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
-    output_beam = focusing_system.get_photon_beam(random_seed=random_seed, remove_lost_rays=remove_lost_rays)
-    return focusing_system, output_beam
+    #output_beam = focusing_system.get_photon_beam(random_seed=random_seed, remove_lost_rays=remove_lost_rays)
+    return focusing_system#, output_beam
 
+def getBeam(focusing_system, random_seed=None, remove_lost_rays=True):
+    out_beam = focusing_system.get_photon_beam(random_seed=random_seed, remove_lost_rays=remove_lost_rays)
+    return out_beam
 
-class OptimizationLossFunction:
-    def __init__(self, focusing_system, motor_types, random_seed):
-        self.x_absolute_prev = 0
-        self.random_seed = random_seed
+def getPeakIntensity(focusing_system, random_seed=None):
+    try:
+        out_beam = getBeam(focusing_system, random_seed=random_seed)
+    except EmptyBeamException:
+        # Assuming that the beam is outside the screen and returning 0 as a default value.
+        return 0
+    hist, dw = get_shadow_beam_spatial_distribution(out_beam)
+    peak = dw.get_parameter('peak_intensity')
+    return peak, out_beam, hist, dw
+
+def getCentroidDistance(focusing_system, random_seed=None):
+    try:
+        out_beam = getBeam(focusing_system, random_seed=random_seed)
+    except EmptyBeamException:
+        # Assuming that the centroid is outside the screen and returning 0.5 microns as a default value.
+        return 0.5, None, None, None
+    hist, dw = get_shadow_beam_spatial_distribution(out_beam)
+    h_centroid = dw.get_parameter('h_centroid')
+    v_centroid = dw.get_parameter('v_centroid')
+    centroid_distance = (h_centroid ** 2 + v_centroid ** 2) ** 0.5
+    return centroid_distance, out_beam, hist, dw
+
+class OptimizationCommon:
+    class TrialInstanceLossFunction:
+        def __init__(self, opt_common, verbose=False):
+            self.opt_common = opt_common
+            self.x_absolute_prev = 0
+            self.current_loss = None
+            self.verbose = verbose
+
+        def loss(self, x_absolute_this):
+            if np.ndim(x_absolute_this) > 0:
+                x_absolute_this = np.array(x_absolute_this)
+            x_relative_this = x_absolute_this - self.x_absolute_prev
+            self.x_absolute_prev = x_absolute_this
+            self.current_loss = self.opt_common.lossFunction(x_relative_this, verbose=False)
+            if self.verbose:
+                print("motors", self.opt_common.motor_types,
+                      "trans", x_absolute_this, "current loss", self.current_loss)
+            return self.current_loss
+
+    def __init__(self, focusing_system, motor_types, initial_motor_positions=None, random_seed=None):
         self.focusing_system = focusing_system
-        self.motor_types = motor_types
-        self.current_loss = None
+        self.motor_types = motor_types if np.ndim(motor_types) >0 else [motor_types]
+        self.random_seed = random_seed
 
-    def loss(self, x_absolute_this, verbose=False):
-        x_relative_this = x_absolute_this - self.x_absolute_prev
-        self.x_absolute_prev = x_absolute_this
-        self.focusing_system, self.current_loss = lossFunction(self.focusing_system, self.motor_types, x_relative_this,
-                                                       random_seed=self.random_seed, verbose=verbose)
-        return self.current_loss
+        if initial_motor_positions is None:
+            self.initial_motor_positions = np.zeros(len(self.motor_types))
 
+        self._default_optimization_fn = self.scipy_optimize
 
-def optimizationTrials(focusing_system, motor_types, initial_positions, random_seed,
-                       n_guesses=5, verbose=False):
-    guesses_all = []
-    focusing_system_this = focusing_system
-    for n_trial in range(n_guesses):
-        guess_this = np.random.uniform(-0.05, 0.05, size=np.size(initial_positions))
-        guess_this = np.atleast_1d(guess_this)
-        lossfn_obj = OptimizationLossFunction(focusing_system_this, motor_types, random_seed)
-        lossfn = lambda x: lossfn_obj.loss(x, verbose=verbose)
+    def getBeam(self):
+        return getBeam(self.focusing_system, self.random_seed, remove_lost_rays=True)
 
-        print("Initial loss is", lossfn(np.zeros_like(guess_this)))
-        print(guess_this)
-        opt = scipy.optimize.minimize(lossfn, guess_this,
-                                      method='Nelder-Mead',
-                                      options={'maxiter': 50, 'adaptive': True})
-        guesses_all.append(guess_this)
-        focusing_system_this = lossfn_obj.focusing_system
-        if opt.fun < 5e-4:
-            return focusing_system_this, guesses_all, True
-        focusing_system_this = moveMotors(focusing_system_this, motor_types, initial_positions)
-        centroid, out_beam, *_ = getCentroidDistance()
+    def getPeakIntensity(self):
+        peak, out_beam, hist, dw = getPeakIntensity(self.focusing_system, self.random_seed)
+        return peak
 
-    return focusing_system_this, guesses_all, False
+    def getCentroidDistance(self):
+        centroid_distance, out_beam, hist, dw = getCentroidDistance(self.focusing_system, self.random_seed)
+        return centroid_distance
+
+    def lossFunction(self, translations, verbose=True):
+        """This mutates the state of the focusing system."""
+        self.focusing_system = movers.moveMotors(self.focusing_system, self.motor_types, translations,
+                                                 movement='relative')
+        centroid_distance = self.getCentroidDistance()
+        if verbose:
+            print("motors", self.motor_types, "trans", translations, "current loss", centroid_distance)
+        return centroid_distance
+
+    def scipy_optimize(self, lossfn, initial_guess):
+
+        opt_result = scipy.optimize.minimize(lossfn, initial_guess, method='Nelder-Mead',
+                                             options={'adaptive': True}) #'maxiter': 50,
+        loss = opt_result.fun
+        sol = opt_result.x
+        status = opt_result.status
+        if loss < 5e-4:
+            return opt_result, sol, True
+        return opt_result, sol, False
+
+    def setGaussianProcessOptimizer(self, bounds, **default_opt_params):
+        """Changes the default optimization from scipy-based to Nelder-Mead method to
+        using Gaussian Processes from skopt. Need to explicitly set bounds on the variables if we want
+        to use this optimizer."""
+        if np.ndim(bounds) == 1:
+            bounds = np.array([bounds])
+        if len(bounds) != len(self.motor_types):
+            raise ValueError
+        self._optimization_bounds = bounds
+        self._default_opt_params = default_opt_params
+        self._default_optimization_fn = self.skopt_gp_optimize
+
+    def skopt_gp_optimize(self, lossfn, initial_guess):
+        #print(initial_guess)
+        opt_result = skopt.gp_minimize(lossfn, self._optimization_bounds, **self._default_opt_params)
+        loss = opt_result.fun
+        sol = opt_result.x
+        if loss < 5e-4:
+            return opt_result, sol, True
+        return opt_result, sol, False
+
+    def setInitialMotorPositions(self, motor_positions, movement='absolute'):
+        self.focusing_system = movers.moveMotors(self.focusing_system, self.motor_types,
+                                                 motor_positions, movement=movement)
+        self.initial_motor_positions = motor_positions
+
+    def trials(self, n_guesses=5, verbose=False):
+        guesses_all = []
+        results_all = []
+        for n_trial in range(n_guesses):
+            guess_this = np.random.uniform(-0.05, 0.05, size=np.size(self.motor_types))
+            guess_this = np.atleast_1d(guess_this)
+
+            lossfn_obj_this = self.TrialInstanceLossFunction(self, verbose=verbose)
+            print("Initial loss is", lossfn_obj_this.loss(np.zeros_like(guess_this)))
+
+            result, solution, success_status = self._default_optimization_fn(lossfn_obj_this.loss, guess_this)
+            guesses_all.append(guess_this)
+            results_all.append(result)
+            if success_status:
+                return results_all, guesses_all, solution, True
+
+            self.focusing_system = movers.moveMotors(self.focusing_system, self.motor_types,
+                                                     self.initial_motor_positions)
+            #centroid, out_beam, *_ = getCentroidDistance()
+
+        return results_all, guesses_all, solution, False
