@@ -70,13 +70,13 @@ def reinitialize(input_beam_path, random_seed=None, remove_lost_rays=True):
     #output_beam = focusing_system.get_photon_beam(random_seed=random_seed, remove_lost_rays=remove_lost_rays)
     return focusing_system#, output_beam
 
-def getBeam(focusing_system, random_seed=None, remove_lost_rays=True):
+def get_beam(focusing_system, random_seed=None, remove_lost_rays=True):
     out_beam = focusing_system.get_photon_beam(random_seed=random_seed, remove_lost_rays=remove_lost_rays)
     return out_beam
 
-def getPeakIntensity(focusing_system, random_seed=None):
+def get_peak_intensity(focusing_system, random_seed=None):
     try:
-        out_beam = getBeam(focusing_system, random_seed=random_seed)
+        out_beam = get_beam(focusing_system, random_seed=random_seed)
     except EmptyBeamException:
         # Assuming that the beam is outside the screen and returning 0 as a default value.
         return 0
@@ -84,9 +84,9 @@ def getPeakIntensity(focusing_system, random_seed=None):
     peak = dw.get_parameter('peak_intensity')
     return peak, out_beam, hist, dw
 
-def getCentroidDistance(focusing_system, random_seed=None):
+def get_centroid_distance(focusing_system, random_seed=None):
     try:
-        out_beam = getBeam(focusing_system, random_seed=random_seed)
+        out_beam = get_beam(focusing_system, random_seed=random_seed)
     except EmptyBeamException:
         # Assuming that the centroid is outside the screen and returning 0.5 microns as a default value.
         return 0.5, None, None, None
@@ -109,7 +109,7 @@ class OptimizationCommon:
                 x_absolute_this = np.array(x_absolute_this)
             x_relative_this = x_absolute_this - self.x_absolute_prev
             self.x_absolute_prev = x_absolute_this
-            self.current_loss = self.opt_common.lossFunction(x_relative_this, verbose=False)
+            self.current_loss = self.opt_common.loss_function(x_relative_this, verbose=False)
             if self.verbose:
                 print("motors", self.opt_common.motor_types,
                       "trans", x_absolute_this, "current loss", self.current_loss)
@@ -125,22 +125,22 @@ class OptimizationCommon:
 
         self._default_optimization_fn = self.scipy_optimize
 
-    def getBeam(self):
-        return getBeam(self.focusing_system, self.random_seed, remove_lost_rays=True)
+    def get_beam(self):
+        return get_beam(self.focusing_system, self.random_seed, remove_lost_rays=True)
 
-    def getPeakIntensity(self):
-        peak, out_beam, hist, dw = getPeakIntensity(self.focusing_system, self.random_seed)
+    def get_peak_intensity(self):
+        peak, out_beam, hist, dw = get_peak_intensity(self.focusing_system, self.random_seed)
         return peak
 
-    def getCentroidDistance(self):
-        centroid_distance, out_beam, hist, dw = getCentroidDistance(self.focusing_system, self.random_seed)
+    def get_centroid_distance(self):
+        centroid_distance, out_beam, hist, dw = get_centroid_distance(self.focusing_system, self.random_seed)
         return centroid_distance
 
-    def lossFunction(self, translations, verbose=True):
+    def loss_function(self, translations, verbose=True):
         """This mutates the state of the focusing system."""
-        self.focusing_system = movers.moveMotors(self.focusing_system, self.motor_types, translations,
-                                                 movement='relative')
-        centroid_distance = self.getCentroidDistance()
+        self.focusing_system = movers.move_motors(self.focusing_system, self.motor_types, translations,
+                                                  movement='relative')
+        centroid_distance = self.get_centroid_distance()
         if verbose:
             print("motors", self.motor_types, "trans", translations, "current loss", centroid_distance)
         return centroid_distance
@@ -156,7 +156,7 @@ class OptimizationCommon:
             return opt_result, sol, True
         return opt_result, sol, False
 
-    def setGaussianProcessOptimizer(self, bounds, **default_opt_params):
+    def set_gaussian_process_optimizer(self, bounds, **default_opt_params):
         """Changes the default optimization from scipy-based to Nelder-Mead method to
         using Gaussian Processes from skopt. Need to explicitly set bounds on the variables if we want
         to use this optimizer."""
@@ -177,9 +177,9 @@ class OptimizationCommon:
             return opt_result, sol, True
         return opt_result, sol, False
 
-    def setInitialMotorPositions(self, motor_positions, movement='absolute'):
-        self.focusing_system = movers.moveMotors(self.focusing_system, self.motor_types,
-                                                 motor_positions, movement=movement)
+    def set_initial_motor_positions(self, motor_positions, movement='absolute'):
+        self.focusing_system = movers.move_motors(self.focusing_system, self.motor_types,
+                                                  motor_positions, movement=movement)
         self.initial_motor_positions = motor_positions
 
     def trials(self, n_guesses=5, verbose=False):
@@ -198,8 +198,8 @@ class OptimizationCommon:
             if success_status:
                 return results_all, guesses_all, solution, True
 
-            self.focusing_system = movers.moveMotors(self.focusing_system, self.motor_types,
-                                                     self.initial_motor_positions)
+            self.focusing_system = movers.move_motors(self.focusing_system, self.motor_types,
+                                                      self.initial_motor_positions)
             #centroid, out_beam, *_ = getCentroidDistance()
 
         return results_all, guesses_all, solution, False

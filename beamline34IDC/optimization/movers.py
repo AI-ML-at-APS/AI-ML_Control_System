@@ -1,7 +1,7 @@
 import numpy as np
 from beamline34IDC.simulation.facade.focusing_optics_interface import Movement
 
-def getMovement(movement):
+def get_movement(movement):
     movement_types = {'relative': Movement.RELATIVE,
                       'absolute': Movement.ABSOLUTE}
     if movement in movement_types:
@@ -10,7 +10,7 @@ def getMovement(movement):
         return movement
     raise ValueError
 
-def getMotorMoveFn(focusing_system, motor):
+def get_motor_move_fn(focusing_system, motor):
     motor_move_fns = {'hkb_4': focusing_system.move_hkb_motor_4_translation,
                       'hkb_3': focusing_system.move_hkb_motor_3_pitch,
                       'hkb_q': focusing_system.change_hkb_shape,
@@ -23,13 +23,13 @@ def getMotorMoveFn(focusing_system, motor):
         return motor
     raise ValueError
 
-def moveMotors(focusing_system, motors, translations, movement='relative'):
-    movement = getMovement(movement)
+def move_motors(focusing_system, motors, translations, movement='relative'):
+    movement = get_movement(movement)
     if np.ndim(motors) == 0:
         motors = [motors]
     if np.ndim(translations) == 0:
         translations = [translations]
     for motor, trans in zip(motors, translations):
-        motor_move_fn = getMotorMoveFn(focusing_system, motor)
+        motor_move_fn = get_motor_move_fn(focusing_system, motor)
         motor_move_fn(trans, movement=movement)
     return focusing_system
