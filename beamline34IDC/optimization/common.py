@@ -55,7 +55,6 @@ from beamline34IDC.util import clean_up
 import numpy as np
 import scipy
 import beamline34IDC.optimization.movers as movers
-import skopt
 
 
 def reinitialize(input_beam_path, random_seed=None, remove_lost_rays=True):
@@ -169,6 +168,7 @@ class OptimizationCommon:
         self._default_optimization_fn = self.skopt_gp_optimize
 
     def skopt_gp_optimize(self, lossfn, initial_guess):
+        import skopt
         #print(initial_guess)
         opt_result = skopt.gp_minimize(lossfn, self._optimization_bounds, **self._default_opt_params)
         loss = opt_result.fun
