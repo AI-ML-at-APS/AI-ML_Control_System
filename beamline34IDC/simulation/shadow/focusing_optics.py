@@ -305,16 +305,16 @@ class __FocusingOptics(AbstractFocusingOptics):
     def __move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
-        if units == AngularUnits.MILLIRADIANS: angle = numpy.degrees(angle*1e-3)
-        elif units == AngularUnits.DEGREES:    pass
-        elif units == AngularUnits.RADIANS:    angle = numpy.degrees(angle)
+        if   units == AngularUnits.MILLIRADIANS: angle = numpy.degrees(angle*1e-3)
+        elif units == AngularUnits.DEGREES:      pass
+        elif units == AngularUnits.RADIANS:      angle = numpy.degrees(angle)
         else: raise ValueError("Angular units not recognized")
 
-        if movement == Movement.ABSOLUTE:   delta_pitch_angle = angle - (90 - element._oe.T_INCIDENCE)
-        elif movement == Movement.RELATIVE: delta_pitch_angle = angle
+        if    movement == Movement.ABSOLUTE: delta_pitch_angle = angle - (90 - element._oe.T_INCIDENCE)
+        elif  movement == Movement.RELATIVE: delta_pitch_angle = angle
         else: raise ValueError("Movement not recognized")
 
-        element._oe.X_ROT = delta_pitch_angle
+        element._oe.X_ROT += delta_pitch_angle
 
     @classmethod
     def __move_motor_4_transation(cls, element, translation, movement=Movement.ABSOLUTE):
