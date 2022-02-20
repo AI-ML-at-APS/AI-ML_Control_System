@@ -310,11 +310,11 @@ class __FocusingOptics(AbstractFocusingOptics):
         elif units == AngularUnits.RADIANS:      angle = numpy.degrees(angle)
         else: raise ValueError("Angular units not recognized")
 
-        if    movement == Movement.ABSOLUTE: delta_pitch_angle = angle - (90 - element._oe.T_INCIDENCE)
-        elif  movement == Movement.RELATIVE: delta_pitch_angle = angle
+        if    movement == Movement.ABSOLUTE: element._oe.X_ROT = angle - (90 - element._oe.T_INCIDENCE)
+        elif  movement == Movement.RELATIVE: element._oe.X_ROT += angle
         else: raise ValueError("Movement not recognized")
 
-        element._oe.X_ROT += delta_pitch_angle
+        #element._oe.X_ROT += delta_pitch_angle
 
     @classmethod
     def __move_motor_4_transation(cls, element, translation, movement=Movement.ABSOLUTE):
