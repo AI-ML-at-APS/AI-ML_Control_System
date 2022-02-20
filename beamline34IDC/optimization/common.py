@@ -182,11 +182,11 @@ class OptimizationCommon:
                                                   motor_positions, movement=movement)
         self.initial_motor_positions = motor_positions
 
-    def trials(self, n_guesses=5, verbose=False):
+    def trials(self, n_guesses=5, verbose=False, guess_min=-0.05, guess_max=0.05):
         guesses_all = []
         results_all = []
         for n_trial in range(n_guesses):
-            guess_this = np.random.uniform(-0.05, 0.05, size=np.size(self.motor_types))
+            guess_this = np.random.uniform(guess_min, guess_max, size=np.size(self.motor_types))
             guess_this = np.atleast_1d(guess_this)
 
             lossfn_obj_this = self.TrialInstanceLossFunction(self, verbose=verbose)
