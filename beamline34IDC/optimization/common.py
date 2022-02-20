@@ -121,6 +121,7 @@ class OptimizationCommon:
 
         if initial_motor_positions is None:
             self.initial_motor_positions = np.zeros(len(self.motor_types))
+        self.initial_motor_positions = initial_motor_positions
 
         self._default_optimization_fn = self.scipy_optimize
 
