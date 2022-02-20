@@ -78,7 +78,7 @@ def get_peak_intensity(focusing_system, random_seed=None):
         out_beam = get_beam(focusing_system, random_seed=random_seed)
     except EmptyBeamException:
         # Assuming that the beam is outside the screen and returning 0 as a default value.
-        return 0
+        return 0, None, None, None
     hist, dw = get_shadow_beam_spatial_distribution(out_beam)
     peak = dw.get_parameter('peak_intensity')
     return peak, out_beam, hist, dw
@@ -88,14 +88,27 @@ def get_centroid_distance(focusing_system, random_seed=None):
         out_beam = get_beam(focusing_system, random_seed=random_seed)
     except EmptyBeamException:
         # Assuming that the centroid is outside the screen and returning 0.5 microns as a default value.
-        return 0.5, None, None, None
+        return np.inf, None, None, None
     hist, dw = get_shadow_beam_spatial_distribution(out_beam)
     h_centroid = dw.get_parameter('h_centroid')
     v_centroid = dw.get_parameter('v_centroid')
     centroid_distance = (h_centroid ** 2 + v_centroid ** 2) ** 0.5
     return centroid_distance, out_beam, hist, dw
 
+def get_fwhm(focusing_system, random_seed=None):
+    try:
+        out_beam = get_beam(focusing_system, random_seed=random_seed)
+    except EmptyBeamException:
+        # Assuming that the centroid is outside the screen and returning 0.5 microns as a default value.
+        return np.inf, None, None, None
+    hist, dw = get_shadow_beam_spatial_distribution(out_beam)
+    h_fwhm = dw.get_parameter('h_fwhm')
+    v_fwhm = dw.get_parameter('v_fwhm')
+    fwhm = (h_fwhm ** 2 + v_fwhm ** 2) ** 0.5
+    return fwhm, out_beam, hist, dw
+
 class OptimizationCommon:
+
     class TrialInstanceLossFunction:
         def __init__(self, opt_common, verbose=False):
             self.opt_common = opt_common
@@ -114,7 +127,9 @@ class OptimizationCommon:
                       "trans", x_absolute_this, "current loss", self.current_loss)
             return self.current_loss
 
-    def __init__(self, focusing_system, motor_types, initial_motor_positions=None, random_seed=None):
+    def __init__(self, focusing_system, motor_types,
+                 initial_motor_positions=None, random_seed=None,
+                 loss_parameter = 'centroid', loss_min_value = None):
         self.focusing_system = focusing_system
         self.motor_types = motor_types if np.ndim(motor_types) >0 else [motor_types]
         self.random_seed = random_seed
@@ -124,6 +139,18 @@ class OptimizationCommon:
         self.initial_motor_positions = initial_motor_positions
 
         self._default_optimization_fn = self.scipy_optimize
+
+        if loss_parameter == 'centroid':
+            self._loss_function = self.get_centroid_distance
+            self._loss_min_value = loss_min_value if loss_min_value is not None else 5e-4
+        elif loss_parameter == 'peak_intensity':
+            self._loss_function = self.get_peak_intensity
+            self._loss_min_value = loss_min_value if loss_min_value is not None else -40
+        elif loss_parameter == 'fwhm':
+            self._loss_function = self.get_fwhm
+            self._loss_min_value = loss_min_value if loss_min_value is not None else 1e-4
+        else:
+            raise ValueError("Supplied loss parameter is not valid.")
 
     def get_beam(self):
         return get_beam(self.focusing_system, self.random_seed, remove_lost_rays=True)
@@ -136,14 +163,18 @@ class OptimizationCommon:
         centroid_distance, out_beam, hist, dw = get_centroid_distance(self.focusing_system, self.random_seed)
         return centroid_distance
 
+    def get_fwhm(self):
+        fwhm, out_beam, hist, dw = get_fwhm(self.focusing_system, self.random_seed)
+        return fwhm
+
     def loss_function(self, translations, verbose=True):
         """This mutates the state of the focusing system."""
         self.focusing_system = movers.move_motors(self.focusing_system, self.motor_types, translations,
                                                   movement='relative')
-        centroid_distance = self.get_centroid_distance()
+        loss = self._loss_function()
         if verbose:
-            print("motors", self.motor_types, "trans", translations, "current loss", centroid_distance)
-        return centroid_distance
+            print("motors", self.motor_types, "trans", translations, "current loss", loss)
+        return loss
 
     def scipy_optimize(self, lossfn, initial_guess):
 
@@ -152,7 +183,7 @@ class OptimizationCommon:
         loss = opt_result.fun
         sol = opt_result.x
         status = opt_result.status
-        if loss < 5e-4:
+        if loss < self._loss_min_value:
             return opt_result, sol, True
         return opt_result, sol, False
 
