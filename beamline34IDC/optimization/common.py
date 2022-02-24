@@ -66,49 +66,60 @@ def reinitialize(input_beam_path, random_seed=None, remove_lost_rays=True):
     focusing_system.initialize(input_photon_beam=input_beam,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
-    #output_beam = focusing_system.get_photon_beam(random_seed=random_seed, remove_lost_rays=remove_lost_rays)
-    return focusing_system#, output_beam
+    return focusing_system
+
 
 def get_beam(focusing_system, random_seed=None, remove_lost_rays=True):
-    out_beam = focusing_system.get_photon_beam(random_seed=random_seed, remove_lost_rays=remove_lost_rays)
-    return out_beam
+    photon_beam = focusing_system.get_photon_beam(random_seed=random_seed, remove_lost_rays=remove_lost_rays)
+    return photon_beam
 
-def get_peak_intensity(focusing_system, random_seed=None):
+
+def check_input_for_beam(focusing_system, photon_beam, random_seed):
+    if photon_beam is None:
+        if focusing_system is None:
+            raise ValueError("Need to supply at least one of photon_beam or focusing_system.")
+        photon_beam = get_beam(focusing_system, random_seed=random_seed)
+    return photon_beam
+
+
+def get_peak_intensity(focusing_system=None, photon_beam=None, random_seed=None):
     try:
-        out_beam = get_beam(focusing_system, random_seed=random_seed)
+        photon_beam = check_input_for_beam(focusing_system, photon_beam, random_seed)
     except EmptyBeamException:
         # Assuming that the beam is outside the screen and returning 0 as a default value.
         return 0, None, None, None
-    hist, dw = get_shadow_beam_spatial_distribution(out_beam)
+    hist, dw = get_shadow_beam_spatial_distribution(photon_beam)
     peak = dw.get_parameter('peak_intensity')
-    return peak, out_beam, hist, dw
+    return peak, photon_beam, hist, dw
 
-def get_centroid_distance(focusing_system, random_seed=None):
+
+def get_centroid_distance(focusing_system=None, photon_beam=None, random_seed=None):
     try:
-        out_beam = get_beam(focusing_system, random_seed=random_seed)
+        photon_beam = check_input_for_beam(focusing_system, photon_beam, random_seed)
     except EmptyBeamException:
-        # Assuming that the centroid is outside the screen and returning 0.5 microns as a default value.
+        # Assuming that the beam is outside the screen and returning 0 as a default value.
         return np.inf, None, None, None
-    hist, dw = get_shadow_beam_spatial_distribution(out_beam)
+    hist, dw = get_shadow_beam_spatial_distribution(photon_beam)
     h_centroid = dw.get_parameter('h_centroid')
     v_centroid = dw.get_parameter('v_centroid')
     centroid_distance = (h_centroid ** 2 + v_centroid ** 2) ** 0.5
-    return centroid_distance, out_beam, hist, dw
+    return centroid_distance, photon_beam, hist, dw
 
-def get_fwhm(focusing_system, random_seed=None):
+
+def get_fwhm(focusing_system=None, photon_beam=None, random_seed=None):
     try:
-        out_beam = get_beam(focusing_system, random_seed=random_seed)
+        photon_beam = check_input_for_beam(focusing_system, photon_beam, random_seed)
     except EmptyBeamException:
-        # Assuming that the centroid is outside the screen and returning 0.5 microns as a default value.
+        # Assuming that the beam is outside the screen and returning 0 as a default value.
         return np.inf, None, None, None
-    hist, dw = get_shadow_beam_spatial_distribution(out_beam)
+    hist, dw = get_shadow_beam_spatial_distribution(photon_beam)
     h_fwhm = dw.get_parameter('h_fwhm')
     v_fwhm = dw.get_parameter('v_fwhm')
     fwhm = (h_fwhm ** 2 + v_fwhm ** 2) ** 0.5
-    return fwhm, out_beam, hist, dw
+    return fwhm, photon_beam, hist, dw
+
 
 class OptimizationCommon:
-
     class TrialInstanceLossFunction:
         def __init__(self, opt_common, verbose=False):
             self.opt_common = opt_common
@@ -129,7 +140,7 @@ class OptimizationCommon:
 
     def __init__(self, focusing_system, motor_types,
                  initial_motor_positions=None, random_seed=None,
-                 loss_parameter = 'centroid', loss_min_value = None):
+                 loss_parameter='centroid', loss_min_value=None):
         self.focusing_system = focusing_system
         self.motor_types = motor_types if np.ndim(motor_types) >0 else [motor_types]
         self.random_seed = random_seed
@@ -144,27 +155,30 @@ class OptimizationCommon:
             self._loss_function = self.get_centroid_distance
             self._loss_min_value = loss_min_value if loss_min_value is not None else 5e-4
         elif loss_parameter == 'peak_intensity':
-            self._loss_function = self.get_peak_intensity
+            self._loss_function = self.get_negative_peak_intensity
             self._loss_min_value = loss_min_value if loss_min_value is not None else -40
         elif loss_parameter == 'fwhm':
             self._loss_function = self.get_fwhm
-            self._loss_min_value = loss_min_value if loss_min_value is not None else 1e-4
+            self._loss_min_value = loss_min_value if loss_min_value is not None else 5e-3
         else:
             raise ValueError("Supplied loss parameter is not valid.")
 
     def get_beam(self):
         return get_beam(self.focusing_system, self.random_seed, remove_lost_rays=True)
 
-    def get_peak_intensity(self):
-        peak, out_beam, hist, dw = get_peak_intensity(self.focusing_system, self.random_seed)
-        return peak
+    def get_negative_peak_intensity(self):
+        peak, photon_beam, hist, dw = get_peak_intensity(focusing_system=self.focusing_system,
+                                                      random_seed=self.random_seed)
+        return -peak
 
     def get_centroid_distance(self):
-        centroid_distance, out_beam, hist, dw = get_centroid_distance(self.focusing_system, self.random_seed)
+        centroid_distance, photon_beam, hist, dw = get_centroid_distance(focusing_system=self.focusing_system,
+                                                                      random_seed=self.random_seed)
         return centroid_distance
 
     def get_fwhm(self):
-        fwhm, out_beam, hist, dw = get_fwhm(self.focusing_system, self.random_seed)
+        fwhm, photon_beam, hist, dw = get_fwhm(focusing_system=self.focusing_system,
+                                            random_seed=self.random_seed)
         return fwhm
 
     def loss_function(self, translations, verbose=True):
@@ -201,7 +215,7 @@ class OptimizationCommon:
 
     def skopt_gp_optimize(self, lossfn, initial_guess):
         import skopt
-        #print(initial_guess)
+        # print(initial_guess)
         opt_result = skopt.gp_minimize(lossfn, self._optimization_bounds, **self._default_opt_params)
         loss = opt_result.fun
         sol = opt_result.x
@@ -230,8 +244,9 @@ class OptimizationCommon:
             if success_status:
                 return results_all, guesses_all, solution, True
 
-            self.focusing_system = movers.move_motors(self.focusing_system, self.motor_types,
-                                                      self.initial_motor_positions)
-            #centroid, out_beam, *_ = getCentroidDistance()
+            if n_trial < n_guesses:
+                self.focusing_system = movers.move_motors(self.focusing_system, self.motor_types,
+                                                          self.initial_motor_positions, movement='absolute')
+            # centroid, photon_beam, *_ = getCentroidDistance()
 
         return results_all, guesses_all, solution, False
