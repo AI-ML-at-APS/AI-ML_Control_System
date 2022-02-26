@@ -87,7 +87,7 @@ def get_peak_intensity(focusing_system=None, photon_beam=None, random_seed=None)
         photon_beam = check_input_for_beam(focusing_system, photon_beam, random_seed)
     except EmptyBeamException:
         # Assuming that the beam is outside the screen and returning 0 as a default value.
-        return 0, None, None, None
+        return 1e4, None, None, None
     hist, dw = get_shadow_beam_spatial_distribution(photon_beam)
     peak = dw.get_parameter('peak_intensity')
     return peak, photon_beam, hist, dw
@@ -98,7 +98,7 @@ def get_centroid_distance(focusing_system=None, photon_beam=None, random_seed=No
         photon_beam = check_input_for_beam(focusing_system, photon_beam, random_seed)
     except EmptyBeamException:
         # Assuming that the beam is outside the screen and returning 0 as a default value.
-        return np.inf, None, None, None
+        return 1e4, None, None, None
     hist, dw = get_shadow_beam_spatial_distribution(photon_beam)
     h_centroid = dw.get_parameter('h_centroid')
     v_centroid = dw.get_parameter('v_centroid')
@@ -111,7 +111,7 @@ def get_fwhm(focusing_system=None, photon_beam=None, random_seed=None):
         photon_beam = check_input_for_beam(focusing_system, photon_beam, random_seed)
     except EmptyBeamException:
         # Assuming that the beam is outside the screen and returning 0 as a default value.
-        return np.inf, None, None, None
+        return 1e4, None, None, None
     hist, dw = get_shadow_beam_spatial_distribution(photon_beam)
     h_fwhm = dw.get_parameter('h_fwhm')
     v_fwhm = dw.get_parameter('v_fwhm')
@@ -138,9 +138,13 @@ class OptimizationCommon:
                       "trans", x_absolute_this, "current loss", self.current_loss)
             return self.current_loss
 
-    def __init__(self, focusing_system, motor_types,
-                 initial_motor_positions=None, random_seed=None,
-                 loss_parameter='centroid', loss_min_value=None):
+    def __init__(self, focusing_system: object,
+                 motor_types: list,
+                 initial_motor_positions: list = None,
+                 random_seed: int = None,
+                 loss_parameter: str ='centroid',
+                 loss_min_value: float = None,
+                 default_opt_params: dict = None):
         self.focusing_system = focusing_system
         self.motor_types = motor_types if np.ndim(motor_types) >0 else [motor_types]
         self.random_seed = random_seed
@@ -150,6 +154,7 @@ class OptimizationCommon:
         self.initial_motor_positions = initial_motor_positions
 
         self._default_optimization_fn = self.scipy_optimize
+        self._default_opt_params = {} if default_opt_params is None else default_opt_params
 
         if loss_parameter == 'centroid':
             self._loss_function = self.get_centroid_distance
@@ -190,10 +195,15 @@ class OptimizationCommon:
             print("motors", self.motor_types, "trans", translations, "current loss", loss)
         return loss
 
-    def scipy_optimize(self, lossfn, initial_guess):
+    def scipy_optimize(self, lossfn, initial_guess, extra_options: dict = None):
 
+        if 'adaptive' not in self._default_opt_params:
+            self._default_opt_params['adaptive'] = True
+        opt_params = self._default_opt_params.copy()
+        if extra_options is not None:
+            opt_params.update(extra_options)
         opt_result = scipy.optimize.minimize(lossfn, initial_guess, method='Nelder-Mead',
-                                             options={'adaptive': True}) #'maxiter': 50,
+                                             options=opt_params) #'maxiter': 50,
         loss = opt_result.fun
         sol = opt_result.x
         status = opt_result.status
@@ -213,13 +223,19 @@ class OptimizationCommon:
         self._default_opt_params = default_opt_params
         self._default_optimization_fn = self.skopt_gp_optimize
 
-    def skopt_gp_optimize(self, lossfn, initial_guess):
+    def skopt_gp_optimize(self, lossfn: callable,
+                          initial_guess: list,
+                          extra_options: dict = None):
         import skopt
         # print(initial_guess)
-        opt_result = skopt.gp_minimize(lossfn, self._optimization_bounds, **self._default_opt_params)
+        opt_params = self._default_opt_params.copy()
+        if extra_options is not None:
+            self._extra_opt_params = extra_options
+            opt_params.update(extra_options)
+        opt_result = skopt.gp_minimize(lossfn, self._optimization_bounds, **opt_params)
         loss = opt_result.fun
         sol = opt_result.x
-        if loss < 5e-4:
+        if loss < self._loss_min_value:
             return opt_result, sol, True
         return opt_result, sol, False
 
@@ -228,7 +244,11 @@ class OptimizationCommon:
                                                   motor_positions, movement=movement)
         self.initial_motor_positions = motor_positions
 
-    def trials(self, n_guesses=5, verbose=False, guess_min=-0.05, guess_max=0.05):
+    def trials(self, n_guesses: int = 5,
+               verbose: bool = False,
+               guess_min: float = -0.05,
+               guess_max: float = 0.05,
+               optimizer_extra_options: dict = None):
         guesses_all = []
         results_all = []
         for n_trial in range(n_guesses):
@@ -238,7 +258,8 @@ class OptimizationCommon:
             lossfn_obj_this = self.TrialInstanceLossFunction(self, verbose=verbose)
             print("Initial loss is", lossfn_obj_this.loss(np.zeros_like(guess_this)))
 
-            result, solution, success_status = self._default_optimization_fn(lossfn_obj_this.loss, guess_this)
+            result, solution, success_status = self._default_optimization_fn(lossfn_obj_this.loss, guess_this,
+                                                                             optimizer_extra_options)
             guesses_all.append(guess_this)
             results_all.append(result)
             if success_status:
