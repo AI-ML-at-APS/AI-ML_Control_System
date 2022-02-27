@@ -197,13 +197,28 @@ class OptimizationCommon:
 
     def scipy_optimize(self, lossfn, initial_guess, extra_options: dict = None):
 
+        # default options that hsould be passed as kwargs and not within 'options'
+        minimize_default_kwargs = ['args',  'jac', 'hess', 'hessp', 'method'
+                                   'bounds', 'constraints', 'tol', 'callback']
+
         if 'adaptive' not in self._default_opt_params:
             self._default_opt_params['adaptive'] = True
         opt_params = self._default_opt_params.copy()
         if extra_options is not None:
             opt_params.update(extra_options)
-        opt_result = scipy.optimize.minimize(lossfn, initial_guess, method='Nelder-Mead',
-                                             options=opt_params) #'maxiter': 50,
+
+        kwargs = {}
+        options = {}
+        for param, val in opt_params.items():
+            if param in minimize_default_kwargs:
+                kwargs[param] = val
+            else:
+                options[param] = val
+        if 'method' not in kwargs:
+            kwargs['method'] = 'Nelder-Mead'
+
+        opt_result = scipy.optimize.minimize(lossfn, initial_guess, **kwargs,
+                                             options=options)
         loss = opt_result.fun
         sol = opt_result.x
         status = opt_result.status
