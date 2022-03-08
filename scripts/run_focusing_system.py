@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     #--------------------------------------------------
     # interaction with the beamline
-    '''
+
     focusing_system.change_vkb_shape(10, movement=Movement.RELATIVE)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
-    '''
+
     #--------------------------------------------------
 
     focusing_system.change_hkb_shape(5, movement=Movement.RELATIVE)

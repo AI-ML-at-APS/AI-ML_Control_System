@@ -70,6 +70,28 @@ def get_default_input_features():
                              hkb_motor_3_pitch_angle=0.003,
                              hkb_motor_3_delta_pitch_angle=0.0)
 
+class MotorResolution:
+    __instance = None
+                                           #value #digits to round
+    __vkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
+    __vkb_motor_4_translation_resolution = [1e-3, 3]  # mm
+    __hkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
+    __hkb_motor_4_translation_resolution = [1e-3, 3]  # mm
+
+    @staticmethod
+    def getInstance():
+      if MotorResolution.__instance == None: MotorResolution()
+      return MotorResolution.__instance
+
+    def __init__(self):
+      if MotorResolution.__instance != None: raise Exception("This class is a singleton!")
+      else: MotorResolution.__instance = self
+
+    def get_vkb_motor_3_pitch_resolution(self):       return self.__vkb_motor_3_pitch_resolution
+    def get_vkb_motor_4_translation_resolution(self): return self.__vkb_motor_4_translation_resolution
+    def get_hkb_motor_3_pitch_resolution(self):       return self.__hkb_motor_3_pitch_resolution
+    def get_hkb_motor_4_translation_resolution(self): return self.__hkb_motor_4_translation_resolution
+
 class AbstractFocusingOptics():
     def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs): raise NotImplementedError()
 

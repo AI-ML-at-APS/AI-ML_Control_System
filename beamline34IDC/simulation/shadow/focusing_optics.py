@@ -47,12 +47,13 @@
 
 import numpy
 import Shadow
+from decimal import Decimal
 
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics, ShadowMath, ShadowCongruence
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 from beamline34IDC.util.shadow.common import TTYInibitor, EmptyBeamException, PreProcessorFiles, write_reflectivity_file, write_dabam_file, rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
-from beamline34IDC.simulation.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, AngularUnits, get_default_input_features
+from beamline34IDC.simulation.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, AngularUnits, get_default_input_features, MotorResolution
 
 def shadow_focusing_optics_factory_method():
     return __FocusingOptics()
@@ -247,7 +248,8 @@ class __FocusingOptics(AbstractFocusingOptics):
     # V-KB -----------------------
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self.__move_motor_3_pitch(self.__vkb, angle, movement, units)
+        self.__move_motor_3_pitch(self.__vkb, angle, movement, units,
+                                  round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution()[1])
         
         if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
@@ -256,7 +258,8 @@ class __FocusingOptics(AbstractFocusingOptics):
         return self.__get_motor_3_pitch(self.__vkb, units)
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE):
-        self.__move_motor_4_transation(self.__vkb, translation, movement)
+        self.__move_motor_4_transation(self.__vkb, translation, movement,
+                                       round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution()[1])
 
         if not self.__vkb in self.__modified_elements: self.__modified_elements.append(self.__vkb)
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
@@ -276,7 +279,8 @@ class __FocusingOptics(AbstractFocusingOptics):
     # H-KB -----------------------
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self.__move_motor_3_pitch(self.__hkb, angle, movement, units)
+        self.__move_motor_3_pitch(self.__hkb, angle, movement, units,
+                                  round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution()[1])
 
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
@@ -284,7 +288,8 @@ class __FocusingOptics(AbstractFocusingOptics):
         return self.__get_motor_3_pitch(self.__hkb, units)
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE):
-        self.__move_motor_4_transation(self.__hkb, translation, movement)
+        self.__move_motor_4_transation(self.__hkb, translation, movement,
+                                       round_digit=MotorResolution.getInstance().get_hkb_motor_4_translation_resolution()[1])
 
         if not self.__hkb in self.__modified_elements: self.__modified_elements.append(self.__hkb)
 
@@ -302,7 +307,7 @@ class __FocusingOptics(AbstractFocusingOptics):
     # PRIVATE -----------------------
 
     @classmethod
-    def __move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
+    def __move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS, round_digit=4):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
         if   units == AngularUnits.MILLIRADIANS: angle = numpy.degrees(angle*1e-3)
@@ -310,22 +315,22 @@ class __FocusingOptics(AbstractFocusingOptics):
         elif units == AngularUnits.RADIANS:      angle = numpy.degrees(angle)
         else: raise ValueError("Angular units not recognized")
 
-        if    movement == Movement.ABSOLUTE: element._oe.X_ROT = angle - (90 - element._oe.T_INCIDENCE)
-        elif  movement == Movement.RELATIVE: element._oe.X_ROT += angle
+        if    movement == Movement.ABSOLUTE: element._oe.X_ROT = round(angle - (90 - element._oe.T_INCIDENCE), round_digit)
+        elif  movement == Movement.RELATIVE: element._oe.X_ROT += round(angle, round_digit)
         else: raise ValueError("Movement not recognized")
 
     @classmethod
-    def __move_motor_4_transation(cls, element, translation, movement=Movement.ABSOLUTE):
+    def __move_motor_4_transation(cls, element, translation, movement=Movement.ABSOLUTE, round_digit=3):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
         total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + element._oe.X_ROT)
 
         if movement == Movement.ABSOLUTE:
-            element._oe.OFFY = translation * numpy.sin(total_pitch_angle)
-            element._oe.OFFZ = translation * numpy.cos(total_pitch_angle)
+            element._oe.OFFY = round(translation, round_digit) * numpy.sin(total_pitch_angle)
+            element._oe.OFFZ = round(translation, round_digit)  * numpy.cos(total_pitch_angle)
         elif movement == Movement.RELATIVE:
-            element._oe.OFFY += translation * numpy.sin(total_pitch_angle)
-            element._oe.OFFZ += translation * numpy.cos(total_pitch_angle)
+            element._oe.OFFY += round(translation, round_digit)  * numpy.sin(total_pitch_angle)
+            element._oe.OFFZ += round(translation, round_digit)  * numpy.cos(total_pitch_angle)
         else:
             raise ValueError("Movement not recognized")
 
