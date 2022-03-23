@@ -56,6 +56,10 @@ class AngularUnits:
     DEGREES = 1
     RADIANS = 2
 
+class DistanceUnits:
+    MILLIMETERS = 0
+    MICRON      = 1
+
 def get_default_input_features():
     return DictionaryWrapper(coh_slits_h_aperture=0.03,
                              coh_slits_h_center=0.0,
@@ -111,7 +115,9 @@ class AbstractFocusingOptics():
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): raise NotImplementedError()
     def get_vkb_motor_4_translation(self): raise NotImplementedError()
-    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def move_vkb_motor_1_2_bender(self, pos_1, pos_2, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
     def get_vkb_q_distance(self): raise NotImplementedError()
 
     # H-KB -----------------------
@@ -120,6 +126,8 @@ class AbstractFocusingOptics():
     def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): raise NotImplementedError()
     def get_hkb_motor_4_translation(self): raise NotImplementedError()
+    def move_hkb_motor_1_2_bender(self, pos_1, pos_2, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
     def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
     def get_hkb_q_distance(self): raise NotImplementedError()
 
