@@ -591,8 +591,8 @@ class _KBMockWidget(MockWidget):
         grazing_angle = numpy.radians(90 - self.incidence_angle_respect_to_normal)
 
         self.alpha = calculate_taper_factor(W1, self.W2, L, p, q, grazing_angle)
-        self.W0 = calculate_W0(W1, alpha, L, p, q, grazing_angle)  # W at the center
-        self.F1, self.F2 = calculate_bender_forces(q, R0, eta, widget.E, W0, L, widget.h, widget.r)
+        self.W0 = calculate_W0(W1, self.alpha, L, p, q, grazing_angle)  # W at the center
+        self.F1, self.F2 = calculate_bender_forces(q, self.R0, self.eta, self.E, self.W0, L, self.h, self.r)
     
     def get_positions(self): 
         return self.F1/self.K1, self.F2/self.K2
