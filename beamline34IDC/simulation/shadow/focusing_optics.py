@@ -662,7 +662,7 @@ class __FocusingOpticsWithBender(_FocusingOpticsCommon):
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
 
-    def move_hkb_motor_1_2_bender(self, pos_1, pos_2, movement=Movement.ABSOLUTE):
+    def move_hkb_motor_1_2_bender(self, pos_1, pos_2, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self.__move_motor_1_2_bender(self.__hkb_widget, self._hkb, pos_1, pos_2, movement, units)
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
