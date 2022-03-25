@@ -140,8 +140,8 @@ class _FocusingOpticsCommon(AbstractFocusingOptics):
         vkb.F_RIPPLE = 1
         vkb.RLEN1 = 50.0
         vkb.RLEN2 = 50.0
-        vkb.RWIDX1 = 10.0
-        vkb.RWIDX2 = 10.0
+        vkb.RWIDX1 = 20.95
+        vkb.RWIDX2 = 20.95
         vkb.SIMAG = input_features.get_parameter("vkb_q_distance")
         vkb.SSOUR = 50667.983
         vkb.THETA = vkb_pitch_angle_shadow
@@ -179,8 +179,8 @@ class _FocusingOpticsCommon(AbstractFocusingOptics):
         hkb.F_RIPPLE = 1
         hkb.RLEN1 = 50.0
         hkb.RLEN2 = 50.0
-        hkb.RWIDX1 = 10.0
-        hkb.RWIDX2 = 10.0
+        hkb.RWIDX1 = 24.75
+        hkb.RWIDX2 = 24.75
         hkb.SIMAG = input_features.get_parameter("hkb_q_distance")
         hkb.SSOUR = 50768.983
         hkb.THETA = hkb_pitch_angle_shadow
@@ -530,7 +530,7 @@ class _KBMockWidget(MockWidget):
     h = 10
     r = 10
     output_file_name_full = "mirror_bender.dat"
-    which_length     = 0 # full lenght
+    which_length     = 1 # 0 - full length, 1 - partial length
     optimized_length = 72.0 # only optically active surface
     n_fit_steps      = 5
 
@@ -554,10 +554,10 @@ class _KBMockWidget(MockWidget):
     W0      = 0.0
     F1      = 0.0
     F2      = 0.0
-    K1      = 0.3
-    K2      = 0.3
-
-    W0_frozen = 0.0
+    F01     = 0.0
+    F02     = 0.0
+    K1      = 0.0
+    K2      = 0.0
 
     def __init__(self, shadow_oe, verbose=False, workspace_units=2):
         super(_KBMockWidget, self).__init__(verbose=verbose, workspace_units=workspace_units)
@@ -595,11 +595,11 @@ class _KBMockWidget(MockWidget):
         self.F1, self.F2 = calculate_bender_forces(q, self.R0, self.eta, self.E, self.W0, L, self.h, self.r)
     
     def get_positions(self): 
-        return self.F1/self.K1, self.F2/self.K2
+        return (self.F1-self.F01)/self.K1, (self.F2-self.F02)/self.K2
     
     def set_positions(self, pos_1, pos_2):
-        self.F1 = pos_1 * self.K1
-        self.F2 = pos_2 * self.K2
+        self.F1 = self.F01 + pos_1 * self.K1
+        self.F2 = self.F02 + pos_2 * self.K2
     
 class VKBMockWidget(_KBMockWidget):
     def __init__(self, shadow_oe, verbose=False, workspace_units=2):
@@ -610,8 +610,25 @@ class VKBMockWidget(_KBMockWidget):
         self.R0  = 146.36857
         self.eta = 0.39548
         self.W2  = 21.0
-        self.K1  = 0.3
-        self.K2  = 0.3
+
+        # F = F0 + KX
+        #
+        # from beamtime:
+        # q = 221.0
+        # X1 = 142.5000 = (209.379473 - F01)/K1
+        # X2 = 299.5000 = (259.750158 - F02)/k2
+        #
+        # q = 225.0
+        # X1 = 139.0000 = (205.946389 - F01)/K1
+        # X2 = 296.0000 = (254.506535 - F02)/k2
+
+        # -> K = (Fa-Fb)/(Xa-Xb)
+        # -> F0 = F - KX
+
+        self.X01 = 69.60391014
+        self.X02 = -188.954153
+        self.K1  = 0.980881143
+        self.K2  = 1.498178
 
 class HKBMockWidget(_KBMockWidget):
     def __init__(self, shadow_oe, verbose=False, workspace_units=2):
@@ -622,8 +639,25 @@ class HKBMockWidget(_KBMockWidget):
         self.R0  = 79.57061
         self.eta = 0.36055
         self.W2  = 2.5
-        self.K1  = 0.3
-        self.K2  = 0.3
+
+        # F = F0 + KX
+        #
+        # from beamtime:
+        # q = 120.0
+        # X1 = 250.0515 = (292.400729 - F01)/K1
+        # X2 = 157.0341 = (421.011757 - F02)/k2
+        #
+        # q = 124.0
+        # X1 = 248.0515 = (284.169317 - F01)/K1
+        # X2 = 155.0341 = (404.275779 - F02)/k2
+
+        # -> K = (Fa-Fb)/(Xa-Xb)
+        # -> F0 = F - KX
+
+        self.X01 = -736.7377299
+        self.X02 = -893.0478644
+        self.K1  = 4.115706
+        self.K2  = 8.367989
 
 class __FocusingOpticsWithBender(_FocusingOpticsCommon):
     def __init__(self):
@@ -671,9 +705,9 @@ class __FocusingOpticsWithBender(_FocusingOpticsCommon):
     def __move_motor_1_2_bender(cls, widget, element, pos_1, pos_2, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
-        if units == DistanceUnits.MICRON:
-            pos_1 *= 1e-3
-            pos_2 *= 1e-3
+        if units == DistanceUnits.MILLIMETERS:
+            pos_1 *= 1e3
+            pos_2 *= 1e3
 
         if movement == Movement.ABSOLUTE:
             widget.set_positions(pos_1, pos_2)
