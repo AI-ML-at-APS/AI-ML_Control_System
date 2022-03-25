@@ -407,7 +407,7 @@ class _FocusingOpticsCommon(AbstractFocusingOptics):
 
             if run_all or self._coherence_slits in self._modified_elements:
                 # HYBRID CORRECTION TO CONSIDER DIFFRACTION FROM SLITS
-                output_beam = self._trace_coherence_slits(output_beam, remove_lost_rays)
+                output_beam = self._trace_coherence_slits(remove_lost_rays)
 
                 output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                                 diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
@@ -420,31 +420,21 @@ class _FocusingOpticsCommon(AbstractFocusingOptics):
                 self._slits_beam = output_beam.duplicate()
 
             if run_all or self._vkb in self._modified_elements:
-                output_beam = self._trace_vkb(output_beam, remove_lost_rays)
+                output_beam = self._trace_vkb(remove_lost_rays)
 
-                if not near_field_calculation:
-                    output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                                    diffraction_plane=2,  # Tangential
-                                                                                    calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                                    verbose=verbose,
-                                                                                    random_seed=None if random_seed is None else (random_seed + 200))).ff_beam
-                else:
-                    output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                                    diffraction_plane=2,  # Tangential
-                                                                                    calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                                    nf=1,
-                                                                                    focal_length=self._vkb._oe.SIMAG,  # at focus
-                                                                                    image_distance=self._vkb._oe.SIMAG,  # at focus
-                                                                                    verbose=verbose,
-                                                                                    random_seed=None if random_seed is None else (random_seed + 200))).nf_beam
-                    output_beam._beam.retrace(self._vkb._oe.T_IMAGE - self._vkb._oe.SIMAG)
+                # NOTE: Near field not possible for vkb (beam is untraceable)
+                output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                                diffraction_plane=2,  # Tangential
+                                                                                calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                                verbose=verbose,
+                                                                                random_seed=None if random_seed is None else (random_seed + 200))).ff_beam
 
                 if debug_mode: plot_shadow_beam_spatial_distribution(output_beam, title="VKB", xrange=None, yrange=None)
 
                 self._vkb_beam = output_beam
 
             if run_all or self._hkb in self._modified_elements:
-                output_beam = self._trace_hkb(output_beam, remove_lost_rays)
+                output_beam = self._trace_hkb(remove_lost_rays)
 
                 if not near_field_calculation:
                     output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
@@ -482,17 +472,34 @@ class _FocusingOpticsCommon(AbstractFocusingOptics):
 
         return output_beam
 
-    def _trace_coherence_slits(self, output_beam, remove_lost_rays):
-        output_beam = self._check_beam(ShadowBeam.traceFromOE(self._input_beam.duplicate(), self._coherence_slits.duplicate(), widget_class_name="ScreenSlits"), "Coherence Slits", remove_lost_rays)
-        return output_beam
+    def _trace_coherence_slits(self, remove_lost_rays):
+        return self._trace_oe(input_beam=self._input_beam,
+                              shadow_oe=self._coherence_slits,
+                              widget_class_name="ScreenSlits",
+                              oe_name="Coherence Slits",
+                              remove_lost_rays=remove_lost_rays)
 
-    def _trace_vkb(self, output_beam, remove_lost_rays):
-        output_beam = self._check_beam(ShadowBeam.traceFromOE(self._slits_beam.duplicate(), self._vkb.duplicate(), widget_class_name="EllypticalMirror"), "V-KB", remove_lost_rays)
-        return output_beam
+    def _trace_vkb(self, remove_lost_rays):
+        return self._trace_oe(input_beam=self._slits_beam,
+                              shadow_oe=self._vkb,
+                              widget_class_name="EllypticalMirror",
+                              oe_name="V-KB",
+                              remove_lost_rays=remove_lost_rays)
 
-    def _trace_hkb(self, output_beam, remove_lost_rays):
-        output_beam = self._check_beam(ShadowBeam.traceFromOE(self._vkb_beam.duplicate(), self._hkb.duplicate(), widget_class_name="EllypticalMirror"), "H-KB", remove_lost_rays)
-        return output_beam
+
+
+    def _trace_hkb(self, remove_lost_rays):
+        return self._trace_oe(input_beam=self._vkb_beam,
+                              shadow_oe=self._hkb,
+                              widget_class_name="EllypticalMirror",
+                              oe_name="H-KB",
+                              remove_lost_rays=remove_lost_rays)
+
+    def _trace_oe(self, input_beam, shadow_oe, widget_class_name, oe_name, remove_lost_rays):
+        return self._check_beam(ShadowBeam.traceFromOE(input_beam.duplicate(),
+                                                       shadow_oe.duplicate(),
+                                                       widget_class_name=widget_class_name),
+                                oe_name, remove_lost_rays)
 
     def _check_beam(self, output_beam, oe, remove_lost_rays):
         if ShadowCongruence.checkEmptyBeam(output_beam):
@@ -673,23 +680,34 @@ class __FocusingOpticsWithBender(_FocusingOpticsCommon):
         self.__vkb_widget = VKBMockWidget(self._vkb)
         self.__hkb_widget = HKBMockWidget(self._hkb)
 
-    def _trace_vkb(self, output_beam, remove_lost_rays):
-        self.__vkb_widget.R0 = self.__vkb_widget.R0_out # use last fit result
-        self._vkb, _ = apply_bender_surface(widget=self.__vkb_widget, shadow_oe=self._vkb.duplicate(), input_beam=self._slits_beam.duplicate())
-        
+    def _trace_vkb(self, remove_lost_rays):
+        return self.__trace_kb(widget=self.__vkb_widget,
+                               input_beam=self._slits_beam,
+                               shadow_oe=self._vkb,
+                               widget_class_name="DoubleRodBenderEllypticalMirror",
+                               oe_name="V-KB",
+                               remove_lost_rays=remove_lost_rays)
+
+    def _trace_hkb(self, remove_lost_rays):
+        return self.__trace_kb(widget=self.__hkb_widget,
+                               input_beam=self._vkb_beam,
+                               shadow_oe=self._hkb,
+                               widget_class_name="DoubleRodBenderEllypticalMirror",
+                               oe_name="H-KB",
+                               remove_lost_rays=remove_lost_rays)
+
+    def __trace_kb(self, widget, input_beam, shadow_oe, widget_class_name, oe_name, remove_lost_rays):
+        widget.R0              = widget.R0_out  # use last fit result
+        shadow_oe._oe.FILE_RIP = bytes(widget.ms_defect_file_name, 'utf-8') # restore original error profile
+
+        apply_bender_surface(widget=widget, shadow_oe=shadow_oe.duplicate(), input_beam=input_beam.duplicate())
+
         # Redo raytracing with the bender correction as error profile
-        output_beam = self._check_beam(ShadowBeam.traceFromOE(self._slits_beam.duplicate(), self._vkb.duplicate(), widget_class_name="DoubleRodBenderEllypticalMirror"), "V-KB", remove_lost_rays)
-
-        return output_beam
-
-    def _trace_hkb(self, output_beam, remove_lost_rays):
-        self.__hkb_widget.R0 = self.__hkb_widget.R0_out  # use last fit result
-        self._hkb, _ = apply_bender_surface(widget=self.__hkb_widget, shadow_oe=self._hkb.duplicate(), input_beam=self._vkb_beam.duplicate())
-
-        # Redo raytracing with the bender correction as error profile
-        output_beam = self._check_beam(ShadowBeam.traceFromOE(self._vkb_beam.duplicate(), self._hkb.duplicate(), widget_class_name="DoubleRodBenderEllypticalMirror"), "V-KB", remove_lost_rays)
-
-        return output_beam
+        return self._trace_oe(input_beam=input_beam,
+                              shadow_oe=shadow_oe,
+                              widget_class_name=widget_class_name,
+                              oe_name=oe_name,
+                              remove_lost_rays=remove_lost_rays)
 
     def move_vkb_motor_1_2_bender(self, pos_1, pos_2, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self.__move_motor_1_2_bender(self.__vkb_widget, self._vkb, pos_1, pos_2, movement, units)
