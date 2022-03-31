@@ -48,7 +48,7 @@ import os
 
 from beamline34IDC.simulation.facade import Implementors
 from beamline34IDC.simulation.facade.focusing_optics_factory import focusing_optics_factory_method
-from beamline34IDC.simulation.facade.focusing_optics_interface import Movement, AngularUnits
+from beamline34IDC.simulation.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
 
 from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     # Focusing Optics System -------------------------
 
-    focusing_system = focusing_optics_factory_method(implementor=Implementors.SHADOW)
+    focusing_system = focusing_optics_factory_method(implementor=Implementors.SHADOW, bender=True)
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     #--------------------------------------------------
     # interaction with the beamline
 
-    focusing_system.change_vkb_shape(10, movement=Movement.RELATIVE)
+    focusing_system.move_vkb_motor_1_2_bender(pos_upstream=-2, pos_downstream=-2, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     #--------------------------------------------------
 
-    focusing_system.change_hkb_shape(5, movement=Movement.RELATIVE)
+    focusing_system.move_hkb_motor_1_2_bender(pos_upstream=5, pos_downstream=5, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
@@ -115,7 +115,6 @@ if __name__ == "__main__":
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
-
 
     # ----------------------------------------------------------------
 

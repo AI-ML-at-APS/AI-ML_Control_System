@@ -53,7 +53,7 @@ except AttributeError:
     from setuptools import find_packages, setup
 
 NAME = 'ML-Control-System-34-ID-C'
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 ISRELEASED = False
 
 DESCRIPTION = 'ML Control System for the Beamline 34-ID-C @ APS'
