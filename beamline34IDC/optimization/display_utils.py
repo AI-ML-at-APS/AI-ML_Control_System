@@ -44,46 +44,45 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os
 
-from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
-from beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
-from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, plot_shadow_beam_divergence_distribution, get_shadow_beam_spatial_distribution, save_source_beam
-from beamline34IDC.util import clean_up
+import matplotlib.pyplot as plt
+import numpy as np
 
-if __name__ == "__main__":
+# This is just for a live plotting utility --------------------------------
+import IPython
+# Check if we are in a ipython/colab environment
+try:
+    class_name = IPython.get_ipython().__class__.__name__
+    if "Terminal" in class_name:
+        IS_NOTEBOOK = False
+    else:
+        IS_NOTEBOOK = True
+except NameError:
+    IS_NOTEBOOK = False
 
-    verbose = False
+if IS_NOTEBOOK:
+    from IPython import display
+# ---------------------------------------------------------------------------
 
-    os.chdir("../work_directory")
 
-    clean_up()
+class LivePlotCallback:
+    def __init__(self, optimizer, **fig_kwargs):
+        if not IS_NOTEBOOK:
+            raise Exception("Cannot use live plot callback outside ipython environment for now.")
+        self.optimizer = optimizer
+        self.fig, self.ax = plt.subplots(1, 1, **fig_kwargs)
+        self.hdisplay = display.display("", display_id=True)
+        self.ax.set_xlabel("Calls")
+        self.ax.set_ylabel("Loss")
+        self.ax.set_yscale("log")
 
-    source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.GAUSSIAN)
-    source.initialize(n_rays=500000, random_seed=3245345, storage_ring=StorageRing.APS)
+    def live_plot(self, *args, **kwargs):
+        x_points = np.arange(self.optimizer._opt_fn_call_counter)
 
-    source.set_angular_acceptance_from_aperture(aperture=[0.05, 0.09], distance=50500)
-    source.set_energy(energy_range=[4999.0, 5001.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
+        colors = x_points / x_points.size
+        self.ax.scatter(x_points, self.optimizer._opt_trials_losses, marker='o', c=colors, cmap='jet')
+        self.ax.autoscale_view()
+        self.hdisplay.update(self.fig)
 
-    source_beam = source.get_source_beam(verbose=verbose)
-
-    save_source_beam(source_beam, "gaussian_undulator_source.dat")
-
-    plot_shadow_beam_spatial_distribution(source_beam)
-    plot_shadow_beam_divergence_distribution(source_beam)
-
-    '''
-    source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.UNDULATOR)
-    source.initialize(n_rays=50000, random_seed=3245345, verbose=True, storage_ring=StorageRing.APS)
-
-    source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
-    source.set_K_on_specific_harmonic(harmonic_energy=6000, harmonic_number=1, which=source.KDirection.VERTICAL)
-    source.set_energy(photon_energy_distribution=source.PhotonEnergyDistributions.ON_HARMONIC, harmonic_number=1)
-
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(ignore_aperture=True), xrange=[-1, 1], yrange=[-0.05, 0.05])
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-1, 1], yrange=[-0.05, 0.05])
-    '''
-
-    shadow_histogram = get_shadow_beam_spatial_distribution(source_beam, xrange=[-1, 1], yrange=[-0.05, 0.05])
-
-    clean_up()
+    def close(self):
+        plt.close(self.fig)
