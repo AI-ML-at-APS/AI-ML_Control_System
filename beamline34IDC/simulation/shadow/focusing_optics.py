@@ -641,7 +641,6 @@ class VKBMockWidget(_KBMockWidget):
 
         self.set_positions(142.5, 299.5) # from beamline calibration
 
-
 class HKBMockWidget(_KBMockWidget):
     def __init__(self, shadow_oe, verbose=False, workspace_units=2):
         super().__init__(shadow_oe=shadow_oe, verbose=verbose, workspace_units=workspace_units)
