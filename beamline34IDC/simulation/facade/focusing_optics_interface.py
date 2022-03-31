@@ -56,6 +56,10 @@ class AngularUnits:
     DEGREES = 1
     RADIANS = 2
 
+class DistanceUnits:
+    MILLIMETERS = 0
+    MICRON      = 1
+
 def get_default_input_features():
     return DictionaryWrapper(coh_slits_h_aperture=0.03,
                              coh_slits_h_center=0.0,
@@ -69,6 +73,28 @@ def get_default_input_features():
                              hkb_motor_4_translation=0.0,
                              hkb_motor_3_pitch_angle=0.003,
                              hkb_motor_3_delta_pitch_angle=0.0)
+
+class MotorResolution:
+    __instance = None
+                                           #value #digits to round
+    __vkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
+    __vkb_motor_4_translation_resolution = [1e-3, 3]  # mm
+    __hkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
+    __hkb_motor_4_translation_resolution = [1e-3, 3]  # mm
+
+    @staticmethod
+    def getInstance():
+      if MotorResolution.__instance == None: MotorResolution()
+      return MotorResolution.__instance
+
+    def __init__(self):
+      if MotorResolution.__instance != None: raise Exception("This class is a singleton!")
+      else: MotorResolution.__instance = self
+
+    def get_vkb_motor_3_pitch_resolution(self):       return self.__vkb_motor_3_pitch_resolution
+    def get_vkb_motor_4_translation_resolution(self): return self.__vkb_motor_4_translation_resolution
+    def get_hkb_motor_3_pitch_resolution(self):       return self.__hkb_motor_3_pitch_resolution
+    def get_hkb_motor_4_translation_resolution(self): return self.__hkb_motor_4_translation_resolution
 
 class AbstractFocusingOptics():
     def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs): raise NotImplementedError()
@@ -89,7 +115,9 @@ class AbstractFocusingOptics():
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): raise NotImplementedError()
     def get_vkb_motor_4_translation(self): raise NotImplementedError()
-    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
     def get_vkb_q_distance(self): raise NotImplementedError()
 
     # H-KB -----------------------
@@ -98,6 +126,8 @@ class AbstractFocusingOptics():
     def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): raise NotImplementedError()
     def get_hkb_motor_4_translation(self): raise NotImplementedError()
+    def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
     def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
     def get_hkb_q_distance(self): raise NotImplementedError()
 

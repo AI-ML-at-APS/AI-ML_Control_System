@@ -53,7 +53,7 @@ from beamline34IDC.simulation.srw.focusing_optics import srw_focusing_optics_fac
 # DESIGN PATTERN: FACTORY METHOD
 #
 
-def focusing_optics_factory_method(implementor=Implementors.SHADOW):
-    if implementor==Implementors.SHADOW: return shadow_focusing_optics_factory_method()
-    elif implementor==Implementors.SRW:  return srw_focusing_optics_factory_method()
+def focusing_optics_factory_method(implementor=Implementors.SHADOW, **kwargs):
+    if implementor==Implementors.SHADOW: return shadow_focusing_optics_factory_method(**kwargs)
+    elif implementor==Implementors.SRW:  return srw_focusing_optics_factory_method(**kwargs)
     else: raise ValueError("Implementor not recognized")
