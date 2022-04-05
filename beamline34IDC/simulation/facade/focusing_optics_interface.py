@@ -77,8 +77,10 @@ def get_default_input_features():
 class MotorResolution:
     __instance = None
                                            #value #digits to round
+    __vkb_motor_1_2_bender_resolution    = [1e-5, 5]  # mm
     __vkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
     __vkb_motor_4_translation_resolution = [1e-3, 3]  # mm
+    __hkb_motor_1_2_bender_resolution    = [1e-5, 5]  # mm
     __hkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
     __hkb_motor_4_translation_resolution = [1e-3, 3]  # mm
 
@@ -91,8 +93,10 @@ class MotorResolution:
       if MotorResolution.__instance != None: raise Exception("This class is a singleton!")
       else: MotorResolution.__instance = self
 
+    def get_vkb_motor_1_2_bender_resolution(self):    return self.__vkb_motor_1_2_bender_resolution
     def get_vkb_motor_3_pitch_resolution(self):       return self.__vkb_motor_3_pitch_resolution
     def get_vkb_motor_4_translation_resolution(self): return self.__vkb_motor_4_translation_resolution
+    def get_vkb_motor_1_2_bender_resolution(self):    return self.__hkb_motor_1_2_bender_resolution
     def get_hkb_motor_3_pitch_resolution(self):       return self.__hkb_motor_3_pitch_resolution
     def get_hkb_motor_4_translation_resolution(self): return self.__hkb_motor_4_translation_resolution
 

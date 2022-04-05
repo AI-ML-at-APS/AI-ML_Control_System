@@ -716,23 +716,28 @@ class __FocusingOpticsWithBender(_FocusingOpticsCommon):
                               remove_lost_rays=remove_lost_rays)
 
     def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_motor_1_2_bender(self.__vkb_widget, self._vkb, pos_upstream, pos_downstream, movement, units)
+        self.__move_motor_1_2_bender(self.__vkb_widget, self._vkb, pos_upstream, pos_downstream, movement, units,
+                                     round_digit=MotorResolution.getInstance().get_vkb_motor_1_2_resolution()[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_motor_1_2_bender(self.__hkb_widget, self._hkb, pos_upstream, pos_downstream, movement, units)
+        self.__move_motor_1_2_bender(self.__hkb_widget, self._hkb, pos_upstream, pos_downstream, movement, units,
+                                     round_digit=MotorResolution.getInstance().get_hkb_motor_1_2_resolution()[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     @classmethod
-    def __move_motor_1_2_bender(cls, widget, element, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+    def __move_motor_1_2_bender(cls, widget, element, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON, round_digit=2):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
         if units == DistanceUnits.MILLIMETERS:
-            pos_upstream   *= 1e3
-            pos_downstream *= 1e3
+            pos_upstream   = round(pos_upstream,   round_digit)*1e3
+            pos_downstream = round(pos_downstream, round_digit)*1e3
+        else:
+            pos_upstream   = round(pos_upstream,   round_digit - 3)
+            pos_downstream = round(pos_downstream, round_digit - 3)
 
         if movement == Movement.ABSOLUTE:
             widget.set_positions(pos_upstream, pos_downstream)
