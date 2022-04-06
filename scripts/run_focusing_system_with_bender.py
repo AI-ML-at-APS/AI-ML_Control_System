@@ -70,8 +70,10 @@ if __name__ == "__main__":
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
-    print("Initial VKB Bender", focusing_system.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-    print("Initial HKB Bender", focusing_system.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
+    print("Initial V-KB bender positions (up, down)", focusing_system.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
+    print("Initial H-KB bender positions (up, down)", focusing_system.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
+
+    #exit(0)
 
     # ----------------------------------------------------------------
     # perturbation of the incident beam to make adjustements necessary
@@ -90,6 +92,8 @@ if __name__ == "__main__":
     focusing_system.move_vkb_motor_1_2_bender(pos_upstream=-2, pos_downstream=-2, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
+
+    exit(0)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
