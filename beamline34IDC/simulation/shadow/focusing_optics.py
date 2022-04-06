@@ -593,7 +593,7 @@ class _KBMockWidget(MockWidget):
     def manage_acceptance_slits(self, shadow_oe): pass # do nothing
     def initialize_bender_parameters(self): pass
 
-    def load_calibration_and_initial_values(self, key):
+    def load_calibration(self, key):
         ini = get_registered_ini_instance(application_name="benders calibration")
 
         # F = C + KX, with X in micron
@@ -621,11 +621,6 @@ class _KBMockWidget(MockWidget):
         self.F_downstream_apparent = force_2_focus
 
         if self._verbose: print(key + ", focus bender positions from calibration (up, down): ", self.get_positions())
-
-        ini = get_registered_ini_instance(application_name="motors configuration")
-
-        self.set_positions(ini.get_float_from_ini(key, "motor_1"),
-                           ini.get_float_from_ini(key, "motor_2")) # from beamline calibration
 
     def calculate_bender_quantities(self):
         W1 = self.dim_x_plus + self.dim_x_minus
@@ -655,7 +650,7 @@ class VKBMockWidget(_KBMockWidget):
         self.eta = 0.39548
         self.W2  = 21.0
 
-        super().load_calibration_and_initial_values("V-KB")
+        super().load_calibration("V-KB")
 
 class HKBMockWidget(_KBMockWidget):
     def __init__(self, shadow_oe, verbose=False, workspace_units=2):
@@ -667,7 +662,7 @@ class HKBMockWidget(_KBMockWidget):
         self.eta = 0.36055
         self.W2  = 2.5
 
-        super().load_calibration_and_initial_values("H-KB")
+        super().load_calibration("H-KB")
 
 class __FocusingOpticsWithBender(_FocusingOpticsCommon):
     def __init__(self):
@@ -681,7 +676,11 @@ class __FocusingOpticsWithBender(_FocusingOpticsCommon):
         super().initialize(input_photon_beam, input_features, **kwargs)
 
         self.__vkb_widget = VKBMockWidget(self._vkb, verbose=True)
+        self.__vkb_widget.set_positions(input_features.get_parameter("vkb_motor_1_bender_position"),
+                                        input_features.get_parameter("vkb_motor_2_bender_position"))
         self.__hkb_widget = HKBMockWidget(self._hkb, verbose=True)
+        self.__hkb_widget.set_positions(input_features.get_parameter("hkb_motor_1_bender_position"),
+                                        input_features.get_parameter("hkb_motor_2_bender_position"))
 
     def _trace_vkb(self, remove_lost_rays):
         return self.__trace_kb(widget=self.__vkb_widget,

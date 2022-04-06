@@ -69,10 +69,15 @@ def get_default_input_features():
                              vkb_motor_4_translation=0.0,
                              vkb_motor_3_pitch_angle=0.003,
                              vkb_motor_3_delta_pitch_angle=0.0,
+                             vkb_motor_1_bender_position=142.5,
+                             vkb_motor_2_bender_position=299.5,
                              hkb_q_distance=120,
                              hkb_motor_4_translation=0.0,
                              hkb_motor_3_pitch_angle=0.003,
-                             hkb_motor_3_delta_pitch_angle=0.0)
+                             hkb_motor_3_delta_pitch_angle=0.0,
+                             hkb_motor_1_bender_position=250.0515,
+                             hkb_motor_2_bender_position=157.0341
+                             )
 
 class MotorResolution:
     __instance = None
