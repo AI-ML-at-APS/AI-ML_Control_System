@@ -45,15 +45,16 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-import numpy
 import Shadow
 
-from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
+from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics, ShadowMath, ShadowCongruence
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 from orangecontrib.ml.util.mocks import MockWidget
 from beamline34IDC.util.shadow.common import TTYInibitor, EmptyBeamException, PreProcessorFiles, write_reflectivity_file, write_dabam_file, rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
 from beamline34IDC.simulation.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, AngularUnits, DistanceUnits, get_default_input_features, MotorResolution
+
+from beamline34IDC.util.initializer import get_registered_ini_instance
 
 def shadow_focusing_optics_factory_method(**kwargs):
     try:
@@ -592,6 +593,35 @@ class _KBMockWidget(MockWidget):
     def manage_acceptance_slits(self, shadow_oe): pass # do nothing
     def initialize_bender_parameters(self): pass
 
+    def load_calibration(self, key):
+        ini = get_registered_ini_instance(application_name="benders calibration")
+
+        # F = C + KX, with X in micron
+        #
+        # -> K = (Fa-Fb)/(Xa-Xb)
+        # -> C = F - KX
+
+        pos_1_focus     = ini.get_float_from_ini(key, "motor_1_focus")
+        pos_2_focus     = ini.get_float_from_ini(key, "motor_2_focus")
+        pos_1_out_focus = ini.get_float_from_ini(key, "motor_1_+4mm")
+        pos_2_out_focus = ini.get_float_from_ini(key, "motor_2_+4mm")
+
+        force_1_focus     = ini.get_float_from_ini(key, "force_1_focus")
+        force_2_focus     = ini.get_float_from_ini(key, "force_2_focus")
+        force_1_out_focus = ini.get_float_from_ini(key, "force_1_+4mm")
+        force_2_out_focus = ini.get_float_from_ini(key, "force_2_+4mm")
+
+        self.K_upstream    = (force_1_focus - force_1_out_focus) / (pos_1_focus - pos_1_out_focus)
+        self.K_downstream  = (force_2_focus - force_2_out_focus) / (pos_2_focus - pos_2_out_focus)
+
+        self.C_upstream    = force_1_focus - self.K_upstream * pos_1_focus
+        self.C_downstream  = force_2_focus - self.K_downstream * pos_2_focus
+
+        self.F_upstream_apparent   = force_1_focus
+        self.F_downstream_apparent = force_2_focus
+
+        if self._verbose: print(key + ", focus bender positions from calibration (up, down): ", self.get_positions())
+
     def calculate_bender_quantities(self):
         W1 = self.dim_x_plus + self.dim_x_minus
         L = self.dim_y_plus + self.dim_y_minus
@@ -620,27 +650,7 @@ class VKBMockWidget(_KBMockWidget):
         self.eta = 0.39548
         self.W2  = 21.0
 
-        # F = C + KX - with X in micron!
-        #
-        # from beamtime:
-        # q = 221.0
-        # X1 = 142.5000 = (209.379473 - C_upstream)/K_upstream
-        # X2 = 299.5000 = (259.750158 - C_downstream)/K_downstream
-        #
-        # q = 225.0
-        # X1 = 139.0000 = (205.946389 - C_upstream)/K_upstream
-        # X2 = 296.0000 = (254.506535 - C_downstream)/K_downstream
-
-        # -> K = (Fa-Fb)/(Xa-Xb)
-        # -> C = F - KX
-
-        self.C_upstream   = 69.60391014
-        self.C_downstream = -188.954153
-        self.K_upstream   = 0.980881143
-        self.K_downstream = 1.498178
-
-        self.set_positions(142.5, 299.5) # from beamline calibration
-
+        super().load_calibration("V-KB")
 
 class HKBMockWidget(_KBMockWidget):
     def __init__(self, shadow_oe, verbose=False, workspace_units=2):
@@ -652,26 +662,7 @@ class HKBMockWidget(_KBMockWidget):
         self.eta = 0.36055
         self.W2  = 2.5
 
-        # F = C + KX, with X in micron
-        #
-        # from beamtime:
-        # q = 120.0
-        # X1 = 250.0515 = (292.400729 - C_upstream)/K_upstream
-        # X2 = 157.0341 = (421.011757 - C_downstream)/k2
-        #
-        # q = 124.0
-        # X1 = 248.0515 = (284.169317 - C_upstream)/K_upstream
-        # X2 = 155.0341 = (404.275779 - C_downstream)/k2
-
-        # -> K = (Fa-Fb)/(Xa-Xb)
-        # -> C = F - KX
-
-        self.C_upstream    = -736.7377299
-        self.C_downstream  = -893.0478644
-        self.K_upstream    = 4.115706
-        self.K_downstream  = 8.367989
-
-        self.set_positions(250.0515, 157.0341) # from beamline calibration
+        super().load_calibration("H-KB")
 
 class __FocusingOpticsWithBender(_FocusingOpticsCommon):
     def __init__(self):
@@ -684,8 +675,12 @@ class __FocusingOpticsWithBender(_FocusingOpticsCommon):
 
         super().initialize(input_photon_beam, input_features, **kwargs)
 
-        self.__vkb_widget = VKBMockWidget(self._vkb)
-        self.__hkb_widget = HKBMockWidget(self._hkb)
+        self.__vkb_widget = VKBMockWidget(self._vkb, verbose=True)
+        self.__vkb_widget.set_positions(input_features.get_parameter("vkb_motor_1_bender_position"),
+                                        input_features.get_parameter("vkb_motor_2_bender_position"))
+        self.__hkb_widget = HKBMockWidget(self._hkb, verbose=True)
+        self.__hkb_widget.set_positions(input_features.get_parameter("hkb_motor_1_bender_position"),
+                                        input_features.get_parameter("hkb_motor_2_bender_position"))
 
     def _trace_vkb(self, remove_lost_rays):
         return self.__trace_kb(widget=self.__vkb_widget,
@@ -717,23 +712,28 @@ class __FocusingOpticsWithBender(_FocusingOpticsCommon):
                               remove_lost_rays=remove_lost_rays)
 
     def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_motor_1_2_bender(self.__vkb_widget, self._vkb, pos_upstream, pos_downstream, movement, units)
+        self.__move_motor_1_2_bender(self.__vkb_widget, self._vkb, pos_upstream, pos_downstream, movement, units,
+                                     round_digit=MotorResolution.getInstance().get_vkb_motor_1_2_bender_resolution()[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_motor_1_2_bender(self.__hkb_widget, self._hkb, pos_upstream, pos_downstream, movement, units)
+        self.__move_motor_1_2_bender(self.__hkb_widget, self._hkb, pos_upstream, pos_downstream, movement, units,
+                                     round_digit=MotorResolution.getInstance().get_hkb_motor_1_2_bender_resolution()[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     @classmethod
-    def __move_motor_1_2_bender(cls, widget, element, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+    def __move_motor_1_2_bender(cls, widget, element, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON, round_digit=2):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
         if units == DistanceUnits.MILLIMETERS:
-            pos_upstream   *= 1e3
-            pos_downstream *= 1e3
+            pos_upstream   = round(pos_upstream,   round_digit)*1e3
+            pos_downstream = round(pos_downstream, round_digit)*1e3
+        else:
+            pos_upstream   = round(pos_upstream,   round_digit - 3)
+            pos_downstream = round(pos_downstream, round_digit - 3)
 
         if movement == Movement.ABSOLUTE:
             widget.set_positions(pos_upstream, pos_downstream)
