@@ -94,7 +94,7 @@ def fix_Intensity(beam_out, polarization=0):
 
 class EmptyBeamException(Exception):
     def __init__(self, oe="OE"):
-        super().__init__("Shadow beam after" + oe + "contains no good rays")
+        super().__init__("Shadow beam after " + oe + " contains no good rays")
 
 class ShadowHistogram():
     def __init__(self, hh, vv, data_2D):
