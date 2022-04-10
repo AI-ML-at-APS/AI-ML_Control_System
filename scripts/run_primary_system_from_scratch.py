@@ -52,7 +52,6 @@ from beamline34IDC.simulation.facade.primary_optics_factory import primary_optic
 from beamline34IDC.util.shadow.common import save_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
 
-
 if __name__ == "__main__":
     verbose = False
 
