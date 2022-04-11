@@ -48,6 +48,8 @@
 import numpy as np
 from beamline34IDC.simulation.facade.focusing_optics_interface import Movement
 
+
+
 # All distance movements are in millimeters: motors 3 and the 'q' parameter.
 def get_movement(movement):
     movement_types = {'relative': Movement.RELATIVE,
@@ -64,13 +66,14 @@ def get_motor_move_fn(focusing_system, motor):
                       'hkb_q': focusing_system.change_hkb_shape,
                       'vkb_4': focusing_system.move_vkb_motor_4_translation,
                       'vkb_3': focusing_system.move_vkb_motor_3_pitch,
-                      'vkb_q': focusing_system.change_vkb_shape}
+                      'vkb_q': focusing_system.change_vkb_shape,
+                      'hkb_1_2': focusing_system.move_hkb_motor_1_2_bender,
+                      'vkb_1_2': focusing_system.move_vkb_motor_1_2_bender}
     if motor in motor_move_fns:
         return motor_move_fns[motor]
     if motor in motor_move_fns.values():
         return motor
     raise ValueError
-
 
 def move_motors(focusing_system, motors, translations, movement='relative'):
     movement = get_movement(movement)
@@ -80,7 +83,16 @@ def move_motors(focusing_system, motors, translations, movement='relative'):
         translations = [translations]
     for motor, trans in zip(motors, translations):
         motor_move_fn = get_motor_move_fn(focusing_system, motor)
-        motor_move_fn(trans, movement=movement)
+        if motor in ['hkb_1_2', 'vkb_1_2']:
+            if np.ndim(trans) == 0 and movement == Movement.RELATIVE:
+                motor_move_fn(trans, trans, movement=movement)
+            elif np.ndim(trans) == 1:
+                motor_move_fn(trans[0], trans[1], movement=movement)
+            else:
+                raise ValueError("For absolute movement for motors 1 and 2, " +
+                                 "translation for both the bender motors should be supplied together")
+        else:
+            motor_move_fn(trans, movement=movement)
     return focusing_system
 
 
@@ -90,7 +102,9 @@ def get_motor_absolute_position_fn(focusing_system, motor):
                          'hkb_q': focusing_system.get_hkb_q_distance,
                          'vkb_4': focusing_system.get_vkb_motor_4_translation,
                          'vkb_3': focusing_system.get_vkb_motor_3_pitch,
-                         'vkb_q': focusing_system.get_vkb_q_distance}
+                         'vkb_q': focusing_system.get_vkb_q_distance,
+                         'hkb_1_2': focusing_system.get_hkb_motor_1_2_bender,
+                         'vkb_1_2': focusing_system.get_vkb_motor_1_2_bender}
     if motor in motor_get_pos_fns:
         return motor_get_pos_fns[motor]
     if motor in motor_get_pos_fns.values():

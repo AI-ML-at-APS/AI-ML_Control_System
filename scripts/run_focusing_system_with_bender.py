@@ -60,6 +60,7 @@ if __name__ == "__main__":
 
     clean_up()
 
+    #%%
     input_beam = load_shadow_beam("primary_optics_system_beam.dat")
 
     # Focusing Optics System -------------------------
@@ -69,6 +70,7 @@ if __name__ == "__main__":
     focusing_system.initialize(input_photon_beam=input_beam,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
+    #%%
 
     # ----------------------------------------------------------------
     # perturbation of the incident beam to make adjustements necessary
@@ -80,6 +82,7 @@ if __name__ == "__main__":
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed)
 
     plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+    #%%
 
     #--------------------------------------------------
     # interaction with the beamline
@@ -89,15 +92,18 @@ if __name__ == "__main__":
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
 
+#%%
     focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
+    #%%
 
     focusing_system.move_vkb_motor_4_translation(0.005, movement=Movement.RELATIVE)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
+    #%%
 
     #--------------------------------------------------
 
@@ -105,16 +111,19 @@ if __name__ == "__main__":
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
+    #%%
 
     focusing_system.move_hkb_motor_3_pitch(0.2, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
+    #%%
 
     focusing_system.move_hkb_motor_4_translation(-0.001, movement=Movement.RELATIVE)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
+    #%%
 
     # ----------------------------------------------------------------
 
