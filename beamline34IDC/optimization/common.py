@@ -174,22 +174,22 @@ class OptimizationCommon(abc.ABC):
             initial_motor_positions = np.zeros(len(self.motor_types))
         self.initial_motor_positions = initial_motor_positions
 
-        self.loss_parameters = np.atleast1d(loss_parameters)
+        self.loss_parameters = np.atleast_1d(loss_parameters)
 
-        self._loss_functions = []
+        self._loss_function_list = []
         temp_loss_min_value = 0
         for loss_type in self.loss_parameters:
             if loss_type == 'centroid':
-                self._loss_functions.append(self.get_centroid_distance)
+                self._loss_function_list.append(self.get_centroid_distance)
             elif loss_type == 'peak_intensity':
                 print("Warning: Stopping condition for the peak intensity case is not supported.")
-                self._loss_functions.append(self.get_negative_log_peak_intensity)
+                self._loss_function_list.append(self.get_negative_log_peak_intensity)
             elif loss_type == 'fwhm':
-                self._loss_functions.append(self.get_fwhm)
+                self._loss_function_list.append(self.get_fwhm)
             else:
                 raise ValueError("Supplied loss parameter is not valid.")
             temp_loss_min_value += configs.DEFAULT_LOSS_TOLERANCES[loss_type]
-        self._loss_function = lambda x: np.sum([lossfn(x) for lossfn in self._loss_functions])
+        self._loss_function = lambda: np.sum([lossfn() for lossfn in self._loss_function_list])
 
         self._loss_min_value = temp_loss_min_value if loss_min_value is None else loss_min_value
         self._opt_trials_motor_positions = []
