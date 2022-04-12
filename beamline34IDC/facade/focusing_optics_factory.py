@@ -55,9 +55,6 @@ from beamline34IDC.simulation.facade.focusing_optics_factory import simulated_fo
 from beamline34IDC.hardware.facade.focusing_optics_factory import hardware_focusing_optics_factory_method
 
 def focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=None, **kwargs):
-    try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
-    except AlreadyInitializedError: pass
-
     if execution_mode == ExecutionMode.SIMULATION: return simulated_focusing_optics_factory_method(implementor=implementor, **kwargs)
     elif execution_mode == ExecutionMode.HARDWARE: return hardware_focusing_optics_factory_method(implementor=implementor, **kwargs)
     else: raise ValueError("Execution Mode not recognized")
