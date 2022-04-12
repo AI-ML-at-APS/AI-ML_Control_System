@@ -45,50 +45,76 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
+import numpy, time
 
-from beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, DistanceUnits
+from epics import caget, caput
 
-def get_default_input_features():
-    return DictionaryWrapper(coh_slits_h_aperture=0.03,
-                             coh_slits_h_center=0.0,
-                             coh_slits_v_aperture=0.07,
-                             coh_slits_v_center=0.0,
-                             vkb_q_distance=221,
-                             vkb_motor_4_translation=0.0,
-                             vkb_motor_3_pitch_angle=0.003,
-                             vkb_motor_3_delta_pitch_angle=0.0,
-                             vkb_motor_1_bender_position=142.5,
-                             vkb_motor_2_bender_position=299.5,
-                             hkb_q_distance=120,
-                             hkb_motor_4_translation=0.0,
-                             hkb_motor_3_pitch_angle=0.003,
-                             hkb_motor_3_delta_pitch_angle=0.0,
-                             hkb_motor_1_bender_position=250.0515,
-                             hkb_motor_2_bender_position=157.0341
-                             )
+from beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
+from beamline34IDC.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics, Directions
 
-class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
-    def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs): raise NotImplementedError()
+def epics_focusing_optics_factory_method(**kwargs):
+    return __EpicsFocusingOptics(**kwargs)
 
-    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): raise NotImplementedError()
-    def restore_input_photon_beam(self): raise NotImplementedError()
+class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
+    def __init__(self, **kwargs):
+        pass
+
+    def initialize(self, **kwargs):
+        pass
 
     #####################################################################################
     # This methods represent the run-time interface, to interact with the optical system
-    # in real time, like in the real beamline. FOR SIMULATION PURPOSES ONLY
+    # in real time, like in the real beamline
+
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): pass
+    def get_coherence_slits_parameters(self): pass # center x, center z, aperture x, aperture z
 
     # V-KB -----------------------
 
-    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_vkb_q_distance(self): raise NotImplementedError()
+    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
+    def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
+    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
+    def get_vkb_motor_4_translation(self): pass
+    def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
+    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
 
     # H-KB -----------------------
 
-    def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
-    def get_hkb_q_distance(self): raise NotImplementedError()
+    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
+    def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
+    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
+    def get_hkb_motor_4_translation(self): pass
+    def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
+    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
 
-    #####################################################################################
-    # Run the simulation
+    # get radiation characteristics ------------------------------
+    def get_beam_scan(self, direction=Directions.HORIZONTAL): pass
 
-    def get_photon_beam(self, **kwargs): raise NotImplementedError()
+    @classmethod
+    def __scan(cls, motor_name, first, final, steps):
+        current = caget(motor_name)
+        stepsize = (final - first) / float(steps)
+        first = current + first
+
+        data = numpy.zeros((steps, 2), float)
+
+        caput('34idc:FastShutterState', 1)
+        caput('34idcTIM2:cam1:AcquireTime', 0.3)
+
+        for i in range(steps):
+            caput(motor_name, first + i * stepsize)
+            caput('34idcTIM2:cam1:Acquire', 1)
+
+            time.sleep(0.2)
+
+            while (caget('34idcTIM2:cam1:Acquire') != 0): time.sleep(0.1)
+    
+            data[i, 0] = i * stepsize + first
+            data[i, 1] = caget('34idcTIM2:Stats5:Total_RBV')
+
+        id = numpy.argmax(data[:, 1])
+
+        caput(motor_name, data[id, 0])
+
+        return data
+

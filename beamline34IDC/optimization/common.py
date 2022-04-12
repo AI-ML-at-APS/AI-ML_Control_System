@@ -46,7 +46,7 @@
 # ----------------------------------------------------------------------- #
 
 from beamline34IDC.simulation.facade import Implementors
-from beamline34IDC.simulation.facade.focusing_optics_factory import focusing_optics_factory_method
+from beamline34IDC.simulation.facade.focusing_optics_factory import simulated_focusing_optics_factory_method
 from beamline34IDC.simulation.facade.focusing_optics_interface import Movement
 
 from beamline34IDC.util.shadow.common import get_shadow_beam_spatial_distribution,\
@@ -127,7 +127,7 @@ def reinitialize(input_beam_path, random_seed=None, remove_lost_rays=True):
     clean_up()
 
     input_beam = load_shadow_beam(input_beam_path)
-    focusing_system = focusing_optics_factory_method(implementor=Implementors.SHADOW)
+    focusing_system = simulated_focusing_optics_factory_method(implementor=Implementors.SHADOW)
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
