@@ -58,7 +58,6 @@ class ScipyOptimizer(common.OptimizationCommon):
                               xtol: float = None, ftol: float = None,
                               **extra_options) -> NoReturn:
 
-        self._default_optimization_fn = self.scipy_optimize
         self._opt_params = extra_options
 
         if maxiter is None:
