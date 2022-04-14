@@ -50,8 +50,8 @@ from beamline34IDC.simulation.facade import Implementors
 from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
 from beamline34IDC.simulation.facade.source_factory import source_factory_method
 from beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
-from beamline34IDC.simulation.facade.focusing_optics_factory import focusing_optics_factory_method
-from beamline34IDC.simulation.facade.focusing_optics_interface import AngularUnits
+from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
+from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits
 
 from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, save_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     # Focusing Optics System -------------------------
 
-    focusing_system = focusing_optics_factory_method(implementor=implementor)
+    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=implementor)
 
     focusing_system.initialize(input_photon_beam=primary_system.get_photon_beam(verbose=verbose),
                                rewrite_preprocessor_files=PreProcessorFiles.NO,

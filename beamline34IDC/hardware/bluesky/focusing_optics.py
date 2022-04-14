@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# #########################################################################
-# Copyright (c) 2020, UChicago Argonne, LLC. All rights reserved.         #
+# ----------------------------------------------------------------------- #
+# Copyright (c) 2021, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2020. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2021. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -43,79 +43,46 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN       #
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
-# #########################################################################
+# ----------------------------------------------------------------------- #
 
-import os
+from beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
+from beamline34IDC.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics, Directions
 
-try:
-    from setuptools import find_packages, setup
-except AttributeError:
-    from setuptools import find_packages, setup
+def bluesky_focusing_optics_factory_method(**kwargs):
+    return __BlueskyFocusingOptics(**kwargs)
 
-NAME = 'ML-Control-System-34-ID-C'
-VERSION = '0.0.2'
-ISRELEASED = False
+class __BlueskyFocusingOptics(AbstractHardwareFocusingOptics):
+    def __init__(self, **kwargs):
+        pass
 
-DESCRIPTION = 'ML Control System for the Beamline 34-ID-C @ APS'
-README_FILE = os.path.join(os.path.dirname(__file__), 'README.md')
-LONG_DESCRIPTION = open(README_FILE).read()
-AUTHOR = 'Luca Rebuffi'
-AUTHOR_EMAIL = 'lrebuffi@anl.gov'
-URL = 'https://github.com/APS-34-ID-C/ML_Control_System'
-DOWNLOAD_URL = 'https://github.com/APS-34-ID-C/ML_Control_System'
-LICENSE = 'GPLv3'
+    def initialize(self, **kwargs):
+        pass
 
-KEYWORDS = (
-    'raytracing',
-    'simulator',
-    'machine learning'
-)
+    #####################################################################################
+    # This methods represent the run-time interface, to interact with the optical system
+    # in real time, like in the real beamline
 
-CLASSIFIERS = (
-    'Development Status :: 5 - Production/Stable',
-    'Environment :: X11 Applications :: Qt',
-    'Environment :: Console',
-    'Environment :: Plugins',
-    'Programming Language :: Python :: 3',
-    'Intended Audience :: Science/Research',
-)
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): pass
+    def get_coherence_slits_parameters(self): pass # center x, center z, aperture x, aperture z
 
-SETUP_REQUIRES = (
-    'setuptools',
-)
+    # V-KB -----------------------
 
-INSTALL_REQUIRES = (
-    'OASYS1-ShadowOui>=1.5.131',
-    'OASYS1-ShadowOui-Advanced-Tools>=1.0.82',
-    'OASYS1-ML>=0.0.1',
-    'pyepics'
-)
+    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
+    def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
+    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
+    def get_vkb_motor_4_translation(self): pass
+    def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
+    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
 
-PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
+    # H-KB -----------------------
 
-PACKAGE_DATA = {}
-NAMESPACE_PACAKGES = []
-ENTRY_POINTS = {}
+    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
+    def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
+    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
+    def get_hkb_motor_4_translation(self): pass
+    def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
+    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
 
-if __name__ == '__main__':
-     setup(
-          name = NAME,
-          version = VERSION,
-          description = DESCRIPTION,
-          long_description = LONG_DESCRIPTION,
-          author = AUTHOR,
-          author_email = AUTHOR_EMAIL,
-          url = URL,
-          download_url = DOWNLOAD_URL,
-          license = LICENSE,
-          keywords = KEYWORDS,
-          classifiers = CLASSIFIERS,
-          packages = PACKAGES,
-          package_data = PACKAGE_DATA,
-          setup_requires = SETUP_REQUIRES,
-          install_requires = INSTALL_REQUIRES,
-          entry_points = ENTRY_POINTS,
-          namespace_packages=NAMESPACE_PACAKGES,
-          include_package_data = True,
-          zip_safe = False,
-          )
+    # PROTECTED GENERIC MOTOR METHODS
+    
+    def get_beam_scan(self, direction=Directions.HORIZONTAL): pass

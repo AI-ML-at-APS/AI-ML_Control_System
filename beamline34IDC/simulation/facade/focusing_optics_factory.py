@@ -49,11 +49,17 @@ from beamline34IDC.simulation.facade import Implementors
 from beamline34IDC.simulation.shadow.focusing_optics import shadow_focusing_optics_factory_method
 from beamline34IDC.simulation.srw.focusing_optics import srw_focusing_optics_factory_method
 
+from beamline34IDC.util.initializer import register_ini_instance, AlreadyInitializedError, IniMode
 #############################################################################
 # DESIGN PATTERN: FACTORY METHOD
 #
 
-def focusing_optics_factory_method(implementor=Implementors.SHADOW, **kwargs):
+def simulated_focusing_optics_factory_method(implementor=Implementors.SHADOW, **kwargs):
+    try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
+    except AlreadyInitializedError: pass
+    try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="benders calibration", ini_file_name="benders_calibration.ini")
+    except AlreadyInitializedError: pass
+
     if implementor==Implementors.SHADOW: return shadow_focusing_optics_factory_method(**kwargs)
     elif implementor==Implementors.SRW:  return srw_focusing_optics_factory_method(**kwargs)
     else: raise ValueError("Implementor not recognized")

@@ -60,7 +60,7 @@ from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 import scipy.constants as codata
 
-from ..gaussian_fit import calculate_gaussian_fit
+from ..gaussian_fit import calculate_2D_gaussian_fit
 
 m2ev = codata.c * codata.h / codata.e
 
@@ -94,7 +94,7 @@ def fix_Intensity(beam_out, polarization=0):
 
 class EmptyBeamException(Exception):
     def __init__(self, oe="OE"):
-        super().__init__("Shadow beam after" + oe + "contains no good rays")
+        super().__init__("Shadow beam after " + oe + " contains no good rays")
 
 class ShadowHistogram():
     def __init__(self, hh, vv, data_2D):
@@ -125,7 +125,7 @@ def __shadow_beam_get_distribution_info(ticket, do_gaussian_fit=False):
     vv = ticket['bin_v_center']
 
     if do_gaussian_fit:
-        try:    gaussian_fit = calculate_gaussian_fit(data_2D=histogram, x=hh, y=vv)
+        try:    gaussian_fit = calculate_2D_gaussian_fit(data_2D=histogram, x=hh, y=vv)
         except: gaussian_fit = {}
     else:       gaussian_fit = {}
 
