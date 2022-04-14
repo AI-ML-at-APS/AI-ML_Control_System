@@ -44,46 +44,81 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os
 
-from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
-from beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
-from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, plot_shadow_beam_divergence_distribution, get_shadow_beam_spatial_distribution, save_source_beam
-from beamline34IDC.util import clean_up
+import numpy as np
+from beamline34IDC.simulation.facade.focusing_optics_interface import Movement
 
-if __name__ == "__main__":
 
-    verbose = False
 
-    os.chdir("../work_directory")
+# All distance movements are in millimeters: motors 3 and the 'q' parameter.
+def get_movement(movement):
+    movement_types = {'relative': Movement.RELATIVE,
+                      'absolute': Movement.ABSOLUTE}
+    if movement in movement_types:
+        return movement_types[movement]
+    if movement in movement_types.values():
+        return movement
+    raise ValueError
 
-    clean_up()
+def get_motor_move_fn(focusing_system, motor):
+    motor_move_fns = {'hkb_4': focusing_system.move_hkb_motor_4_translation,
+                      'hkb_3': focusing_system.move_hkb_motor_3_pitch,
+                      'hkb_q': focusing_system.change_hkb_shape,
+                      'vkb_4': focusing_system.move_vkb_motor_4_translation,
+                      'vkb_3': focusing_system.move_vkb_motor_3_pitch,
+                      'vkb_q': focusing_system.change_vkb_shape,
+                      'hkb_1_2': focusing_system.move_hkb_motor_1_2_bender,
+                      'vkb_1_2': focusing_system.move_vkb_motor_1_2_bender}
+    if motor in motor_move_fns:
+        return motor_move_fns[motor]
+    if motor in motor_move_fns.values():
+        return motor
+    raise ValueError
 
-    source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.GAUSSIAN)
-    source.initialize(n_rays=500000, random_seed=3245345, storage_ring=StorageRing.APS)
+def move_motors(focusing_system, motors, translations, movement='relative'):
+    movement = get_movement(movement)
+    if np.ndim(motors) == 0:
+        motors = [motors]
+    if np.ndim(translations) == 0:
+        translations = [translations]
+    for motor, trans in zip(motors, translations):
+        motor_move_fn = get_motor_move_fn(focusing_system, motor)
+        if motor in ['hkb_1_2', 'vkb_1_2']:
+            if np.ndim(trans) == 0 and movement == Movement.RELATIVE:
+                motor_move_fn(trans, trans, movement=movement)
+            elif np.ndim(trans) == 1:
+                motor_move_fn(trans[0], trans[1], movement=movement)
+            else:
+                raise ValueError("For absolute movement for motors 1 and 2, " +
+                                 "translation for both the bender motors should be supplied together")
+        else:
+            motor_move_fn(trans, movement=movement)
+    return focusing_system
 
-    source.set_angular_acceptance_from_aperture(aperture=[0.05, 0.09], distance=50500)
-    source.set_energy(energy_range=[4999.0, 5001.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
 
-    source_beam = source.get_source_beam(verbose=verbose)
+def get_motor_absolute_position_fn(focusing_system, motor):
+    motor_get_pos_fns = {'hkb_4': focusing_system.get_hkb_motor_4_translation,
+                         'hkb_3': focusing_system.get_hkb_motor_3_pitch,
+                         'hkb_q': focusing_system.get_hkb_q_distance,
+                         'vkb_4': focusing_system.get_vkb_motor_4_translation,
+                         'vkb_3': focusing_system.get_vkb_motor_3_pitch,
+                         'vkb_q': focusing_system.get_vkb_q_distance,
+                         'hkb_1_2': focusing_system.get_hkb_motor_1_2_bender,
+                         'vkb_1_2': focusing_system.get_vkb_motor_1_2_bender}
+    if motor in motor_get_pos_fns:
+        return motor_get_pos_fns[motor]
+    if motor in motor_get_pos_fns.values():
+        return motor
+    raise ValueError
 
-    save_source_beam(source_beam, "gaussian_undulator_source.dat")
 
-    plot_shadow_beam_spatial_distribution(source_beam)
-    plot_shadow_beam_divergence_distribution(source_beam)
+def get_absolute_positions(focusing_system, motors):
 
-    '''
-    source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.UNDULATOR)
-    source.initialize(n_rays=50000, random_seed=3245345, verbose=True, storage_ring=StorageRing.APS)
+    if np.ndim(motors) == 0:
+        motors = [motors]
 
-    source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
-    source.set_K_on_specific_harmonic(harmonic_energy=6000, harmonic_number=1, which=source.KDirection.VERTICAL)
-    source.set_energy(photon_energy_distribution=source.PhotonEnergyDistributions.ON_HARMONIC, harmonic_number=1)
-
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(ignore_aperture=True), xrange=[-1, 1], yrange=[-0.05, 0.05])
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-1, 1], yrange=[-0.05, 0.05])
-    '''
-
-    shadow_histogram = get_shadow_beam_spatial_distribution(source_beam, xrange=[-1, 1], yrange=[-0.05, 0.05])
-
-    clean_up()
+    positions = []
+    for motor in motors:
+        position = get_motor_absolute_position_fn(focusing_system, motor)()
+        positions.append(position)
+    return positions
