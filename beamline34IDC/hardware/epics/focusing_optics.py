@@ -59,21 +59,25 @@ def epics_focusing_optics_factory_method(**kwargs):
     return __EpicsFocusingOptics(**kwargs)
 
 class Motors:
-    # TBD: COHERENCE SLITS
+    COH_SLITS_H_CENTER   = '34idc:m58:c2:m5.VAL'
+    COH_SLITS_H_APERTURE = '34idc:m58:c2:m6.VAL'
+    COH_SLITS_V_CENTER   = '34idc:m58:c2:m7.VAL'
+    COH_SLITS_V_APERTURE = '34idc:m58:c2:m8.VAL'
 
-    VKB_MOTOR_1 = '34idc:m58:c1:m3.VAL'
-    VKB_MOTOR_2 = '34idc:m58:c1:m4.VAL'
-    VKB_MOTOR_3 = ""
-    VKB_MOTOR_4 = ""
+    VKB_MOTOR_1 = '34idc:m58:c1:m3.VAL' # upstream force micron
+    VKB_MOTOR_2 = '34idc:m58:c1:m4.VAL' # downstream force micron
+    VKB_MOTOR_3 = '34idc:m58:c1:m2.VAL' # pitch mrad
+    VKB_MOTOR_4 = '34idc:m58:c1:m1.VAL' # translation micron
 
     HKB_MOTOR_1 = '34idc:m58:c1:m7.VAL'
     HKB_MOTOR_2 = '34idc:m58:c1:m8.VAL'
-    HKB_MOTOR_3 = ""
-    HKB_MOTOR_4 = ""
+    HKB_MOTOR_3 = '34idc:m58:c1:m6.VAL'
+    HKB_MOTOR_4 = '34idc:m58:c1:m5.VAL'
 
-    SAMPLE_STAGE_X   = '34idc:lab:m1.VAL'
-    SAMPLE_STAGE_Z   = '34idc:lab:m3.VAL'
-    SAMPLE_STAGE_Z_2 = '34idc:mxv:c0:m1.VAL' # for scanning purposes, it appeared in M.C. code: to be verified
+    SAMPLE_STAGE_X        = '34idc:lab:m1.VAL'
+    SAMPLE_STAGE_Y        = '34idc:lab:m2.VAL'
+    SAMPLE_STAGE_Z        = '34idc:lab:m3.VAL'    # fine Z motion
+    SAMPLE_STAGE_Z_COARSE = '34idc:mxv:c0:m1.VAL' # coarse Z motion
 
 class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
 

@@ -260,20 +260,20 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
             run_all = self._modified_elements == [] or len(self._modified_elements) == 3
 
             if run_all or self._coherence_slits in self._modified_elements:
-                output_beam      = self._trace_coherence_slits(random_seed, remove_lost_rays, verbose)
-                self._slits_beam = output_beam.duplicate()
+                self._slits_beam = self._trace_coherence_slits(random_seed, remove_lost_rays, verbose)
+                output_beam      = self._slits_beam
 
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._slits_beam, title="Coherence Slits", xrange=None, yrange=None)
 
             if run_all or self._vkb in self._modified_elements:
-                output_beam    = self._trace_vkb(random_seed, remove_lost_rays, verbose)
-                self._vkb_beam = output_beam.duplicate()
+                self._vkb_beam = self._trace_vkb(random_seed, remove_lost_rays, verbose)
+                output_beam    = self._vkb_beam
 
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._vkb_beam, title="VKB", xrange=None, yrange=None)
 
             if run_all or self._hkb in self._modified_elements:
-                output_beam    = self._trace_hkb(near_field_calculation, random_seed, remove_lost_rays, verbose)
-                self._hkb_beam = output_beam.duplicate()
+                self._hkb_beam = self._trace_hkb(near_field_calculation, random_seed, remove_lost_rays, verbose)
+                output_beam    = self._hkb_beam
 
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._hkb_beam, title="HKB", xrange=None, yrange=None)
 
@@ -291,7 +291,7 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
                 try:    fortran_suppressor.stop()
                 except: pass
 
-        return output_beam
+        return output_beam.duplicate(history=False)
 
     def _trace_coherence_slits(self, random_seed, remove_lost_rays, verbose):
         output_beam = self._trace_oe(input_beam=self._input_beam,
@@ -794,7 +794,7 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
         output_beam_downstream = run_hybrid(output_beam_downstream, increment=201)
         output_beam_downstream._beam.rays = output_beam_downstream._beam.rays[cursor_downstream]
 
-        return ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=1)
+        return ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=0)
 
     def _trace_hkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
         output_beam_upstream, cursor_upstream, output_beam_downstream, cursor_downstream = \
