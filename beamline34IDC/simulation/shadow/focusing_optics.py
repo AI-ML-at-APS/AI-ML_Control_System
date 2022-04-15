@@ -310,8 +310,8 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
     def _trace_vkb(self, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
     def _trace_hkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
 
-    def _trace_oe(self, input_beam, shadow_oe, widget_class_name, oe_name, remove_lost_rays):
-        return self._check_beam(ShadowBeam.traceFromOE(input_beam.duplicate(),
+    def _trace_oe(self, input_beam, shadow_oe, widget_class_name, oe_name, remove_lost_rays, history=True):
+        return self._check_beam(ShadowBeam.traceFromOE(input_beam.duplicate(history=history),
                                                        shadow_oe.duplicate(),
                                                        widget_class_name=widget_class_name),
                                 oe_name, remove_lost_rays)
@@ -825,7 +825,7 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
         output_beam_downstream = run_hybrid(output_beam_downstream, increment=301)
         output_beam_downstream._beam.rays = output_beam_downstream._beam.rays[cursor_downstream]
 
-        output_beam = ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=1)
+        output_beam = ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=0)
 
         return rotate_axis_system(output_beam, rotation_angle=270.0)
 
@@ -846,13 +846,15 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
                                                           shadow_oe=upstream_oe,
                                                           widget_class_name=widget_class_name,
                                                           oe_name=oe_name + "_UPSTREAM",
-                                                          remove_lost_rays=False)._beam.rays[:, 9] == 1)
+                                                          remove_lost_rays=False,
+                                                          history=False)._beam.rays[:, 9] == 1)
 
         downstream_beam_cursor = numpy.where(self._trace_oe(input_beam=input_beam,
                                                             shadow_oe=downstream_oe,
                                                             widget_class_name=widget_class_name,
                                                             oe_name=oe_name + "_DOWNSTREAM",
-                                                            remove_lost_rays=False)._beam.rays[:, 9] == 1)
+                                                            remove_lost_rays=False,
+                                                            history=False)._beam.rays[:, 9] == 1)
 
         
         # this make HYBRID FAIL! we have to do it after the hybrid calculation
