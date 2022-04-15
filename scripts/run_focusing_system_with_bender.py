@@ -47,7 +47,7 @@
 import os
 
 from beamline34IDC.simulation.facade import Implementors
-from beamline34IDC.simulation.facade.focusing_optics_factory import simulated_focusing_optics_factory_method
+from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
 from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
 
 from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     # Focusing Optics System -------------------------
 
-    focusing_system = simulated_focusing_optics_factory_method(implementor=Implementors.SHADOW, bender=True)
+    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW, bender=True)
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
