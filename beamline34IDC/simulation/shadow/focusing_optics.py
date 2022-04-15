@@ -175,21 +175,14 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
     def _move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS, round_digit=4):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
-        if units == AngularUnits.MILLIRADIANS:
-            angle = numpy.degrees(angle * 1e-3)
-        elif units == AngularUnits.DEGREES:
-            pass
-        elif units == AngularUnits.RADIANS:
-            angle = numpy.degrees(angle)
-        else:
-            raise ValueError("Angular units not recognized")
+        if units == AngularUnits.MILLIRADIANS: angle = numpy.degrees(angle * 1e-3)
+        elif units == AngularUnits.DEGREES:    pass
+        elif units == AngularUnits.RADIANS:    angle = numpy.degrees(angle)
+        else: raise ValueError("Angular units not recognized")
 
-        if movement == Movement.ABSOLUTE:
-            element._oe.X_ROT = round(angle - (90 - element._oe.T_INCIDENCE), round_digit)
-        elif movement == Movement.RELATIVE:
-            element._oe.X_ROT += round(angle, round_digit)
-        else:
-            raise ValueError("Movement not recognized")
+        if movement == Movement.ABSOLUTE:   element._oe.X_ROT = round(angle - (90 - element._oe.T_INCIDENCE), round_digit)
+        elif movement == Movement.RELATIVE: element._oe.X_ROT += round(angle, round_digit)
+        else:  raise ValueError("Movement not recognized")
 
     @classmethod
     def _move_motor_4_transation(cls, element, translation, movement=Movement.ABSOLUTE, round_digit=3):
@@ -212,14 +205,10 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
 
         angle = 90 - element._oe.T_INCIDENCE + element._oe.X_ROT
 
-        if units == AngularUnits.MILLIRADIANS:
-            return 1000 * numpy.radians(angle)
-        elif units == AngularUnits.DEGREES:
-            return angle
-        elif units == AngularUnits.RADIANS:
-            return numpy.radians(angle)
-        else:
-            raise ValueError("Angular units not recognized")
+        if units == AngularUnits.MILLIRADIANS:  return 1000 * numpy.radians(angle)
+        elif units == AngularUnits.DEGREES:     return angle
+        elif units == AngularUnits.RADIANS:     return numpy.radians(angle)
+        else: raise ValueError("Angular units not recognized")
 
     @classmethod
     def _get_motor_4_translation(cls, element):
@@ -520,12 +509,9 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
     def __change_shape(cls, element, q_distance, movement=Movement.ABSOLUTE):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
-        if movement == Movement.ABSOLUTE:
-            element._oe.SIMAG = q_distance
-        elif movement == Movement.RELATIVE:
-            element._oe.SIMAG += q_distance
-        else:
-            raise ValueError("Movement not recognized")
+        if movement == Movement.ABSOLUTE:   element._oe.SIMAG = q_distance
+        elif movement == Movement.RELATIVE: element._oe.SIMAG += q_distance
+        else: raise ValueError("Movement not recognized")
 
 from beamline34IDC.simulation.shadow.bender import BenderManager, HKBMockWidget, VKBMockWidget
 from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl.double_rod_bendable_ellispoid_mirror_bl import apply_bender_surface

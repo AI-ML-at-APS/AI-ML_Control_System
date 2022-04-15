@@ -100,7 +100,7 @@ class BenderManager():
         return (self.F_upstream - self.C_upstream) / self.K_upstream, (self.F_downstream - self.C_downstream) / self.K_downstream
 
     def set_positions(self, pos_upstream, pos_downstream):
-        self.F_upstream = self.C_upstream + pos_upstream * self.K_upstream
+        self.F_upstream   = self.C_upstream + pos_upstream * self.K_upstream
         self.F_downstream = self.C_downstream + pos_downstream * self.K_downstream
 
         try:
