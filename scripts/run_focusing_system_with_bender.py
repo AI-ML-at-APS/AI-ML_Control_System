@@ -87,14 +87,14 @@ if __name__ == "__main__":
     #--------------------------------------------------
     # interaction with the beamline
 
-    focusing_system.move_vkb_motor_1_2_bender(pos_upstream=0.0, pos_downstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_1_2_bender(pos_downstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
 
-    focusing_system.move_vkb_motor_1_2_bender(pos_upstream=-10.0, pos_downstream=0.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_1_2_bender(pos_upstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
@@ -106,14 +106,14 @@ if __name__ == "__main__":
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
 
-    focusing_system.move_vkb_motor_4_translation(0.005, movement=Movement.RELATIVE)
+    focusing_system.move_vkb_motor_4_translation(5, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
 
     #--------------------------------------------------
 
-    focusing_system.move_hkb_motor_1_2_bender(pos_upstream=5.0, pos_downstream=0.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_1_2_bender(pos_upstream=5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("HKB Q", focusing_system.get_hkb_q_distance())
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
 
-    focusing_system.move_hkb_motor_4_translation(-0.001, movement=Movement.RELATIVE)
+    focusing_system.move_hkb_motor_4_translation(-1, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)

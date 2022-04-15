@@ -44,11 +44,31 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import numpy
 
-class Implementors:
-    EPICS = 0
-    BLUESKY = 1
+from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
+from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from beamline34IDC.util.gaussian_fit import calculate_1D_gaussian_fit
 
-class Beamline:
-    REAL    = 0
-    VIRTUAL = 1
+def get_beam_info(scan_data_h=None, scan_data_v=None, do_gaussian_fit=False):
+    beam_info = DictionaryWrapper()
+
+    def __get_scan_info(data, suffix):
+        fwhm, _, _         = get_fwhm(data[1], data[0])
+        sigma              = get_sigma(data[1], data[0])
+        centroid           = get_average(data[1], data[0])
+        peak_intensity     = numpy.average(data[1][numpy.where(data[1] >= numpy.max(data[1]) * 0.90)])
+        integral_intensity = numpy.sum(data[1])
+
+        beam_info.set_parameter("fwhm_" + suffix, fwhm)
+        beam_info.set_parameter("sigma_" + suffix, sigma)
+        beam_info.set_parameter("centroid_" + suffix, centroid)
+        beam_info.set_parameter("peak_intensity_" + suffix, peak_intensity)
+        beam_info.set_parameter("integral_intensity_" + suffix, integral_intensity)
+
+        if do_gaussian_fit: beam_info.set_parameter("gaussian_fit_" + suffix, calculate_1D_gaussian_fit(data_1D=data[1], x=data[0]))
+
+    if not scan_data_h is None: __get_scan_info(scan_data_h, "h")
+    if not scan_data_v is None: __get_scan_info(scan_data_v, "v")
+
+    return beam_info

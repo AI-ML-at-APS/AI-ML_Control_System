@@ -49,40 +49,41 @@ import numpy, time
 
 from epics import caget, caput
 
-from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
-from beamline34IDC.util.gaussian_fit import calculate_1D_gaussian_fit
 from beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
+from beamline34IDC.hardware.facade import Beamline
 from beamline34IDC.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics, Directions
 
 def epics_focusing_optics_factory_method(**kwargs):
     return __EpicsFocusingOptics(**kwargs)
 
 class Motors:
-    COH_SLITS_H_CENTER   = '34idc:m58:c2:m5.VAL'
-    COH_SLITS_H_APERTURE = '34idc:m58:c2:m6.VAL'
-    COH_SLITS_V_CENTER   = '34idc:m58:c2:m7.VAL'
-    COH_SLITS_V_APERTURE = '34idc:m58:c2:m8.VAL'
+    COH_SLITS_H_CENTER   = {Beamline.REAL : '34idc:m58:c2:m5.VAL', Beamline.VIRTUAL : '34idcsim:m58:c2:m5.VAL'}
+    COH_SLITS_H_APERTURE = {Beamline.REAL : '34idc:m58:c2:m6.VAL', Beamline.VIRTUAL : '34idcsim:m58:c2:m6.VAL'}
+    COH_SLITS_V_CENTER   = {Beamline.REAL : '34idc:m58:c2:m7.VAL', Beamline.VIRTUAL : '34idcsim:m58:c2:m7.VAL'}
+    COH_SLITS_V_APERTURE = {Beamline.REAL : '34idc:m58:c2:m8.VAL', Beamline.VIRTUAL : '34idcsim:m58:c2:m8.VAL'}
 
-    VKB_MOTOR_1 = '34idc:m58:c1:m3.VAL' # upstream force micron
-    VKB_MOTOR_2 = '34idc:m58:c1:m4.VAL' # downstream force micron
-    VKB_MOTOR_3 = '34idc:m58:c1:m2.VAL' # pitch mrad
-    VKB_MOTOR_4 = '34idc:m58:c1:m1.VAL' # translation micron
+    VKB_MOTOR_1 = {Beamline.REAL : '34idc:m58:c1:m3.VAL', Beamline.VIRTUAL : '34idcsim:m58:c1:m3.VAL'} # upstream force micron
+    VKB_MOTOR_2 = {Beamline.REAL : '34idc:m58:c1:m4.VAL', Beamline.VIRTUAL : '34idcsim:m58:c1:m4.VAL'} # downstream force micron
+    VKB_MOTOR_3 = {Beamline.REAL : '34idc:m58:c1:m2.VAL', Beamline.VIRTUAL : '34idcsim:m58:c1:m2.VAL'} # pitch mrad
+    VKB_MOTOR_4 = {Beamline.REAL : '34idc:m58:c1:m1.VAL', Beamline.VIRTUAL : '34idcsim:m58:c1:m1.VAL'} # translation micron
 
-    HKB_MOTOR_1 = '34idc:m58:c1:m7.VAL'
-    HKB_MOTOR_2 = '34idc:m58:c1:m8.VAL'
-    HKB_MOTOR_3 = '34idc:m58:c1:m6.VAL'
-    HKB_MOTOR_4 = '34idc:m58:c1:m5.VAL'
+    HKB_MOTOR_1 = {Beamline.REAL : '34idc:m58:c1:m7.VAL', Beamline.VIRTUAL : '34idcsim:m58:c1:m7.VAL'}
+    HKB_MOTOR_2 = {Beamline.REAL : '34idc:m58:c1:m8.VAL', Beamline.VIRTUAL : '34idcsim:m58:c1:m8.VAL'}
+    HKB_MOTOR_3 = {Beamline.REAL : '34idc:m58:c1:m6.VAL', Beamline.VIRTUAL : '34idcsim:m58:c1:m6.VAL'}
+    HKB_MOTOR_4 = {Beamline.REAL : '34idc:m58:c1:m5.VAL', Beamline.VIRTUAL : '34idcsim:m58:c1:m5.VAL'}
 
-    SAMPLE_STAGE_X        = '34idc:lab:m1.VAL'
-    SAMPLE_STAGE_Y        = '34idc:lab:m2.VAL'
-    SAMPLE_STAGE_Z        = '34idc:lab:m3.VAL'    # fine Z motion
-    SAMPLE_STAGE_Z_COARSE = '34idc:mxv:c0:m1.VAL' # coarse Z motion
+    SAMPLE_STAGE_X        = {Beamline.REAL : '34idc:lab:m1.VAL'   , Beamline.VIRTUAL : '34idcsim:lab:m1.VAL'   }
+    SAMPLE_STAGE_Y        = {Beamline.REAL : '34idc:lab:m2.VAL'   , Beamline.VIRTUAL : '34idcsim:lab:m2.VAL'   }
+    SAMPLE_STAGE_Z        = {Beamline.REAL : '34idc:lab:m3.VAL'   , Beamline.VIRTUAL : '34idcsim:lab:m3.VAL'   }    # fine Z motion
+    SAMPLE_STAGE_Z_COARSE = {Beamline.REAL : '34idc:mxv:c0:m1.VAL', Beamline.VIRTUAL : '34idcsim:mxv:c0:m1.VAL'} # coarse Z motion
 
 class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
-
+    
     def __init__(self, **kwargs):
-        pass
+        try: beamline = kwargs["beamline"]
+        except: beamline: Beamline.REAL
+        
+        self.__beamline = beamline
 
     def initialize(self, **kwargs): pass
 
@@ -90,37 +91,60 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
     # This methods represent the run-time interface, to interact with the optical system
     # in real time, like in the real beamline
 
-    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): pass
-    def get_coherence_slits_parameters(self): pass # center x, center z, aperture x, aperture z
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None):
+        if not coh_slits_h_center is None:   caput(Motors.COH_SLITS_H_CENTER[self.__beamline], coh_slits_h_center)
+        if not coh_slits_v_center is None:   caput(Motors.COH_SLITS_V_CENTER[self.__beamline], coh_slits_v_center)
+        if not coh_slits_h_aperture is None: caput(Motors.COH_SLITS_H_APERTURE[self.__beamline], coh_slits_h_aperture)
+        if not coh_slits_v_aperture is None: caput(Motors.COH_SLITS_V_APERTURE[self.__beamline], coh_slits_v_aperture)
+
+    def get_coherence_slits_parameters(self): 
+        return caget(Motors.COH_SLITS_H_CENTER[self.__beamline]), \
+               caget(Motors.COH_SLITS_V_CENTER[self.__beamline]), \
+               caget(Motors.COH_SLITS_H_APERTURE[self.__beamline]), \
+               caget(Motors.COH_SLITS_V_APERTURE[self.__beamline])
 
     # V-KB -----------------------
 
-    def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_motor_1_2_bender(Motors.VKB_MOTOR_1, Motors.VKB_MOTOR_2, pos_upstream, pos_downstream, movement, units)
+    def move_vkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self.__move_motor_1_2_bender(Motors.VKB_MOTOR_1[self.__beamline], Motors.VKB_MOTOR_2[self.__beamline], pos_upstream, pos_downstream, movement, units)
 
     def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON):
-        return self.__get_motor_1_2_bender(Motors.VKB_MOTOR_1, Motors.VKB_MOTOR_2, units)
+        return self.__get_motor_1_2_bender(Motors.VKB_MOTOR_1[self.__beamline], Motors.VKB_MOTOR_2[self.__beamline], units)
 
-    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
-    def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
-    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
-    def get_vkb_motor_4_translation(self): pass
+    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): 
+        self.__move_motor_3_pitch(Motors.VKB_MOTOR_3[self.__beamline], angle, movement, units)
+
+    def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): 
+        return self.__get_motor_3_pitch(Motors.VKB_MOTOR_3[self.__beamline], units)
+    
+    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): 
+        self.__move_motor_4_transation(Motors.VKB_MOTOR_4[self.__beamline], translation, movement, units)
+        
+    def get_vkb_motor_4_translation(self, units=DistanceUnits.MICRON):  
+        return self.__get_motor_4_translation(Motors.VKB_MOTOR_4[self.__beamline], units)
 
     # H-KB -----------------------
 
-    def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_motor_1_2_bender(Motors.HKB_MOTOR_1, Motors.HKB_MOTOR_2, pos_upstream, pos_downstream, movement, units)
+    def move_hkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self.__move_motor_1_2_bender(Motors.HKB_MOTOR_1[self.__beamline], Motors.HKB_MOTOR_2[self.__beamline], pos_upstream, pos_downstream, movement, units)
 
     def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON):
-        return self.__get_motor_1_2_bender(Motors.HKB_MOTOR_1, Motors.HKB_MOTOR_2, units)
+        return self.__get_motor_1_2_bender(Motors.HKB_MOTOR_1[self.__beamline], Motors.HKB_MOTOR_2, units)
 
-    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
-    def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
-    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
-    def get_hkb_motor_4_translation(self): pass
+    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
+        self.__move_motor_3_pitch(Motors.HKB_MOTOR_3[self.__beamline], angle, movement, units)
+        
+    def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): 
+        return self.__get_motor_3_pitch(Motors.HKB_MOTOR_3[self.__beamline], units)
+
+    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): 
+        self.__move_motor_4_transation(Motors.HKB_MOTOR_4[self.__beamline], translation, movement, units)
+    
+    def get_hkb_motor_4_translation(self, units=DistanceUnits.MICRON): 
+        return self.__get_motor_4_translation(Motors.HKB_MOTOR_4[self.__beamline], units)
 
     # PRIVATE METHODS
-
+    
     @classmethod
     def __move_motor_1_2_bender(cls, motor_1, motor_2, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         if units == DistanceUnits.MILLIMETERS:
@@ -140,28 +164,61 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
 
         return factor * caget(motor_1), factor * caget(motor_2)
 
+    @classmethod
+    def __move_motor_3_pitch(cls, motor, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
+        if units == AngularUnits.MILLIRADIANS: pass
+        elif units == AngularUnits.DEGREES:    angle = 1e3 * numpy.radians(angle)
+        elif units == AngularUnits.RADIANS:    angle = 1e3 * angle
+        else: raise ValueError("Angular units not recognized")
+
+        if movement == Movement.ABSOLUTE:   caput(motor, angle)
+        elif movement == Movement.RELATIVE: caput(motor, caget(motor) + angle)
+        else:  raise ValueError("Movement not recognized")
+    
+    @classmethod
+    def __move_motor_4_transation(cls, motor, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        if units == DistanceUnits.MILLIMETERS: translation *= 1e3
+        
+        if movement == Movement.ABSOLUTE:   caput(motor, translation)
+        elif movement == Movement.RELATIVE: caput(motor, caget(motor) + translation)
+        else: raise ValueError("Movement not recognized")
+
+    @classmethod
+    def __get_motor_3_pitch(cls, motor, units=AngularUnits.MILLIRADIANS):
+        angle = caget(motor)
+
+        if units == AngularUnits.MILLIRADIANS:  return angle
+        elif units == AngularUnits.DEGREES:     return numpy.degrees(angle*1e-3)
+        elif units == AngularUnits.RADIANS:     return angle*1e-3
+        else: raise ValueError("Angular units not recognized")
+
+    @classmethod
+    def __get_motor_4_translation(cls, motor, units=DistanceUnits.MICRON):
+        translation = caget(motor)
+
+        if units == DistanceUnits.MICRON:        return translation
+        elif units == DistanceUnits.MILLIMETERS: return translation*1e-3
+        else: raise ValueError("Distance units not recognized")
+        
     # get radiation characteristics ------------------------------
-    def get_beam_scan(self, direction=Directions.HORIZONTAL, parameters=[-2, 2, 40]):
-        if direction==Directions.HORIZONTAL: data = self.__scan(Motors.SAMPLE_STAGE_X, parameters[0], parameters[1], parameters[2])
-        elif direction==Directions.VERTICAL: data = self.__scan(Motors.SAMPLE_STAGE_Z, parameters[0], parameters[1], parameters[2])
-
-        fwhm, _, _  = get_fwhm(data[1], data[0])
-        sigma       = get_sigma(data[1], data[0])
-        centroid    = get_average(data[1], data[0])
-
-        peak_intensity     = numpy.average(data[1][numpy.where(data[1] >= numpy.max(data[1]) * 0.90)])
-        integral_intensity = numpy.sum(data[1])
-
-        gaussian_fit = calculate_1D_gaussian_fit(data_1D=data[1], x=data[0])
-
-        return data, \
-               DictionaryWrapper(sigma=sigma,
-                                 fwhm=fwhm,
-                                 centroid=centroid,
-                                 integral_intensity=integral_intensity,
-                                 peak_intensity=peak_intensity,
-                                 gaussian_fit=gaussian_fit)
-
+    
+    def get_photon_beam(self, **kwargs): 
+        try:    direction = kwargs["direction"]
+        except: direction = Directions.BOTH
+        try:    parameters = kwargs["parameters"]
+        except: parameters = [[-2, 2, 40],[-2, 2, 40]] if direction==Directions.BOTH else [-2, 2, 40]
+        
+        data_h = None
+        data_v = None
+        
+        if direction == Directions.HORIZONTAL: data_h = self.__scan(Motors.SAMPLE_STAGE_X[self.__beamline], parameters[0], parameters[1], parameters[2])
+        elif direction == Directions.VERTICAL: data_v = self.__scan(Motors.SAMPLE_STAGE_Z[self.__beamline], parameters[0], parameters[1], parameters[2])
+        elif direction == Directions.BOTH:
+            data_h = self.__scan(Motors.SAMPLE_STAGE_X[self.__beamline], parameters[0][0], parameters[0][1], parameters[0][2])
+            data_v = self.__scan(Motors.SAMPLE_STAGE_Z[self.__beamline], parameters[1][0], parameters[1][1], parameters[1][2])
+        
+        return data_h, data_v
+        
     @classmethod
     def __scan(cls, motor_name, first, final, steps):
         current = caget(motor_name)

@@ -44,11 +44,3 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-
-class Implementors:
-    EPICS = 0
-    BLUESKY = 1
-
-class Beamline:
-    REAL    = 0
-    VIRTUAL = 1

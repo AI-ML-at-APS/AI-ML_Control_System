@@ -88,7 +88,3 @@ class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
     def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
     def get_hkb_q_distance(self): raise NotImplementedError()
 
-    #####################################################################################
-    # Run the simulation
-
-    def get_photon_beam(self, **kwargs): raise NotImplementedError()

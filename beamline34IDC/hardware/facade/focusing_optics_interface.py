@@ -52,8 +52,9 @@ from beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptic
 class Directions:
     HORIZONTAL = 0
     VERTICAL = 1
+    BOTH = 2
 
 class AbstractHardwareFocusingOptics(AbstractFocusingOptics):
     def initialize(self, **kwargs): raise NotImplementedError()
 
-    def get_beam_scan(self, direction=Directions.HORIZONTAL): raise NotImplementedError()
+    def get_photon_beam(self, **kwargs): raise NotImplementedError()

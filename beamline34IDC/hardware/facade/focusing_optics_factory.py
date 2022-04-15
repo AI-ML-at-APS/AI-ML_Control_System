@@ -55,7 +55,6 @@ from beamline34IDC.util.initializer import register_ini_instance, AlreadyInitial
 #
 
 def hardware_focusing_optics_factory_method(implementor=Implementors.EPICS, **kwargs):
-
     if implementor==Implementors.EPICS: return epics_focusing_optics_factory_method(**kwargs)
     elif implementor==Implementors.BLUESKY:  return bluesky_focusing_optics_factory_method(**kwargs)
     else: raise ValueError("Implementor not recognized")

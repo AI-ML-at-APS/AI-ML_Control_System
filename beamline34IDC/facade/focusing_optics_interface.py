@@ -95,18 +95,20 @@ class AbstractFocusingOptics():
 
     # V-KB -----------------------
 
-    def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_vkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
     def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): raise NotImplementedError()
-    def get_vkb_motor_4_translation(self): raise NotImplementedError()
+    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_vkb_motor_4_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
 
     # H-KB -----------------------
 
-    def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_hkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
     def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): raise NotImplementedError()
-    def get_hkb_motor_4_translation(self): raise NotImplementedError()
+    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_hkb_motor_4_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+
+    def get_photon_beam(self, **kwargs): raise NotImplementedError()

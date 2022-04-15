@@ -45,7 +45,6 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from beamline34IDC.util.initializer import register_ini_instance, AlreadyInitializedError, IniMode
 #############################################################################
 # DESIGN PATTERN: FACTORY METHOD
 #
