@@ -80,8 +80,8 @@ class Motors:
 class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
     
     def __init__(self, **kwargs):
-        try: beamline = kwargs["beamline"]
-        except: beamline: Beamline.REAL
+        try:    beamline = kwargs["beamline"]
+        except: beamline = Beamline.REAL
         
         self.__beamline = beamline
 
