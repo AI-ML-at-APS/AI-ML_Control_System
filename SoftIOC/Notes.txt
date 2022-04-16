@@ -1,0 +1,25 @@
+From Max Wyman:
+
+I think you may have the sample Z coarse and fine assignments reversed:
+
+34idc:lab:m3 has a range of +/- 100 mm
+34idc:mxv:c0:m1 has a range of +/- 100 micron
+
+It doesn't affect the setup of the soft IOC but in case is affects your simulation, I thought I should point it out.
+
+-----------------------
+
+I put the ioc here:
+/net/s100dserv/xorApps/epics/synApps_6_2/ioc/34idSim
+
+To run the IOC:
+[mwyman@dumpling ~]$ cd /net/s100dserv/xorApps/epics/synApps_6_2/ioc/34idSim
+[mwyman@dumpling 34idSim]$ cd iocBoot/ioc34idSim/softioc/
+[mwyman@dumpling softioc]$ ./34idSim.sh run
+
+To start the screens (doesn't work yet):
+[mwyman@dumpling ~]$ cd /net/s100dserv/xorApps/epics/synApps_6_2/ioc/34idSim
+[mwyman@dumpling 34idSim]$ ./start_caQtDM_34idSim
+
+The gitlab repo is here:
+https://git.aps.anl.gov/optics/34idsim
