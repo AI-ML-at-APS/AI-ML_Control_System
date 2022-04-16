@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-import numpy, time
+import os, numpy, time
 
 from epics import caget, caput
 
@@ -85,7 +85,9 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
         
         self.__beamline = beamline
 
-    def initialize(self, **kwargs): pass
+    def initialize(self, **kwargs):
+        if self.__beamline   == Beamline.VIRTUAL: os.environ["EPICS_CA_ADDR_LIST"] = "dumpling.???"
+        elif self.__beamline == Beamline.REAL: os.environ["EPICS_CA_ADDR_LIST"] = "boh"
 
     #####################################################################################
     # This methods represent the run-time interface, to interact with the optical system
