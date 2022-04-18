@@ -23,3 +23,8 @@ To start the screens (doesn't work yet):
 
 The gitlab repo is here:
 https://git.aps.anl.gov/optics/34idsim
+
+
+DONE in Skylarc:
+
+ssh -i ~/.ssh/id_rsa s1bmuser@164.54.138.190
