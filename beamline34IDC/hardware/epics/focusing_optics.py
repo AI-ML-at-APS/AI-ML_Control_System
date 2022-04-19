@@ -61,6 +61,12 @@ def epics_focusing_optics_factory_method(**kwargs):
 
     return __EpicsFocusingOptics(**kwargs)
 
+class Scan:
+    SHUTTER  = {Beamline.REAL : '34idc:FastShutterState',     Beamline.VIRTUAL : '34idSim:FastShutterState'}
+    DETECTOR = {Beamline.REAL : '34idcTIM2:cam1',             Beamline.VIRTUAL : '34idSimTIM2:cam1'}
+    COUNTS   = {Beamline.REAL : '34idcTIM2:Stats5:Total_RBV', Beamline.VIRTUAL : '34idSimTIM2:Stats5:Total_RBV'}
+
+
 class Motors:
     COH_SLITS_H_CENTER   = {Beamline.REAL : '34idc:m58:c2:m5', Beamline.VIRTUAL : '34idSim:m58:c2:m5'}
     COH_SLITS_H_APERTURE = {Beamline.REAL : '34idc:m58:c2:m6', Beamline.VIRTUAL : '34idSim:m58:c2:m6'}
@@ -227,28 +233,30 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
             data_v = self.__scan(Motors.SAMPLE_STAGE_Z[self.__beamline], parameters[1][0], parameters[1][1], parameters[1][2])
         
         return data_h, data_v
-        
-    @classmethod
-    def __scan(cls, motor_name, first, final, steps):
+
+    def __scan(self, motor_name, first, final, steps):
         current = caget(motor_name + ".VAL")
         stepsize = (final - first) / float(steps)
         first = current + first
 
         data = numpy.zeros((steps, 2), float)
 
-        caput('34idc:FastShutterState', 1)
-        caput('34idcTIM2:cam1:AcquireTime', 0.3)
+        DETECTOR = Scan.DETECTOR[self.__beamline]
+        COUNTS   = Scan.COUNTS[self.__beamline]
+
+        caput(Scan.SHUTTER[self.__beamline], 1)
+        caput(DETECTOR + ':AcquireTime', 0.3)
 
         for i in range(steps):
             caput(motor_name + ".VAL", first + i * stepsize)
-            caput('34idcTIM2:cam1:Acquire', 1)
+            caput(DETECTOR + ':Acquire', 1)
 
             time.sleep(0.2)
 
-            while (caget('34idcTIM2:cam1:Acquire') != 0): time.sleep(0.1)
+            while (caget(DETECTOR + ':Acquire') != 0): time.sleep(0.1)
     
             data[i, 0] = i * stepsize + first
-            data[i, 1] = caget('34idcTIM2:Stats5:Total_RBV')
+            data[i, 1] = caget(COUNTS)
 
         # put the motor on the peak!
         caput(motor_name + ".VAL", data[numpy.argmax(data[:, 1]), 0])

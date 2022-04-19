@@ -63,3 +63,7 @@ print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=Dist
 print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
 print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
 print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+
+focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+
+print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
