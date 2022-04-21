@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-import numpy
+import os, numpy
 
 from oasys.widgets import congruence
 from orangecontrib.ml.util.mocks import MockWidget
@@ -159,6 +159,9 @@ class BenderManager():
         self._kb_downstream.set_q_distance(calculate_q(self._kb_downstream, F_downstream, side=1))
         self._kb_downstream.calculate_bender_quantities()
 
+    def remove_bender_files(self):
+        if os.path.exists(self._kb_upstream.output_file_name_full):   os.remove(self._kb_upstream.output_file_name_full)
+        if os.path.exists(self._kb_downstream.output_file_name_full): os.remove(self._kb_downstream.output_file_name_full)
 
 class _KBMockWidget(MockWidget):
     shadow_oe = None
