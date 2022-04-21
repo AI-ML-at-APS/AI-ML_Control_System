@@ -717,6 +717,7 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS):
+        # motor 3/4 are identical for the two sides
         return self._get_motor_3_pitch(self._vkb[0], units)
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
@@ -729,7 +730,8 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_4_translation(self, units=DistanceUnits.MICRON):
-        return self._get_motor_4_translation(self._vkb, units)
+        # motor 3/4 are identical for the two sides
+        return self._get_motor_4_translation(self._vkb[0], units)
 
     def move_hkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self.__move_motor_1_2_bender(self.__hkb_bender_manager, pos_upstream, pos_downstream, movement, units,
