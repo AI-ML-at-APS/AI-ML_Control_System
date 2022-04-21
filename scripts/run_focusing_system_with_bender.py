@@ -92,14 +92,14 @@ if __name__ == "__main__":
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
+                                          xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
 
     focusing_system.move_vkb_motor_1_2_bender(pos_upstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
+                                          xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
 
     focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
 

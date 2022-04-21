@@ -44,6 +44,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os.path
 
 import numpy
 import Shadow
@@ -306,9 +307,11 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
     def _trace_hkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
 
     def _trace_oe(self, input_beam, shadow_oe, widget_class_name, oe_name, remove_lost_rays, history=True):
-        return self._check_beam(ShadowBeam.traceFromOE(input_beam.duplicate(history=history),
+        return self._check_beam(ShadowBeam.traceFromOE(input_beam, #.duplicate(history=history),
                                                        shadow_oe.duplicate(),
-                                                       widget_class_name=widget_class_name),
+                                                       widget_class_name=widget_class_name,
+                                                       history=history,
+                                                       recursive_history=False),
                                 oe_name, remove_lost_rays)
 
     def _check_beam(self, output_beam, oe, remove_lost_rays):
@@ -855,15 +858,29 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
         #upstream_input_beam._beam.rays   = upstream_input_beam._beam.rays[upstream_beam_cursor]
         #downstream_input_beam._beam.rays = downstream_input_beam._beam.rays[downstream_beam_cursor]
 
-        def calculate_bender(input_beam, widget):
-            widget.R0                     = widget.R0_out  # use last fit result
-            widget.shadow_oe._oe.FILE_RIP = bytes(widget.ms_defect_file_name, 'utf-8') # restore original error profile
+        def calculate_bender(input_beam, widget, do_calculation=True):
+            widget.R0                     = widget.R0_out                              # use last fit result
 
-            apply_bender_surface(widget=widget, shadow_oe=widget.shadow_oe, input_beam=input_beam)
+            if do_calculation:
+                widget.shadow_oe._oe.FILE_RIP = bytes(widget.ms_defect_file_name, 'utf-8') # restore original error profile
 
-        # trace both the beam on the whole bender widget
-        calculate_bender(input_beam, upstream_widget)
-        calculate_bender(input_beam, downstream_widget)
+                apply_bender_surface(widget=widget, shadow_oe=widget.shadow_oe, input_beam=input_beam)
+            else:
+                widget.shadow_oe._oe.F_RIPPLE = 1
+                widget.shadow_oe._oe.F_G_S = 2
+                widget.shadow_oe._oe.FILE_RIP = bytes(widget.output_file_name_full, 'utf-8')
+
+        if (bender_manager.F_upstream == bender_manager.F_upstream_previous) and (bender_manager.F_downstream == bender_manager.F_downstream_previous) and \
+                os.path.exists(upstream_widget.output_file_name_full) and os.path.exists(downstream_widget.output_file_name_full):
+            # trace both the beam on the whole bender widget
+            calculate_bender(input_beam, upstream_widget, do_calculation=False)
+            calculate_bender(input_beam, downstream_widget, do_calculation=False)
+        else:
+            calculate_bender(input_beam, upstream_widget)
+            calculate_bender(input_beam, downstream_widget)
+
+        bender_manager.F_upstream_previous   = bender_manager.F_upstream
+        bender_manager.F_downstream_previous = bender_manager.F_downstream
 
         # Redo raytracing with the bender correction as error profile
         return self._trace_oe(input_beam=input_beam,
@@ -885,16 +902,15 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
 
         current_pos_upstream, current_pos_downstream = bender_manager.get_positions()
 
-        if units == DistanceUnits.MILLIMETERS:
-            if not pos_upstream is None: pos_upstream   = round(pos_upstream,   round_digit)*1e3
-            else:                        pos_upstream = current_pos_upstream
-            if not pos_downstream is None: pos_downstream = round(pos_downstream, round_digit)*1e3
-            else:                          pos_downstream = current_pos_downstream
-        else:
-            if not pos_upstream is None: pos_upstream   = round(pos_upstream,   round_digit - 3)
-            else:                        pos_upstream = current_pos_upstream
-            if not pos_downstream is None: pos_downstream = round(pos_downstream, round_digit - 3)
-            else:                          pos_downstream = current_pos_downstream
+        def check_pos(pos, current_pos):
+            if not pos is None:
+                if units == DistanceUnits.MILLIMETERS: return round(pos,   round_digit)*1e3
+                else:                                  return round(pos,   round_digit - 3)
+            else:
+                return 0.0 if movement == Movement.RELATIVE else current_pos
+
+        pos_upstream   = check_pos(pos_upstream,   current_pos_upstream)
+        pos_downstream = check_pos(pos_downstream, current_pos_downstream)
 
         if movement == Movement.ABSOLUTE:
             bender_manager.set_positions(pos_upstream, pos_downstream)

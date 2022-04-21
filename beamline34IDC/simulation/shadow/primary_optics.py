@@ -188,7 +188,7 @@ class __PrimaryOptics(AbstractPrimaryOptics):
                 widget_class_name = optical_element_data[1]
                 is_last_element   = optical_element_data[2]
 
-                output_beam = ShadowBeam.traceFromOE(input_beam, optical_element, widget_class_name=widget_class_name)
+                output_beam = ShadowBeam.traceFromOE(input_beam, optical_element, widget_class_name=widget_class_name, recursive_history=False)
 
                 if not is_last_element: input_beam = output_beam.duplicate()
         except Exception as e:

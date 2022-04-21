@@ -303,7 +303,7 @@ class __ShadowHybridUndulatorSource(AbstractSource):
         source_beam = self.get_source_beam(ignore_aperture=True)
         self.__widget.seed = random_seed # restore user seed
 
-        slits_beam = ShadowBeam.traceFromOE(source_beam, ShadowOpticalElement(slits_oe), widget_class_name="ScreenSlits")
+        slits_beam = ShadowBeam.traceFromOE(source_beam, ShadowOpticalElement(slits_oe), widget_class_name="ScreenSlits", recursive_history=False)
 
         # good only
         good_only = numpy.where(slits_beam._beam.rays[:, 9] == 1)

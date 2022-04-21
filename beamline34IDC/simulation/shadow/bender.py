@@ -62,6 +62,9 @@ class BenderManager():
     K_upstream = 0.0
     K_downstream = 0.0
 
+    F_upstream_previous = 0.0
+    F_downstream_previous = 0.0
+
     def __init__(self, kb_upstream, kb_downstream, verbose=False):
         self._kb_upstream = kb_upstream
         self._kb_downstream = kb_downstream
