@@ -53,7 +53,7 @@ from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement, Shado
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics, ShadowMath, ShadowCongruence
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 
-from beamline34IDC.util.shadow.common import TTYInibitor, EmptyBeamException, PreProcessorFiles, write_reflectivity_file, write_dabam_file, rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
+from beamline34IDC.util.shadow.common import TTYInibitor, HybridFailureException, EmptyBeamException, PreProcessorFiles, write_reflectivity_file, write_dabam_file, rotate_axis_system, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
 from beamline34IDC.facade.focusing_optics_interface import Movement, MotorResolution, AngularUnits, DistanceUnits
 from beamline34IDC.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features
 
@@ -297,11 +297,14 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
                                      remove_lost_rays=remove_lost_rays)
 
         # HYBRID CORRECTION TO CONSIDER DIFFRACTION FROM SLITS
-        return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                 diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
-                                                                 calcType=1,  # Diffraction by Simple Aperture
-                                                                 verbose=verbose,
-                                                                 random_seed=None if random_seed is None else (random_seed + 100))).ff_beam
+        try:
+            return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                     diffraction_plane=4,  # BOTH 1D+1D (3 is 2D)
+                                                                     calcType=1,  # Diffraction by Simple Aperture
+                                                                     verbose=verbose,
+                                                                     random_seed=None if random_seed is None else (random_seed + 100))).ff_beam
+        except Exception:
+            raise HybridFailureException(oe="Coherence Slits")
 
     def _trace_vkb(self, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
     def _trace_hkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
@@ -474,12 +477,14 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
                                       remove_lost_rays=remove_lost_rays)
 
         # NOTE: Near field not possible for vkb (beam is untraceable)
-        return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                 diffraction_plane=2,  # Tangential
-                                                                 calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                 verbose=verbose,
-                                                                 random_seed=None if random_seed is None else (random_seed + 200))).ff_beam
-
+        try:
+            return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                     diffraction_plane=2,  # Tangential
+                                                                     calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                     verbose=verbose,
+                                                                     random_seed=None if random_seed is None else (random_seed + 200))).ff_beam
+        except Exception:
+            raise HybridFailureException(oe="V-KB")
 
     def _trace_hkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
         output_beam = self._trace_oe(input_beam=self._vkb_beam,
@@ -487,20 +492,22 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
                               widget_class_name="EllypticalMirror",
                               oe_name="H-KB",
                               remove_lost_rays=remove_lost_rays)
-
-        if not near_field_calculation:
-            output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                            diffraction_plane=2,  # Tangential
-                                                                            calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                            verbose=verbose,
-                                                                            random_seed=None if random_seed is None else (random_seed + 300))).ff_beam
-        else:
-            output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                            diffraction_plane=2,  # Tangential
-                                                                            calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                            nf=1,
-                                                                            verbose=verbose,
-                                                                            random_seed=None if random_seed is None else (random_seed + 300))).nf_beam
+        try:
+            if not near_field_calculation:
+                output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                                diffraction_plane=2,  # Tangential
+                                                                                calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                                verbose=verbose,
+                                                                                random_seed=None if random_seed is None else (random_seed + 300))).ff_beam
+            else:
+                output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                                diffraction_plane=2,  # Tangential
+                                                                                calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                                nf=1,
+                                                                                verbose=verbose,
+                                                                                random_seed=None if random_seed is None else (random_seed + 300))).nf_beam
+        except Exception:
+            raise HybridFailureException(oe="H-KB")
 
         output_beam = rotate_axis_system(output_beam, rotation_angle=270.0)
 
@@ -781,11 +788,14 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
 
         def run_hybrid(output_beam, increment):
             # NOTE: Near field not possible for vkb (beam is untraceable)
-            return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                     diffraction_plane=2,  # Tangential
-                                                                     calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                     verbose=verbose,
-                                                                     random_seed=None if random_seed is None else (random_seed + increment))).ff_beam
+            try:
+                return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                         diffraction_plane=2,  # Tangential
+                                                                         calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                         verbose=verbose,
+                                                                         random_seed=None if random_seed is None else (random_seed + increment))).ff_beam
+            except Exception:
+                raise HybridFailureException(oe="V-KB")
 
         output_beam_upstream = run_hybrid(output_beam_upstream, increment=200)
         output_beam_upstream._beam.rays = output_beam_upstream._beam.rays[cursor_upstream]
@@ -804,19 +814,22 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
                             remove_lost_rays=remove_lost_rays)
 
         def run_hybrid(output_beam, increment):
-            if not near_field_calculation:
-                return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                         diffraction_plane=2,  # Tangential
-                                                                         calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                         verbose=verbose,
-                                                                         random_seed=None if random_seed is None else (random_seed + increment))).ff_beam
-            else:
-                return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                         diffraction_plane=2,  # Tangential
-                                                                         calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                         nf=1,
-                                                                         verbose=verbose,
-                                                                         random_seed=None if random_seed is None else (random_seed + increment))).nf_beam
+            try:
+                if not near_field_calculation:
+                    return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                             diffraction_plane=2,  # Tangential
+                                                                             calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                             verbose=verbose,
+                                                                             random_seed=None if random_seed is None else (random_seed + increment))).ff_beam
+                else:
+                    return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                             diffraction_plane=2,  # Tangential
+                                                                             calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                             nf=1,
+                                                                             verbose=verbose,
+                                                                             random_seed=None if random_seed is None else (random_seed + increment))).nf_beam
+            except Exception:
+                raise HybridFailureException(oe="H-KB")
 
         output_beam_upstream = run_hybrid(output_beam_upstream, increment=300)
         output_beam_upstream._beam.rays = output_beam_upstream._beam.rays[cursor_upstream]

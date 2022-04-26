@@ -96,6 +96,10 @@ class EmptyBeamException(Exception):
     def __init__(self, oe="OE"):
         super().__init__("Shadow beam after " + oe + " contains no good rays")
 
+class HybridFailureException(Exception):
+    def __init__(self, oe="OE"):
+        super().__init__("Hybrid Algorithm failed for " + oe)
+
 class ShadowHistogram():
     def __init__(self, hh, vv, data_2D):
         self.hh = hh
