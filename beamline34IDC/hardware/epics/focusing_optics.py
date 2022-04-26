@@ -106,17 +106,25 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
     # This methods represent the run-time interface, to interact with the optical system
     # in real time, like in the real beamline
 
-    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None):
-        if not coh_slits_h_center is None:   caput(Motors.COH_SLITS_H_CENTER[self.__beamline] + ".VAL", coh_slits_h_center)
-        if not coh_slits_v_center is None:   caput(Motors.COH_SLITS_V_CENTER[self.__beamline] + ".VAL", coh_slits_v_center)
-        if not coh_slits_h_aperture is None: caput(Motors.COH_SLITS_H_APERTURE[self.__beamline] + ".VAL", coh_slits_h_aperture)
-        if not coh_slits_v_aperture is None: caput(Motors.COH_SLITS_V_APERTURE[self.__beamline] + ".VAL", coh_slits_v_aperture)
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None, units=DistanceUnits.MICRON):
+        if units == DistanceUnits.MICRON:        factor = 1.0
+        elif units == DistanceUnits.MILLIMETERS: factor = 1e3
+        else: raise ValueError("Distance units not recognized")
 
-    def get_coherence_slits_parameters(self): 
-        return caget(Motors.COH_SLITS_H_CENTER[self.__beamline] + ".VAL"), \
-               caget(Motors.COH_SLITS_V_CENTER[self.__beamline] + ".VAL"), \
-               caget(Motors.COH_SLITS_H_APERTURE[self.__beamline] + ".VAL"), \
-               caget(Motors.COH_SLITS_V_APERTURE[self.__beamline] + ".VAL")
+        if not coh_slits_h_center is None:   caput(Motors.COH_SLITS_H_CENTER[self.__beamline] + ".VAL",   factor*coh_slits_h_center)
+        if not coh_slits_v_center is None:   caput(Motors.COH_SLITS_V_CENTER[self.__beamline] + ".VAL",   factor*coh_slits_v_center)
+        if not coh_slits_h_aperture is None: caput(Motors.COH_SLITS_H_APERTURE[self.__beamline] + ".VAL", factor*coh_slits_h_aperture)
+        if not coh_slits_v_aperture is None: caput(Motors.COH_SLITS_V_APERTURE[self.__beamline] + ".VAL", factor*coh_slits_v_aperture)
+
+    def get_coherence_slits_parameters(self, units=DistanceUnits.MICRON):
+        if units == DistanceUnits.MICRON:        factor = 1.0
+        elif units == DistanceUnits.MILLIMETERS: factor = 1e-3
+        else: raise ValueError("Distance units not recognized")
+
+        return factor*caget(Motors.COH_SLITS_H_CENTER[self.__beamline] + ".VAL"), \
+               factor*caget(Motors.COH_SLITS_V_CENTER[self.__beamline] + ".VAL"), \
+               factor*caget(Motors.COH_SLITS_H_APERTURE[self.__beamline] + ".VAL"), \
+               factor*caget(Motors.COH_SLITS_V_APERTURE[self.__beamline] + ".VAL")
 
     # V-KB -----------------------
 
@@ -165,6 +173,8 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
         if units == DistanceUnits.MILLIMETERS:
             pos_upstream *= 1e3
             pos_downstream *= 1e3
+        elif units == DistanceUnits.MICRON: pass
+        else: raise ValueError("Distance units not recognized")
 
         if movement == Movement.RELATIVE:
             if pos_upstream   != 0.0: caput(motor_1 + ".RLV", pos_upstream)
@@ -175,7 +185,9 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
 
     @classmethod
     def __get_motor_1_2_bender(cls, motor_1, motor_2, units=DistanceUnits.MICRON):
-        factor = 1e-3 if units == DistanceUnits.MILLIMETERS else 1.0
+        if units == DistanceUnits.MICRON:        factor = 1.0
+        elif units == DistanceUnits.MILLIMETERS: factor = 1e-3
+        else: raise ValueError("Distance units not recognized")
 
         return factor * caget(motor_1 + ".VAL"), factor * caget(motor_2 + ".VAL")
 
@@ -193,7 +205,9 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
     @classmethod
     def __move_motor_4_transation(cls, motor, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         if units == DistanceUnits.MILLIMETERS: translation *= 1e3
-        
+        elif units == DistanceUnits.MICRON: pass
+        else: raise ValueError("Distance units not recognized")
+
         if movement   == Movement.ABSOLUTE: caput(motor + ".VAL", translation)
         elif movement == Movement.RELATIVE: caput(motor + ".RLV", translation)
         else: raise ValueError("Movement not recognized")
