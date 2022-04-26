@@ -152,22 +152,33 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         # This methods represent the run-time interface, to interact with the optical system
         # in real time, like in the real beamline
 
-    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None):
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None, units=DistanceUnits.MICRON):
         if self._coherence_slits is None: raise ValueError("Initialize Focusing Optics System first")
 
-        if not coh_slits_h_center   is None: self._coherence_slits._oe.CX_SLIT = numpy.array([coh_slits_h_center, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        if not coh_slits_v_center   is None: self._coherence_slits._oe.CZ_SLIT = numpy.array([coh_slits_v_center, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        if not coh_slits_h_aperture is None: self._coherence_slits._oe.RX_SLIT = numpy.array([coh_slits_h_aperture, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        if not coh_slits_v_aperture is None: self._coherence_slits._oe.RZ_SLIT = numpy.array([coh_slits_v_aperture, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        if units == DistanceUnits.MICRON:        factor = 1e-3
+        elif units == DistanceUnits.MILLIMETERS: factor = 1.0
+        else: raise ValueError("Distance units not recognized")
+
+        if not coh_slits_h_center   is None: self._coherence_slits._oe.CX_SLIT = numpy.array([factor*coh_slits_h_center, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        if not coh_slits_v_center   is None: self._coherence_slits._oe.CZ_SLIT = numpy.array([factor*coh_slits_v_center, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        if not coh_slits_h_aperture is None: self._coherence_slits._oe.RX_SLIT = numpy.array([factor*coh_slits_h_aperture, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        if not coh_slits_v_aperture is None: self._coherence_slits._oe.RZ_SLIT = numpy.array([factor*coh_slits_v_aperture, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
         if not self._coherence_slits in self._modified_elements: self._modified_elements.append(self._coherence_slits)
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
-    def get_coherence_slits_parameters(self):  # center x, center z, aperture x, aperture z
+    def get_coherence_slits_parameters(self, units=DistanceUnits.MICRON):  # center x, center z, aperture x, aperture z
         if self._coherence_slits is None: raise ValueError("Initialize Focusing Optics System first")
 
-        return self._coherence_slits._oe.CX_SLIT, self._coherence_slits._oe.CZ_SLIT, self._coherence_slits._oe.RX_SLIT, self._coherence_slits._oe.RZ_SLIT
+        if units == DistanceUnits.MICRON:        factor = 1e3
+        elif units == DistanceUnits.MILLIMETERS: factor = 1.0
+        else: raise ValueError("Distance units not recognized")
+
+        return factor*self._coherence_slits._oe.CX_SLIT, \
+               factor*self._coherence_slits._oe.CZ_SLIT, \
+               factor*self._coherence_slits._oe.RX_SLIT, \
+               factor*self._coherence_slits._oe.RZ_SLIT
 
         # V-KB -----------------------
 
@@ -190,6 +201,8 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
         if units == DistanceUnits.MICRON: translation *= 1e-3
+        elif units == DistanceUnits.MILLIMETERS: pass
+        else: raise ValueError("Distance units not recognized")
 
         total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + element._oe.X_ROT)
 
@@ -222,6 +235,8 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         translation = numpy.average([element._oe.OFFY / numpy.sin(total_pitch_angle), element._oe.OFFZ / numpy.cos(total_pitch_angle)])
 
         if units == DistanceUnits.MICRON: translation *= 1e3
+        elif units == DistanceUnits.MILLIMETERS: pass
+        else: raise ValueError("Distance units not recognized")
 
         return translation
 
@@ -922,7 +937,8 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
         def check_pos(pos, current_pos):
             if not pos is None:
                 if units == DistanceUnits.MILLIMETERS: return round(pos,   round_digit)*1e3
-                else:                                  return round(pos,   round_digit - 3)
+                elif units == DistanceUnits.MICRON:    return round(pos,   round_digit - 3)
+                else: raise ValueError("Distance units not recognized")
             else:
                 return 0.0 if movement == Movement.RELATIVE else current_pos
 
@@ -946,5 +962,7 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
         if units == DistanceUnits.MILLIMETERS:
             pos_upstream   *= 1e-3
             pos_downstream *= 1e-3
+        elif units == DistanceUnits.MICRON: pass
+        else: raise ValueError("Distance units not recognized")
 
         return pos_upstream, pos_downstream

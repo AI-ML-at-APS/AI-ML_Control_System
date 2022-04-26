@@ -90,8 +90,8 @@ class AbstractFocusingOptics():
     # This methods represent the run-time interface, to interact with the optical system
     # in real time, like in the real beamline
 
-    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): raise NotImplementedError()
-    def get_coherence_slits_parameters(self): raise NotImplementedError() # center x, center z, aperture x, aperture z
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_coherence_slits_parameters(self, units=DistanceUnits.MICRON): raise NotImplementedError() # center x, center z, aperture x, aperture z
 
     # V-KB -----------------------
 
