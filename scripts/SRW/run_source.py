@@ -59,6 +59,7 @@ if __name__ == "__main__":
     source = source_factory_method(implementor=Implementors.SRW, kind_of_source=Sources.UNDULATOR)
     source.initialize(storage_ring=StorageRing.APS)
     source.set_energy(energy=5000)
+
     source_wavefront = source.get_source_beam(verbose=verbose)
 
     save_srw_wavefront(source_wavefront, "srw_undulator_source.dat")

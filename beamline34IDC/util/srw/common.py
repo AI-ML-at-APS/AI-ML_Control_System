@@ -134,8 +134,17 @@ def plot_srw_wavefront_spatial_distribution(srw_wavefront, title="X,Z", xrange=N
     plt.ylabel("vertical direction [mm]")
     plt.show()
 
-def save_srw_wavefront(srw_wavefront, file_name="srw_wavefront.h5"):
-    save_wfr_2_hdf5(srw_wavefront, file_name, subgroupname="wfr", intensity=True, phase=False, overwrite=True)
+import pickle
 
-def load_srw_wavefront(file_name="srw_wavefront.h5"):
-    return SRWWavefront.decorateSRWWF(load_hdf5_2_wfr(file_name, "wfr"))
+def save_srw_wavefront(srw_wavefront, file_name="srw_wavefront.dat"):
+    out_s = open(os.path.join(os.getcwd(),  file_name), 'wb')
+    pickle.dump(srw_wavefront, out_s)
+    out_s.flush()
+    out_s.close()
+
+def load_srw_wavefront(file_name="srw_wavefront.dat"):
+    in_s = open(os.path.join(os.getcwd(), file_name, 'rb'))
+    srw_wavefront = pickle.load(in_s)
+    in_s.close()
+
+    return srw_wavefront

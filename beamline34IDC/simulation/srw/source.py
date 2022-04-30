@@ -47,11 +47,10 @@
 
 import numpy
 
-from wofrysrw.propagator.wavefront2D.srw_wavefront import WavefrontParameters, WavefrontPrecisionParameters, PolarizationComponent
+from wofrysrw.propagator.wavefront2D.srw_wavefront import WavefrontParameters, WavefrontPrecisionParameters
 from wofrysrw.storage_ring.srw_electron_beam import SRWElectronBeam
 from wofrysrw.storage_ring.light_sources.srw_undulator_light_source import SRWUndulatorLightSource
 from wofrysrw.storage_ring.magnetic_structures.srw_undulator import SRWUndulator
-from wofrysrw.beamline.srw_beamline import SRWBeamline
 
 from beamline34IDC.simulation.facade.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
 from beamline34IDC.util.shadow.common import codata, m2ev
