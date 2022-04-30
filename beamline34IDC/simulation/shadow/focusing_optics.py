@@ -159,10 +159,12 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         elif units == DistanceUnits.MILLIMETERS: factor = 1.0
         else: raise ValueError("Distance units not recognized")
 
-        if not coh_slits_h_center   is None: self._coherence_slits._oe.CX_SLIT = numpy.array([factor*coh_slits_h_center, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        if not coh_slits_v_center   is None: self._coherence_slits._oe.CZ_SLIT = numpy.array([factor*coh_slits_v_center, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        if not coh_slits_h_aperture is None: self._coherence_slits._oe.RX_SLIT = numpy.array([factor*coh_slits_h_aperture, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        if not coh_slits_v_aperture is None: self._coherence_slits._oe.RZ_SLIT = numpy.array([factor*coh_slits_v_aperture, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        round_digit = MotorResolution.getInstance().get_coh_slits_motors_resolution(units=units)
+
+        if not coh_slits_h_center   is None: self._coherence_slits._oe.CX_SLIT = numpy.array([round(factor*coh_slits_h_center,   round_digit), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        if not coh_slits_v_center   is None: self._coherence_slits._oe.CZ_SLIT = numpy.array([round(factor*coh_slits_v_center,   round_digit), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        if not coh_slits_h_aperture is None: self._coherence_slits._oe.RX_SLIT = numpy.array([round(factor*coh_slits_h_aperture, round_digit), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        if not coh_slits_v_aperture is None: self._coherence_slits._oe.RZ_SLIT = numpy.array([round(factor*coh_slits_v_aperture, round_digit), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
         if not self._coherence_slits in self._modified_elements: self._modified_elements.append(self._coherence_slits)
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)

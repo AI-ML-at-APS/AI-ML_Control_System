@@ -63,6 +63,7 @@ class DistanceUnits:
 class MotorResolution:
     __instance = None
                                            #value #digits to round
+    __coh_slits_motors_resolution        = [1e-7, 7]  # mm
     __vkb_motor_1_2_bender_resolution    = [1e-7, 7]  # mm
     __vkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
     __vkb_motor_4_translation_resolution = [1e-3, 3]  # mm
@@ -79,6 +80,7 @@ class MotorResolution:
       if MotorResolution.__instance != None: raise Exception("This class is a singleton!")
       else: MotorResolution.__instance = self
 
+    def get_coh_slits_motors_resolution(self, units=DistanceUnits.MICRON):        return self.__get_translational_resolution(self.__coh_slits_motors_resolution, units)
     def get_vkb_motor_1_2_bender_resolution(self, units=DistanceUnits.MICRON):    return self.__get_translational_resolution(self.__vkb_motor_1_2_bender_resolution, units)
     def get_vkb_motor_3_pitch_resolution(self, units=AngularUnits.MILLIRADIANS):  return self.__get_rotational_resolution(self.__vkb_motor_3_pitch_resolution, units)
     def get_vkb_motor_4_translation_resolution(self, units=DistanceUnits.MICRON): return self.__get_translational_resolution(self.__vkb_motor_4_translation_resolution, units)
