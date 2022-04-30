@@ -716,15 +716,28 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
         self._vkb = [ShadowOpticalElement(vkb_up), ShadowOpticalElement(vkb_down)]
         self._hkb = [ShadowOpticalElement(hkb_up), ShadowOpticalElement(hkb_down)]
 
-    def move_vkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_motor_1_2_bender(self.__vkb_bender_manager, pos_upstream, pos_downstream, movement, units,
+    # ---- H-KB ---------------------------------------------------------
+
+    def move_vkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self.__move_motor_1_2_bender(self.__vkb_bender_manager, pos_upstream, None, movement, units,
                                      round_digit=MotorResolution.getInstance().get_vkb_motor_1_2_bender_resolution()[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
-    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON):
-        return self.__get_motor_1_2_bender(self.__vkb_bender_manager, units)
+    def get_vkb_motor_1_bender(self, units=DistanceUnits.MICRON): 
+        return self.__get_motor_1_2_bender(self.__vkb_bender_manager, units)[0]
+    
+    def move_vkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): 
+        self.__move_motor_1_2_bender(self.__vkb_bender_manager, None, pos_downstream, movement, units,
+                                     round_digit=MotorResolution.getInstance().get_vkb_motor_1_2_bender_resolution()[1])
+
+        if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
+        if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
+
+    def get_vkb_motor_2_bender(self, units=DistanceUnits.MICRON):
+        return self.__get_motor_1_2_bender(self.__vkb_bender_manager, units)[1]
+
 
     def get_vkb_q_distance(self):
         return self._get_q_distance(self._vkb[0]), self._get_q_distance(self._vkb[1])
@@ -755,14 +768,25 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
         # motor 3/4 are identical for the two sides
         return self._get_motor_4_translation(self._vkb[0], units)
 
-    def move_hkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_motor_1_2_bender(self.__hkb_bender_manager, pos_upstream, pos_downstream, movement, units,
+    # ---- H-KB ---------------------------------------------------------
+
+    def move_hkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self.__move_motor_1_2_bender(self.__hkb_bender_manager, pos_upstream, None, movement, units,
                                      round_digit=MotorResolution.getInstance().get_hkb_motor_1_2_bender_resolution()[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
-    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON):
-        return self.__get_motor_1_2_bender(self.__hkb_bender_manager, units)
+    def get_hkb_motor_1_bender(self, units=DistanceUnits.MICRON):
+        return self.__get_motor_1_2_bender(self.__hkb_bender_manager, units)[0]
+
+    def move_hkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self.__move_motor_1_2_bender(self.__hkb_bender_manager, None, pos_downstream, movement, units,
+                                     round_digit=MotorResolution.getInstance().get_hkb_motor_1_2_bender_resolution()[1])
+
+        if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
+
+    def get_hkb_motor_2_bender(self, units=DistanceUnits.MICRON):
+        return self.__get_motor_1_2_bender(self.__hkb_bender_manager, units)[1]
 
     def get_hkb_q_distance(self):
         return self._get_q_distance(self._hkb[0]), self._get_q_distance(self._hkb[1])

@@ -128,71 +128,70 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
 
     # V-KB -----------------------
 
-    def move_vkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_motor_1_2_bender(Motors.VKB_MOTOR_1[self.__beamline], Motors.VKB_MOTOR_2[self.__beamline], pos_upstream, pos_downstream, movement, units)
+    def move_vkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self.__move_translational_motor(Motors.VKB_MOTOR_1[self.__beamline], pos_upstream, movement, units)
 
-    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON):
-        return self.__get_motor_1_2_bender(Motors.VKB_MOTOR_1[self.__beamline], Motors.VKB_MOTOR_2[self.__beamline], units)
+    def get_vkb_motor_1_bender(self, units=DistanceUnits.MICRON):
+        return self.__get_translational_motor_position(Motors.VKB_MOTOR_1[self.__beamline], units)
+
+    def move_vkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self.__move_translational_motor(Motors.VKB_MOTOR_2[self.__beamline], pos_downstream, movement, units)
+
+    def get_vkb_motor_2_bender(self, units=DistanceUnits.MICRON):
+        return self.__get_translational_motor_position(Motors.VKB_MOTOR_2[self.__beamline], units)
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): 
-        self.__move_motor_3_pitch(Motors.VKB_MOTOR_3[self.__beamline], angle, movement, units)
+        self.__move_rotational_motor(Motors.VKB_MOTOR_3[self.__beamline], angle, movement, units)
 
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): 
-        return self.__get_motor_3_pitch(Motors.VKB_MOTOR_3[self.__beamline], units)
+        return self.__get_rotational_motor_angle(Motors.VKB_MOTOR_3[self.__beamline], units)
     
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): 
-        self.__move_motor_4_transation(Motors.VKB_MOTOR_4[self.__beamline], translation, movement, units)
+        self.__move_translational_motor(Motors.VKB_MOTOR_4[self.__beamline], translation, movement, units)
         
     def get_vkb_motor_4_translation(self, units=DistanceUnits.MICRON):  
-        return self.__get_motor_4_translation(Motors.VKB_MOTOR_4[self.__beamline], units)
+        return self.__get_translational_motor_position(Motors.VKB_MOTOR_4[self.__beamline], units)
 
     # H-KB -----------------------
 
-    def move_hkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_motor_1_2_bender(Motors.HKB_MOTOR_1[self.__beamline], Motors.HKB_MOTOR_2[self.__beamline], pos_upstream, pos_downstream, movement, units)
+    def move_hkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self.__move_translational_motor(Motors.HKB_MOTOR_1[self.__beamline], pos_upstream, movement, units)
 
-    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON):
-        return self.__get_motor_1_2_bender(Motors.HKB_MOTOR_1[self.__beamline], Motors.HKB_MOTOR_2[self.__beamline], units)
+    def get_hkb_motor_1_bender(self, units=DistanceUnits.MICRON):
+        return self.__get_translational_motor_position(Motors.HKB_MOTOR_1[self.__beamline], units)
+
+    def move_hkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self.__move_translational_motor(Motors.HKB_MOTOR_2[self.__beamline], pos_downstream, movement, units)
+
+    def get_hkb_motor_2_bender(self, units=DistanceUnits.MICRON): 
+        return self.__get_translational_motor_position(Motors.HKB_MOTOR_2[self.__beamline], units)
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self.__move_motor_3_pitch(Motors.HKB_MOTOR_3[self.__beamline], angle, movement, units)
+        self.__move_rotational_motor(Motors.HKB_MOTOR_3[self.__beamline], angle, movement, units)
         
     def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): 
-        return self.__get_motor_3_pitch(Motors.HKB_MOTOR_3[self.__beamline], units)
+        return self.__get_rotational_motor_angle(Motors.HKB_MOTOR_3[self.__beamline], units)
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): 
-        self.__move_motor_4_transation(Motors.HKB_MOTOR_4[self.__beamline], translation, movement, units)
+        self.__move_translational_motor(Motors.HKB_MOTOR_4[self.__beamline], translation, movement, units)
     
     def get_hkb_motor_4_translation(self, units=DistanceUnits.MICRON): 
-        return self.__get_motor_4_translation(Motors.HKB_MOTOR_4[self.__beamline], units)
+        return self.__get_translational_motor_position(Motors.HKB_MOTOR_4[self.__beamline], units)
 
     # PRIVATE METHODS
     
     @classmethod
-    def __move_motor_1_2_bender(cls, motor_1, motor_2, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        if units == DistanceUnits.MILLIMETERS:
-            pos_upstream *= 1e3
-            pos_downstream *= 1e3
+    def __move_translational_motor(cls, motor, pos, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        if units == DistanceUnits.MILLIMETERS: pos *= 1e3
         elif units == DistanceUnits.MICRON: pass
         else: raise ValueError("Distance units not recognized")
 
-        if movement == Movement.RELATIVE:
-            if pos_upstream   != 0.0: caput(motor_1 + ".RLV", pos_upstream)
-            if pos_downstream != 0.0: caput(motor_2 + ".RLV", pos_downstream)
-        elif movement == Movement.ABSOLUTE:
-            if pos_upstream   != caget(motor_1 + ".VAL"): caput(motor_1 + ".VAL", pos_upstream)
-            if pos_downstream != caget(motor_2 + ".VAL"): caput(motor_2 + ".VAL", pos_downstream)
+        if movement   == Movement.ABSOLUTE: caput(motor + ".VAL", pos)
+        elif movement == Movement.RELATIVE: caput(motor + ".RLV", pos)
+        else: raise ValueError("Movement not recognized")
 
     @classmethod
-    def __get_motor_1_2_bender(cls, motor_1, motor_2, units=DistanceUnits.MICRON):
-        if units == DistanceUnits.MICRON:        factor = 1.0
-        elif units == DistanceUnits.MILLIMETERS: factor = 1e-3
-        else: raise ValueError("Distance units not recognized")
-
-        return factor * caget(motor_1 + ".VAL"), factor * caget(motor_2 + ".VAL")
-
-    @classmethod
-    def __move_motor_3_pitch(cls, motor, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
+    def __move_rotational_motor(cls, motor, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         if units == AngularUnits.MILLIRADIANS: pass
         elif units == AngularUnits.DEGREES:    angle = 1e3 * numpy.radians(angle)
         elif units == AngularUnits.RADIANS:    angle = 1e3 * angle
@@ -201,33 +200,20 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
         if movement   == Movement.ABSOLUTE: caput(motor + ".VAL", angle)
         elif movement == Movement.RELATIVE: caput(motor + ".RLV", angle)
         else:  raise ValueError("Movement not recognized")
-    
+
     @classmethod
-    def __move_motor_4_transation(cls, motor, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        if units == DistanceUnits.MILLIMETERS: translation *= 1e3
-        elif units == DistanceUnits.MICRON: pass
+    def __get_translational_motor_position(cls, motor, units=DistanceUnits.MICRON):
+        if units == DistanceUnits.MICRON:        return caget(motor + ".VAL")
+        elif units == DistanceUnits.MILLIMETERS: return 1e-3*caget(motor + ".VAL")
         else: raise ValueError("Distance units not recognized")
 
-        if movement   == Movement.ABSOLUTE: caput(motor + ".VAL", translation)
-        elif movement == Movement.RELATIVE: caput(motor + ".RLV", translation)
-        else: raise ValueError("Movement not recognized")
-
     @classmethod
-    def __get_motor_3_pitch(cls, motor, units=AngularUnits.MILLIRADIANS):
-        angle = caget(motor)
-
-        if units == AngularUnits.MILLIRADIANS:  return angle
-        elif units == AngularUnits.DEGREES:     return numpy.degrees(angle*1e-3)
-        elif units == AngularUnits.RADIANS:     return angle*1e-3
+    def __get_rotational_motor_angle(cls, motor, units=AngularUnits.MILLIRADIANS):
+        if units == AngularUnits.MILLIRADIANS:  return caget(motor)
+        elif units == AngularUnits.DEGREES:     return numpy.degrees(caget(motor)*1e-3)
+        elif units == AngularUnits.RADIANS:     return caget(motor)*1e-3
         else: raise ValueError("Angular units not recognized")
 
-    @classmethod
-    def __get_motor_4_translation(cls, motor, units=DistanceUnits.MICRON):
-        translation = caget(motor + ".VAL")
-
-        if units == DistanceUnits.MICRON:        return translation
-        elif units == DistanceUnits.MILLIMETERS: return translation*1e-3
-        else: raise ValueError("Distance units not recognized")
         
     # get radiation characteristics ------------------------------
     

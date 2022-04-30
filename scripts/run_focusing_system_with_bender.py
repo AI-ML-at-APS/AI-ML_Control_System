@@ -70,8 +70,14 @@ if __name__ == "__main__":
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
-    print("Initial V-KB bender positions and q (up, down) ", focusing_system.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON), focusing_system.get_vkb_q_distance())
-    print("Initial H-KB bender positions and q (up, down)",  focusing_system.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON), focusing_system.get_hkb_q_distance())
+    print("Initial V-KB bender positions and q (up, down) ",
+          focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_q_distance())
+    print("Initial H-KB bender positions and q (up, down)",
+          focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_q_distance())
 
     # ----------------------------------------------------------------
     # perturbation of the incident beam to make adjustements necessary
@@ -87,14 +93,14 @@ if __name__ == "__main__":
     #--------------------------------------------------
     # interaction with the beamline
 
-    focusing_system.move_vkb_motor_1_2_bender(pos_downstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_2_bender(pos_downstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
 
-    focusing_system.move_vkb_motor_1_2_bender(pos_upstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_1_bender(pos_upstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
@@ -113,7 +119,7 @@ if __name__ == "__main__":
 
     #--------------------------------------------------
 
-    focusing_system.move_hkb_motor_1_2_bender(pos_upstream=5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_1_bender(pos_upstream=5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("HKB Q", focusing_system.get_hkb_q_distance())
 

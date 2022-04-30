@@ -45,41 +45,71 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from beamline34IDC.simulation.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, get_default_input_features
+from beamline34IDC.facade.focusing_optics_interface import Movement, DistanceUnits, AngularUnits
+from beamline34IDC.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features
 
-def srw_focusing_optics_factory_method():
-    return __FocusingOpticsSystem()
+def srw_focusing_optics_factory_method(**kwargs):
+    try:
+        if kwargs["bender"] == True: return __BendableFocusingOptics()
+        else:                        return __IdealFocusingOptics()
+    except: return __IdealFocusingOptics()
 
-class __FocusingOpticsSystem(AbstractFocusingOptics):
+class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
+
+    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): pass
+    def restore_input_photon_beam(self): pass
+
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None, units=DistanceUnits.MICRON): pass
+    def get_coherence_slits_parameters(self, units=DistanceUnits.MICRON): pass # center x, center z, aperture x, aperture z
+
+
+class __IdealFocusingOptics(_FocusingOpticsCommon):
+    def __init__(self):
+        pass
+
+    def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs):
+        try: rewrite_reflectivity_files    = kwargs["rewrite_reflectivity_files"]
+        except: rewrite_reflectivity_files = False
+        try: rewrite_height_error_profile_files    = kwargs["rewrite_height_error_profile_files"]
+        except: rewrite_height_error_profile_files = False
+
+    # V-KB -----------------------
+
+    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
+    def get_vkb_q_distance(self): pass
+
+    # H-KB -----------------------
+
+    def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): pass
+    def get_hkb_q_distance(self): pass
+
+class __BendableFocusingOptics(_FocusingOpticsCommon):
     def __init__(self):
         pass
     
     def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs): pass
 
-    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): pass
-    def restore_input_photon_beam(self): pass
-
-    #####################################################################################
-    # This methods represent the run-time interface, to interact with the optical system 
-    # in real time, like in the real beamline
-
-    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): pass
-    def get_coherence_slits_parameters(self): return None # center x, center z, aperture x, aperture z
 
     # V-KB -----------------------
 
-    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE): pass
-    def get_vkb_motor_3_pitch(self): return None
-    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
-    def get_vkb_motor_4_translation(self): return None
-    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE): pass
-    def get_vkb_q_distance(self): return None
+    def move_vkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_vkb_motor_1_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_vkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_vkb_motor_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
+    def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
+    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
+    def get_vkb_motor_4_translation(self, units=DistanceUnits.MICRON): pass
 
     # H-KB -----------------------
 
-    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE): pass
-    def get_hkb_motor_3_pitch(self): return None
-    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
-    def get_hkb_motor_4_translation(self): return None
-    def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): pass
-    def get_hkb_q_distance(self): return None
+    def move_hkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_hkb_motor_1_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_hkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_hkb_motor_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
+    def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
+    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
+    def get_hkb_motor_4_translation(self, units=DistanceUnits.MICRON): pass
+
+    def get_photon_beam(self, **kwargs): pass

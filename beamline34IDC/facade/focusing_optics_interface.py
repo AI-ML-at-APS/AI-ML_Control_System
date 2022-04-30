@@ -44,6 +44,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import numpy
+
 
 class Movement:
     ABSOLUTE = 0
@@ -77,12 +79,37 @@ class MotorResolution:
       if MotorResolution.__instance != None: raise Exception("This class is a singleton!")
       else: MotorResolution.__instance = self
 
-    def get_vkb_motor_1_2_bender_resolution(self):    return self.__vkb_motor_1_2_bender_resolution
-    def get_vkb_motor_3_pitch_resolution(self):       return self.__vkb_motor_3_pitch_resolution
-    def get_vkb_motor_4_translation_resolution(self): return self.__vkb_motor_4_translation_resolution
-    def get_hkb_motor_1_2_bender_resolution(self):    return self.__hkb_motor_1_2_bender_resolution
-    def get_hkb_motor_3_pitch_resolution(self):       return self.__hkb_motor_3_pitch_resolution
-    def get_hkb_motor_4_translation_resolution(self): return self.__hkb_motor_4_translation_resolution
+    def get_vkb_motor_1_2_bender_resolution(self, units=DistanceUnits.MILLIMETERS):
+        if units==DistanceUnits.MILLIMETERS: return self.__vkb_motor_1_2_bender_resolution
+        elif units==DistanceUnits.MICRON:    return 1e3*self.__vkb_motor_1_2_bender_resolution
+        else: raise ValueError("Units not recognized")
+
+    def get_vkb_motor_3_pitch_resolution(self, units=AngularUnits.DEGREES):
+        if units==AngularUnits.DEGREES:        return self.__vkb_motor_3_pitch_resolution
+        elif units==AngularUnits.MILLIRADIANS: return 1e3*numpy.radians(self.__vkb_motor_3_pitch_resolution)
+        elif units==AngularUnits.RADIANS:      return numpy.radians(self.__vkb_motor_3_pitch_resolution)
+        else: raise ValueError("Units not recognized")
+
+    def get_vkb_motor_4_translation_resolution(self, units=DistanceUnits.MILLIMETERS):
+        if units==DistanceUnits.MILLIMETERS: return self.__vkb_motor_4_translation_resolution
+        elif units==DistanceUnits.MICRON:    return 1e3*self.__vkb_motor_4_translation_resolution
+        else: raise ValueError("Units not recognized")
+
+    def get_hkb_motor_1_2_bender_resolution(self, units=DistanceUnits.MILLIMETERS):
+        if units==DistanceUnits.MILLIMETERS: return self.__hkb_motor_1_2_bender_resolution
+        elif units==DistanceUnits.MICRON:    return 1e3*self.__hkb_motor_1_2_bender_resolution
+        else: raise ValueError("Units not recognized")
+
+    def get_hkb_motor_3_pitch_resolution(self, units=AngularUnits.DEGREES):
+        if units==AngularUnits.DEGREES:        return self.__hkb_motor_3_pitch_resolution
+        elif units==AngularUnits.MILLIRADIANS: return 1e3*numpy.radians(self.__hkb_motor_3_pitch_resolution)
+        elif units==AngularUnits.RADIANS:      return numpy.radians(self.__hkb_motor_3_pitch_resolution)
+        else: raise ValueError("Units not recognized")
+
+    def get_hkb_motor_4_translation_resolution(self, units=DistanceUnits.MILLIMETERS):
+        if units==DistanceUnits.MILLIMETERS: return self.__hkb_motor_4_translation_resolution
+        elif units==DistanceUnits.MICRON:    return 1e3*self.__hkb_motor_4_translation_resolution
+        else: raise ValueError("Units not recognized")
 
 class AbstractFocusingOptics():
 
@@ -95,8 +122,10 @@ class AbstractFocusingOptics():
 
     # V-KB -----------------------
 
-    def move_vkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_vkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_vkb_motor_1_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_vkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_vkb_motor_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
@@ -104,8 +133,10 @@ class AbstractFocusingOptics():
 
     # H-KB -----------------------
 
-    def move_hkb_motor_1_2_bender(self, pos_upstream=None, pos_downstream=None, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_hkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_hkb_motor_1_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_hkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_hkb_motor_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
