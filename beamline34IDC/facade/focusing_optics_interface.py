@@ -79,36 +79,24 @@ class MotorResolution:
       if MotorResolution.__instance != None: raise Exception("This class is a singleton!")
       else: MotorResolution.__instance = self
 
-    def get_vkb_motor_1_2_bender_resolution(self, units=DistanceUnits.MILLIMETERS):
-        if units==DistanceUnits.MILLIMETERS: return self.__vkb_motor_1_2_bender_resolution
-        elif units==DistanceUnits.MICRON:    return 1e3*self.__vkb_motor_1_2_bender_resolution
+    def get_vkb_motor_1_2_bender_resolution(self, units=DistanceUnits.MICRON):    return self.__get_translational_resolution(self.__vkb_motor_1_2_bender_resolution, units)
+    def get_vkb_motor_3_pitch_resolution(self, units=AngularUnits.MILLIRADIANS):  return self.__get_rotational_resolution(self.__vkb_motor_3_pitch_resolution, units)
+    def get_vkb_motor_4_translation_resolution(self, units=DistanceUnits.MICRON): return self.__get_translational_resolution(self.__vkb_motor_4_translation_resolution, units)
+    def get_hkb_motor_1_2_bender_resolution(self, units=DistanceUnits.MICRON):    return self.__get_translational_resolution(self.__hkb_motor_1_2_bender_resolution, units)
+    def get_hkb_motor_3_pitch_resolution(self, units=AngularUnits.MILLIRADIANS):  return self.__get_rotational_resolution(self.__hkb_motor_3_pitch_resolution, units)
+    def get_hkb_motor_4_translation_resolution(self, units=DistanceUnits.MICRON): return self.__get_translational_resolution(self.__hkb_motor_4_translation_resolution, units)
+
+    @classmethod
+    def __get_translational_resolution(cls, resolution_array, units=DistanceUnits.MICRON):
+        if units==DistanceUnits.MILLIMETERS: return resolution_array
+        elif units==DistanceUnits.MICRON:    return [1e3*resolution_array[0], resolution_array[1] - 3]
         else: raise ValueError("Units not recognized")
 
-    def get_vkb_motor_3_pitch_resolution(self, units=AngularUnits.DEGREES):
-        if units==AngularUnits.DEGREES:        return self.__vkb_motor_3_pitch_resolution
-        elif units==AngularUnits.MILLIRADIANS: return 1e3*numpy.radians(self.__vkb_motor_3_pitch_resolution)
-        elif units==AngularUnits.RADIANS:      return numpy.radians(self.__vkb_motor_3_pitch_resolution)
-        else: raise ValueError("Units not recognized")
-
-    def get_vkb_motor_4_translation_resolution(self, units=DistanceUnits.MILLIMETERS):
-        if units==DistanceUnits.MILLIMETERS: return self.__vkb_motor_4_translation_resolution
-        elif units==DistanceUnits.MICRON:    return 1e3*self.__vkb_motor_4_translation_resolution
-        else: raise ValueError("Units not recognized")
-
-    def get_hkb_motor_1_2_bender_resolution(self, units=DistanceUnits.MILLIMETERS):
-        if units==DistanceUnits.MILLIMETERS: return self.__hkb_motor_1_2_bender_resolution
-        elif units==DistanceUnits.MICRON:    return 1e3*self.__hkb_motor_1_2_bender_resolution
-        else: raise ValueError("Units not recognized")
-
-    def get_hkb_motor_3_pitch_resolution(self, units=AngularUnits.DEGREES):
-        if units==AngularUnits.DEGREES:        return self.__hkb_motor_3_pitch_resolution
-        elif units==AngularUnits.MILLIRADIANS: return 1e3*numpy.radians(self.__hkb_motor_3_pitch_resolution)
-        elif units==AngularUnits.RADIANS:      return numpy.radians(self.__hkb_motor_3_pitch_resolution)
-        else: raise ValueError("Units not recognized")
-
-    def get_hkb_motor_4_translation_resolution(self, units=DistanceUnits.MILLIMETERS):
-        if units==DistanceUnits.MILLIMETERS: return self.__hkb_motor_4_translation_resolution
-        elif units==DistanceUnits.MICRON:    return 1e3*self.__hkb_motor_4_translation_resolution
+    @classmethod
+    def __get_rotational_resolution(cls, resolution_array, units=AngularUnits.MILLIRADIANS):
+        if units==AngularUnits.DEGREES:        return resolution_array
+        elif units==AngularUnits.MILLIRADIANS: return [1e3*numpy.radians(resolution_array[0]), resolution_array[1] - 1]
+        elif units==AngularUnits.RADIANS:      return [numpy.radians(resolution_array[0]),     resolution_array[1] + 2]
         else: raise ValueError("Units not recognized")
 
 class AbstractFocusingOptics():
