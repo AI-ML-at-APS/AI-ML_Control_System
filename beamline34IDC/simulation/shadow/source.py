@@ -108,12 +108,12 @@ class __ShadowGaussianUndulatorSource(AbstractSource):
     def set_angular_acceptance_from_aperture(self, aperture=[0.03, 0.07], distance=50500):
         self.set_angular_acceptance(divergence=[aperture[0] / distance, aperture[1] / distance])
 
-    def set_energy(self, energy_range=[4999.0, 5001.0], **kwargs):
+    def set_energy(self, energy=[4999.0, 5001.0], **kwargs):
         try: self.__shadow_source.src.F_COLOR = kwargs["photon_energy_distribution"]
         except: self.__shadow_source.src.F_COLOR = 3
 
-        self.__shadow_source.src.PH1 = energy_range[0]
-        if self.__shadow_source.src.F_COLOR==3: self.__shadow_source.src.PH2 = energy_range[1]
+        self.__shadow_source.src.PH1 = energy[0]
+        if self.__shadow_source.src.F_COLOR==3: self.__shadow_source.src.PH2 = energy[1]
 
         self.__set_photon_sizes()
 
@@ -231,7 +231,7 @@ class __ShadowHybridUndulatorSource(AbstractSource):
             self.__widget.Kv = Kboth
             self.__widget.Kh = Kboth
 
-    def set_energy(self, energy_range=[4999.0, 5001.0], **kwargs):
+    def set_energy(self, energy=[4999.0, 5001.0], **kwargs):
         try: photon_energy_distribution = kwargs["photon_energy_distribution"]
         except: photon_energy_distribution = 2
 
@@ -246,11 +246,11 @@ class __ShadowHybridUndulatorSource(AbstractSource):
             self.__widget.harmonic_number = harmonic_number
         elif photon_energy_distribution == self.PhotonEnergyDistributions.SINGLE_ENERGY:
             self.__widget.use_harmonic = 1
-            self.__widget.energy = energy_range[0]
+            self.__widget.energy = energy[0]
         elif photon_energy_distribution == self.PhotonEnergyDistributions.RANGE:
             self.__widget.use_harmonic = 2
-            self.__widget.energy = energy_range[0]
-            self.__widget.energy_to = energy_range[1]
+            self.__widget.energy = energy[0]
+            self.__widget.energy_to = energy[1]
             self.__widget.energy_points = energy_points
 
     def get_source_beam(self, **kwargs):

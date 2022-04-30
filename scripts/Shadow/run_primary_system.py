@@ -46,77 +46,31 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from beamline34IDC.simulation.facade import Implementors
-from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits
-
-from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
+from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
+from beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
+from beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
+from beamline34IDC.util.shadow.common import load_source_beam, save_shadow_beam, plot_shadow_beam_spatial_distribution, PreProcessorFiles
 from beamline34IDC.util import clean_up
+
 
 if __name__ == "__main__":
     verbose = False
 
-    os.chdir("../work_directory")
+    os.chdir("../../work_directory")
 
     clean_up()
 
-    input_beam = load_shadow_beam("primary_optics_system_beam.dat")
+    # Source -------------------------
+    source_beam = load_source_beam("gaussian_undulator_source.dat")
 
-    # Focusing Optics System -------------------------
+    # Primary Optics System -------------------------
+    primary_system = primary_optics_factory_method(implementor=Implementors.SHADOW)
+    primary_system.initialize(source_photon_beam=source_beam, rewrite_preprocessor_files=PreProcessorFiles.YES_SOURCE_RANGE)
 
-    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW)
+    input_beam = primary_system.get_photon_beam(verbose)
 
-    focusing_system.initialize(input_photon_beam=input_beam,
-                               rewrite_preprocessor_files=PreProcessorFiles.NO,
-                               rewrite_height_error_profile_files=False)
+    save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
 
-    # ----------------------------------------------------------------
-    # perturbation of the incident beam to make adjustements necessary
-
-    random_seed = 2120 # for repeatability
-
-    focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
-
-    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed)
-
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
-
-    #--------------------------------------------------
-    # interaction with the beamline
-
-    focusing_system.change_vkb_shape(10, movement=Movement.RELATIVE)
-
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
-
-    focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
-
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
-
-    focusing_system.move_vkb_motor_4_translation(0.005, movement=Movement.RELATIVE)
-
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
-
-    #--------------------------------------------------
-
-    focusing_system.change_hkb_shape(5, movement=Movement.RELATIVE)
-
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
-
-    focusing_system.move_hkb_motor_3_pitch(0.2, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
-
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
-
-    focusing_system.move_hkb_motor_4_translation(-0.001, movement=Movement.RELATIVE)
-
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
-
-
-    # ----------------------------------------------------------------
+    plot_shadow_beam_spatial_distribution(input_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
 
     clean_up()

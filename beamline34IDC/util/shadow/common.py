@@ -60,7 +60,8 @@ from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 import scipy.constants as codata
 
-from ..gaussian_fit import calculate_2D_gaussian_fit
+from beamline34IDC.util.common import Histogram
+from beamline34IDC.util.gaussian_fit import calculate_2D_gaussian_fit
 
 m2ev = codata.c * codata.h / codata.e
 
@@ -100,12 +101,6 @@ class HybridFailureException(Exception):
     def __init__(self, oe="OE"):
         super().__init__("Hybrid Algorithm failed for " + oe)
 
-class ShadowHistogram():
-    def __init__(self, hh, vv, data_2D):
-        self.hh = hh
-        self.vv = vv
-        self.data_2D = data_2D
-
 def get_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
     return __shadow_beam_get_distribution_info(shadow_beam._beam.histo2(1, 3, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange), do_gaussian_fit=do_gaussian_fit)
 
@@ -133,7 +128,7 @@ def __shadow_beam_get_distribution_info(ticket, do_gaussian_fit=False):
         except: gaussian_fit = {}
     else:       gaussian_fit = {}
 
-    return ShadowHistogram(hh, vv, histogram), \
+    return Histogram(hh, vv, histogram), \
            DictionaryWrapper(
                h_sigma=ticket['sigma_h'],
                h_fwhm=ticket['fwhm_h'],

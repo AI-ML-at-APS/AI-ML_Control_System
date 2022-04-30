@@ -44,39 +44,36 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-class StorageRing:
-    APS = 0
-    APS_U = 1
+import os
 
-class ElectronBeamAPS:
-    energy_in_GeV = 7.0
-    energy_spread = 0.00098
-    ring_current = 0.1
-    sigma_x = 0.0002805
-    sigma_z = 1.02e-05
-    sigdi_x = 1.18e-05
-    sigdi_z = 3.4e-06
+from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
+from beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
+from beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
+from beamline34IDC.util.shadow.common import save_shadow_beam, PreProcessorFiles
+from beamline34IDC.util import clean_up
 
-class ElectronBeamAPS_U:
-    energy_in_GeV = 6.0
-    energy_spread = 0.00138
-    ring_current = 0.2
-    sigma_x = 1.48e-05
-    sigma_z = 3.7e-06
-    sigdi_x = 2.8e-06
-    sigdi_z = 1.5e-06
+if __name__ == "__main__":
+    verbose = False
 
+    os.chdir("../../work_directory")
 
-class Sources:
-    GAUSSIAN = 0
-    UNDULATOR = 1
+    clean_up()
 
-class AbstractSource():
-    def initialize(self, storage_ring=StorageRing.APS, **kwargs): raise NotImplementedError()
-    def set_angular_acceptance(self, divergence=[1e-4, 1e-4]): raise NotImplementedError()
-    def set_angular_acceptance_from_aperture(self, aperture=[0.03, 0.07], distance=50500): raise NotImplementedError()
-    def set_energy(self, energy=[4999.0, 5001.0], **kwargs): raise NotImplementedError()
-    def get_source_beam(self, **kwargs): raise NotImplementedError()
+    implementor    = Implementors.SHADOW
+    kind_of_source = Sources.GAUSSIAN
 
+    # Source -------------------------
+    source = source_factory_method(implementor=implementor, kind_of_source=kind_of_source)
+    source.initialize(storage_ring=StorageRing.APS, n_rays=1000000, random_seed=3245345)
+    source.set_angular_acceptance_from_aperture(aperture=[0.05, 0.09], distance=50500)
+    source.set_energy(energy_range=[4999.0, 5001.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
 
+    # Primary Optics System -------------------------
+    primary_system = primary_optics_factory_method(implementor=implementor)
+    primary_system.initialize(source_photon_beam=source.get_source_beam(verbose=verbose), rewrite_preprocessor_files=PreProcessorFiles.NO)
 
+    input_beam = primary_system.get_photon_beam(verbose=verbose)
+
+    save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
+
+    clean_up()

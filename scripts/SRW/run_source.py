@@ -44,39 +44,27 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-class StorageRing:
-    APS = 0
-    APS_U = 1
+import os
 
-class ElectronBeamAPS:
-    energy_in_GeV = 7.0
-    energy_spread = 0.00098
-    ring_current = 0.1
-    sigma_x = 0.0002805
-    sigma_z = 1.02e-05
-    sigdi_x = 1.18e-05
-    sigdi_z = 3.4e-06
+from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
+from beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
+from beamline34IDC.util.srw.common import plot_srw_wavefront_spatial_distribution, srw_wavefront_get_distribution_info, save_srw_wavefront
 
-class ElectronBeamAPS_U:
-    energy_in_GeV = 6.0
-    energy_spread = 0.00138
-    ring_current = 0.2
-    sigma_x = 1.48e-05
-    sigma_z = 3.7e-06
-    sigdi_x = 2.8e-06
-    sigdi_z = 1.5e-06
+if __name__ == "__main__":
 
+    verbose = False
 
-class Sources:
-    GAUSSIAN = 0
-    UNDULATOR = 1
+    os.chdir("../../work_directory")
 
-class AbstractSource():
-    def initialize(self, storage_ring=StorageRing.APS, **kwargs): raise NotImplementedError()
-    def set_angular_acceptance(self, divergence=[1e-4, 1e-4]): raise NotImplementedError()
-    def set_angular_acceptance_from_aperture(self, aperture=[0.03, 0.07], distance=50500): raise NotImplementedError()
-    def set_energy(self, energy=[4999.0, 5001.0], **kwargs): raise NotImplementedError()
-    def get_source_beam(self, **kwargs): raise NotImplementedError()
+    source = source_factory_method(implementor=Implementors.SRW, kind_of_source=Sources.UNDULATOR)
+    source.initialize(storage_ring=StorageRing.APS)
+    source.set_energy(energy=5000)
+    source_wavefront = source.get_source_beam(verbose=verbose)
 
+    save_srw_wavefront(source_wavefront, "srw_undulator_source.dat")
 
+    plot_srw_wavefront_spatial_distribution(source_wavefront)
 
+    srw_histogram, info = srw_wavefront_get_distribution_info(source_wavefront, do_gaussian_fit=True)
+
+    print(info)

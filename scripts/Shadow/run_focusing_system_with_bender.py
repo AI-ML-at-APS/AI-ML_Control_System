@@ -56,7 +56,7 @@ from beamline34IDC.util import clean_up
 if __name__ == "__main__":
     verbose = False
 
-    os.chdir("../work_directory")
+    os.chdir("../../work_directory")
 
     clean_up()
 
