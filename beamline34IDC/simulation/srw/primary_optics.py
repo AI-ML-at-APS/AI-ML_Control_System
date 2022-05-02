@@ -44,11 +44,22 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-
+import numpy
 from beamline34IDC.simulation.facade.primary_optics_interface import AbstractPrimaryOptics
 
-from wofrysrw.beamline.srw_beamline import SRWBeamline
-from wofrysrw.propagator.wavefront2D.srw_wavefront import WavefrontParameters, WavefrontPrecisionParameters
+from syned.beamline.element_coordinates import ElementCoordinates
+from syned.beamline.beamline_element import BeamlineElement
+from syned.beamline.shape import Rectangle
+
+from wofry.propagator.propagator import PropagationManager, PropagationParameters
+
+from wofrysrw.beamline.srw_beamline import SRWBeamline, Where
+from wofrysrw.propagator.wavefront2D.srw_wavefront import WavefrontPropagationParameters
+from wofrysrw.propagator.propagators2D.srw_fresnel_native import FresnelSRWNative
+
+from wofrysrw.beamline.optical_elements.absorbers.srw_aperture import SRWAperture
+from wofrysrw.beamline.optical_elements.mirrors.srw_mirror import Orientation
+from wofrysrw.beamline.optical_elements.mirrors.srw_plane_mirror import SRWPlaneMirror
 
 def srw_primary_optics_factory_method():
     return __PrimaryOpticsSystem()
@@ -60,227 +71,79 @@ class __PrimaryOpticsSystem(AbstractPrimaryOptics):
 
     def initialize(self, source_photon_beam, **kwargs):
         self.__source_wavefront = source_photon_beam
-
         self.__beamline = SRWBeamline()
 
-    def get_photon_beam(self, **kwargs): pass
+        # Front-End Aperture
+        width = 0.0001
+        height = 0.01
+        front_end_slit = SRWAperture(boundary_shape=Rectangle(x_left=-0.5 * width,
+                                                              x_right=0.5 * width,
+                                                              y_bottom=-0.5 * height,
+                                                              y_top=0.5 * height))
+
+        beamline_element = BeamlineElement(optical_element=front_end_slit, coordinates=ElementCoordinates())
+
+        srw_oe_wavefront_propagation_parameters = WavefrontPropagationParameters(
+                                                                 allow_semianalytical_treatment_of_quadratic_phase_term = 0, # Standard
+                                                                 horizontal_range_modification_factor_at_resizing       = 0.2,
+                                                                 horizontal_resolution_modification_factor_at_resizing  = 1.0,
+                                                                 vertical_range_modification_factor_at_resizing         = 1.0,
+                                                                 vertical_resolution_modification_factor_at_resizing    = 1.0
+                                                             )
+
+        self.__beamline.append_beamline_element(beamline_element)
+        self.__beamline.append_wavefront_propagation_parameters(None, None, Where.DRIFT_BEFORE)
+        self.__beamline.append_wavefront_propagation_parameters(srw_oe_wavefront_propagation_parameters, None, Where.OE)
+        self.__beamline.append_wavefront_propagation_parameters(None, None, Where.DRIFT_AFTER)
+
+        # Mirror 1
+        mirror = SRWPlaneMirror(tangential_size=0.5,
+                                sagittal_size=0.02,
+                                grazing_angle=0.005,
+                                orientation_of_reflection_plane=Orientation.UP,
+                                invert_tangent_component = False,
+                                add_acceptance_slit=True,
+                                height_profile_data_file=None)
+
+        beamline_element = BeamlineElement(optical_element=mirror,
+                                           coordinates=ElementCoordinates(p=2.8,
+                                                                          q=20.9,
+                                                                          angle_radial=0.5*numpy.pi-0.005,
+                                                                          angle_azimuthal=0.0))
+
+        srw_drift_before_wavefront_propagation_parameters = WavefrontPropagationParameters(
+            allow_semianalytical_treatment_of_quadratic_phase_term=2,  # Quadratic Term Special
+            horizontal_range_modification_factor_at_resizing=1.0,
+            horizontal_resolution_modification_factor_at_resizing=1.0,
+            vertical_range_modification_factor_at_resizing=1.0,
+            vertical_resolution_modification_factor_at_resizing=1.0
+        )
+
+        srw_oe_wavefront_propagation_parameters = WavefrontPropagationParameters(
+            allow_semianalytical_treatment_of_quadratic_phase_term=0,  # Standard
+            horizontal_range_modification_factor_at_resizing=1.0,
+            horizontal_resolution_modification_factor_at_resizing=1.0,
+            vertical_range_modification_factor_at_resizing=1.0,
+            vertical_resolution_modification_factor_at_resizing=1.0
+        )
+
+        srw_drift_after_wavefront_propagation_parameters = WavefrontPropagationParameters(
+            allow_semianalytical_treatment_of_quadratic_phase_term=2,  # Quadratic Term Special
+            horizontal_range_modification_factor_at_resizing=1.0,
+            horizontal_resolution_modification_factor_at_resizing=1.0,
+            vertical_range_modification_factor_at_resizing=1.0,
+            vertical_resolution_modification_factor_at_resizing=1.0
+        )
+
+        self.__beamline.append_beamline_element(beamline_element)
+        self.__beamline.append_wavefront_propagation_parameters(srw_drift_before_wavefront_propagation_parameters, None, Where.DRIFT_BEFORE)
+        self.__beamline.append_wavefront_propagation_parameters(srw_oe_wavefront_propagation_parameters, None, Where.OE)
+        self.__beamline.append_wavefront_propagation_parameters(srw_drift_after_wavefront_propagation_parameters, None, Where.DRIFT_AFTER)
 
 
-'''
-####################################################
-# BEAMLINE
+    def get_photon_beam(self, **kwargs):
+        propagation_parameters = PropagationParameters(wavefront=self.__source_wavefront.duplicate(), propagation_elements=None)
+        propagation_parameters.set_additional_parameters("working_beamline", self.__beamline) # Propagation mode: WHOLE BEAMLINE
 
-srw_oe_array = []
-srw_pp_array = []
+        return PropagationManager.Instance().do_propagation(propagation_parameters=propagation_parameters, handler_name=FresnelSRWNative.HANDLER_NAME)
 
-oe_0=SRWLOptA(_shape='r',
-               _ap_or_ob='a',
-               _Dx=0.0001,
-               _Dy=0.01,
-               _x=0.0,
-               _y=0.0)
-
-pp_oe_0 = [0,0,1.0,0,0,0.2,1.0,1.0,1.0,0,0.0,0.0]
-
-srw_oe_array.append(oe_0)
-srw_pp_array.append(pp_oe_0)
-
-drift_before_oe_1 = SRWLOptD(2.8)
-pp_drift_before_oe_1 = [0,0,1.0,2,0,1.0,1.0,1.0,1.0,0,0.0,0.0]
-
-srw_oe_array.append(drift_before_oe_1)
-srw_pp_array.append(pp_drift_before_oe_1)
-
-acceptance_slits_oe_1=SRWLOptA(_shape='r',
-               _ap_or_ob='a',
-               _Dx=0.02,
-               _Dy=0.0024999895836482406,
-               _x=0.0,
-               _y=0.0)
-
-oe_1 = SRWLOptMirPl(_size_tang=0.5,
-                     _size_sag=0.02,
-                     _ap_shape='r',
-                     _sim_meth=2,
-                     _treat_in_out=1,
-                     _nvx=0,
-                     _nvy=0.9999875000260386,
-                     _nvz=-0.004999979167296481,
-                     _tvx=0,
-                     _tvy=-0.004999979167296481,
-                     _x=0.0,
-                     _y=0.0)
-oe_1.set_dim_sim_meth(_size_tang=0.5,
-                      _size_sag=0.02,
-                      _ap_shape='r',
-                      _sim_meth=2,
-                      _treat_in_out=1)
-oe_1.set_orient(_nvx=0,
-                 _nvy=0.9999875000260386,
-                 _nvz=-0.004999979167296481,
-                 _tvx=0,
-                 _tvy=-0.004999979167296481,
-                 _x=0.0,
-                 _y=0.0)
-
-
-pp_acceptance_slits_oe_1 = [0,0,1.0,0,0,1.0,1.0,1.0,1.0,0,0.0,0.0]
-pp_oe_1 = [0,0,1.0,0,0,1.0,1.0,1.0,1.0,0,0.0,0.0]
-
-srw_oe_array.append(acceptance_slits_oe_1)
-srw_pp_array.append(pp_acceptance_slits_oe_1)
-
-srw_oe_array.append(oe_1)
-srw_pp_array.append(pp_oe_1)
-
-drift_before_oe_2 = SRWLOptD(20.902583)
-pp_drift_before_oe_2 = [0,0,1.0,2,0,1.0,1.0,1.0,1.0,0,0.0,0.0]
-
-srw_oe_array.append(drift_before_oe_2)
-srw_pp_array.append(pp_drift_before_oe_2)
-
-
-oe_3=SRWLOptA(_shape='r',
-               _ap_or_ob='a',
-               _Dx=3e-05,
-               _Dy=7e-05,
-               _x=0.0,
-               _y=0.0)
-
-pp_oe_3 = [0,0,1.0,0,0,0.1,5.0,0.1,5.0,0,0.0,0.0]
-
-srw_oe_array.append(oe_3)
-srw_pp_array.append(pp_oe_3)
-
-drift_before_oe_4 = SRWLOptD(0.15)
-pp_drift_before_oe_4 = [0,0,1.0,2,0,1.0,2.0,1.0,2.0,0,0.0,0.0]
-
-srw_oe_array.append(drift_before_oe_4)
-srw_pp_array.append(pp_drift_before_oe_4)
-
-
-acceptance_slits_oe_5=SRWLOptA(_shape='r',
-               _ap_or_ob='a',
-               _Dx=0.02,
-               _Dy=0.00029999954993170305,
-               _x=0.0,
-               _y=0.0)
-
-oe_5 = SRWLOptMirEl(_size_tang=0.1,
-                     _size_sag=0.02,
-                     _p=50.66798299999999,
-                     _q=0.22100000000000364,
-                     _ang_graz=0.0029999999993150024,
-                     _ap_shape='r',
-                     _sim_meth=2,
-                     _treat_in_out=1,
-                     _nvx=0,
-                     _nvy=0.999995500003377,
-                     _nvz=-0.0029999954993170305,
-                     _tvx=0,
-                     _tvy=-0.0029999954993170305,
-                     _x=0.0,
-                     _y=0.0)
-oe_5.set_dim_sim_meth(_size_tang=0.1,
-                      _size_sag=0.02,
-                      _ap_shape='r',
-                      _sim_meth=2,
-                      _treat_in_out=1)
-oe_5.set_orient(_nvx=0,
-                 _nvy=0.999995500003377,
-                 _nvz=-0.0029999954993170305,
-                 _tvx=0,
-                 _tvy=-0.0029999954993170305,
-                 _x=0.0,
-                 _y=0.0)
-
-
-height_profile_data = srwl_uti_read_data_cols('VKB-LTP_srw.dat',
-                                              _str_sep='\t')
-optTrEr_oe_5 = srwl_opt_setup_surf_height_2d(_height_prof_data=height_profile_data,
-                                                        _ang=0.0029999999993150024,
-                                                        _dim='y',
-                                                        _amp_coef=1.0)
-
-pp_acceptance_slits_oe_5 = [0,0,1.0,0,0,1.0,1.0,1.0,1.0,0,0.0,0.0]
-pp_oe_5 = [0,0,1.0,0,0,1.0,1.0,1.0,1.0,0,0.0,0.0]
-
-srw_oe_array.append(acceptance_slits_oe_5)
-srw_pp_array.append(pp_acceptance_slits_oe_5)
-
-srw_oe_array.append(oe_5)
-srw_pp_array.append(pp_oe_5)
-
-srw_oe_array.append(optTrEr_oe_5)
-srw_pp_array.append([0,0,1.0,0,0,1.0,1.0,1.0,1.0,0,0.0,0.0])
-
-drift_after_oe_5 = SRWLOptD(0.101)
-pp_drift_after_oe_5 = [0,0,1.0,2,0,1.0,2.0,1.0,2.0,0,0.0,0.0]
-
-srw_oe_array.append(drift_after_oe_5)
-srw_pp_array.append(pp_drift_after_oe_5)
-
-acceptance_slits_oe_6=SRWLOptA(_shape='r',
-               _ap_or_ob='a',
-               _Dx=0.00029999954993170305,
-               _Dy=0.02,
-               _x=0.0,
-               _y=0.0)
-
-oe_6 = SRWLOptMirEl(_size_tang=0.1,
-                     _size_sag=0.02,
-                     _p=50.76898299999999,
-                     _q=0.12000000000000455,
-                     _ang_graz=0.0029999999993150024,
-                     _ap_shape='r',
-                     _sim_meth=2,
-                     _treat_in_out=1,
-                     _nvx=-0.999995500003377,
-                     _nvy=0,
-                     _nvz=-0.0029999954993170305,
-                     _tvx=0.0029999954993170305,
-                     _tvy=0,
-                     _x=0.0,
-                     _y=0.0)
-oe_6.set_dim_sim_meth(_size_tang=0.1,
-                      _size_sag=0.02,
-                      _ap_shape='r',
-                      _sim_meth=2,
-                      _treat_in_out=1)
-oe_6.set_orient(_nvx=-0.999995500003377,
-                 _nvy=0,
-                 _nvz=-0.0029999954993170305,
-                 _tvx=0.0029999954993170305,
-                 _tvy=0,
-                 _x=0.0,
-                 _y=0.0)
-
-
-height_profile_data = srwl_uti_read_data_cols('HKB-LTP_srw.dat',
-                                              _str_sep='\t')
-optTrEr_oe_6 = srwl_opt_setup_surf_height_2d(_height_prof_data=height_profile_data,
-                                                        _ang=0.0029999999993150024,
-                                                        _dim='x',
-                                                        _amp_coef=1.0)
-
-pp_acceptance_slits_oe_6 = [0,0,1.0,0,0,1.0,2.0,1.0,2.0,0,0.0,0.0]
-pp_oe_6 = [0,0,1.0,0,0,1.0,1.0,1.0,1.0,0,0.0,0.0]
-
-srw_oe_array.append(acceptance_slits_oe_6)
-srw_pp_array.append(pp_acceptance_slits_oe_6)
-
-srw_oe_array.append(oe_6)
-srw_pp_array.append(pp_oe_6)
-
-srw_oe_array.append(optTrEr_oe_6)
-srw_pp_array.append([0,0,1.0,0,0,1.0,1.0,1.0,1.0,0,0.0,0.0])
-
-drift_before_oe_7 = SRWLOptD(0.12)
-pp_drift_before_oe_7 = [0,0,1.0,1,0,1.0,1.0,1.0,1.0,0,0.0,0.0]
-
-srw_oe_array.append(drift_before_oe_7)
-srw_pp_array.append(pp_drift_before_oe_7)
-
-
-
-'''

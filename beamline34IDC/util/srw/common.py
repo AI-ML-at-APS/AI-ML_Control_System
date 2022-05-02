@@ -52,10 +52,11 @@ from matplotlib import cm
 import numpy
 
 from wofrysrw.propagator.wavefront2D.srw_wavefront import SRWWavefront
-from wofrysrw.util.srw_hdf5 import load_hdf5_2_wfr, save_wfr_2_hdf5
 
 from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
 from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from srxraylib.metrology import dabam
+from orangecontrib.srw.util.srw_util import write_error_profile_file
 
 from beamline34IDC.util.common import Histogram
 from beamline34IDC.util.gaussian_fit import calculate_2D_gaussian_fit
@@ -143,8 +144,40 @@ def save_srw_wavefront(srw_wavefront, file_name="srw_wavefront.dat"):
     out_s.close()
 
 def load_srw_wavefront(file_name="srw_wavefront.dat"):
-    in_s = open(os.path.join(os.getcwd(), file_name, 'rb'))
+    in_s = open(os.path.join(os.getcwd(), file_name), 'rb')
     srw_wavefront = pickle.load(in_s)
     in_s.close()
 
     return srw_wavefront
+
+def write_dabam_file(figure_error_rms=None, dabam_entry_number=20, heigth_profile_file_name="KB.dat", seed=8787):
+    server = dabam.dabam()
+    server.set_input_silent(True)
+    server.set_server(dabam.default_server)
+    server.load(dabam_entry_number)
+
+    input_parameters = DabamInputParameters(dabam_server=server)
+    input_parameters.si_to_user_units = 1000.0
+    input_parameters.center_y = 1
+    input_parameters.modify_y = 2
+    input_parameters.new_length_y = 100.0
+    input_parameters.filler_value_y = 0.0
+    if figure_error_rms is None:
+        input_parameters.renormalize_y = 0
+    else:
+        input_parameters.renormalize_y = 1
+        input_parameters.error_type_y = 0
+        input_parameters.rms_y = 3.5
+    input_parameters.kind_of_profile_x = 0
+    input_parameters.dimension_x = 20.0
+    input_parameters.step_x = 1.0
+    input_parameters.power_law_exponent_beta_x = 2.0
+    input_parameters.montecarlo_seed_x = seed
+    input_parameters.error_type_x = 0
+    input_parameters.rms_x = 0.5
+
+    xx, yy, zz = calculate_dabam_profile(input_parameters)
+
+    write_error_profile_file(zz, xx, yy, heigth_profile_file_name)
+
+    return heigth_profile_file_name
