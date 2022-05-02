@@ -93,23 +93,23 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
             vkb_error_profile_file = write_dabam_file(dabam_entry_number=92, heigth_profile_file_name="VKB-LTP_srw.dat", seed=8787)
             hkb_error_profile_file = write_dabam_file(dabam_entry_number=93, heigth_profile_file_name="HKB-LTP_srw.dat", seed=2345345)
         else:
-            vkb_error_profile_file = "VKB-LTP_shadow.dat"
-            hkb_error_profile_file = "HKB-LTP_shadow.dat"
+            vkb_error_profile_file = "VKB-LTP_srw.dat"
+            hkb_error_profile_file = "HKB-LTP_srw.dat"
 
         self._beamline = SRWBeamline()
 
         # Coherence Slits
-        width = input_features.get_parameter("coh_slits_h_aperture")
-        height = input_features.get_parameter("coh_slits_v_aperture")
-        h_center = input_features.get_parameter("coh_slits_h_center")
-        v_center = input_features.get_parameter("coh_slits_v_center")
+        width    = input_features.get_parameter("coh_slits_h_aperture") * 1e-3 # m
+        height   = input_features.get_parameter("coh_slits_v_aperture") * 1e-3
+        h_center = input_features.get_parameter("coh_slits_h_center") * 1e-3
+        v_center = input_features.get_parameter("coh_slits_v_center") * 1e-3
 
         self._coherence_slits = SRWAperture(boundary_shape=Rectangle(x_left=-0.5 * width + h_center,
                                                                      x_right=0.5 * width + h_center,
                                                                      y_bottom=-0.5 * height + v_center,
                                                                      y_top=0.5 * height + v_center))
 
-        beamline_element = BeamlineElement(optical_element=self._coherence_slits, coordinates=ElementCoordinates())
+        beamline_element = BeamlineElement(optical_element=self._coherence_slits, coordinates=ElementCoordinates(q=0.15))
 
         srw_oe_wavefront_propagation_parameters = WavefrontPropagationParameters(
                                                                  allow_semianalytical_treatment_of_quadratic_phase_term = 0, # Standard
@@ -119,10 +119,18 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
                                                                  vertical_resolution_modification_factor_at_resizing    = 5.0
                                                              )
 
-        self.__beamline.append_beamline_element(beamline_element)
-        self.__beamline.append_wavefront_propagation_parameters(None, None, Where.DRIFT_BEFORE)
-        self.__beamline.append_wavefront_propagation_parameters(srw_oe_wavefront_propagation_parameters, None, Where.OE)
-        self.__beamline.append_wavefront_propagation_parameters(None, None, Where.DRIFT_AFTER)
+        srw_after_wavefront_propagation_parameters = WavefrontPropagationParameters(
+                                                                 allow_semianalytical_treatment_of_quadratic_phase_term = 2, # Standard
+                                                                 horizontal_range_modification_factor_at_resizing       = 1.0,
+                                                                 horizontal_resolution_modification_factor_at_resizing  = 2.0,
+                                                                 vertical_range_modification_factor_at_resizing         = 1.0,
+                                                                 vertical_resolution_modification_factor_at_resizing    = 2.0
+                                                             )
+
+        self._beamline.append_beamline_element(beamline_element)
+        self._beamline.append_wavefront_propagation_parameters(None, None, Where.DRIFT_BEFORE)
+        self._beamline.append_wavefront_propagation_parameters(srw_oe_wavefront_propagation_parameters, None, Where.OE)
+        self._beamline.append_wavefront_propagation_parameters(srw_after_wavefront_propagation_parameters, None, Where.DRIFT_AFTER)
 
         self._initialize_kb(input_features, vkb_error_profile_file, hkb_error_profile_file)
 
@@ -131,8 +139,37 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
     def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): pass
     def restore_input_photon_beam(self): pass
 
-    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None, units=DistanceUnits.MICRON): pass
-    def get_coherence_slits_parameters(self, units=DistanceUnits.MICRON): pass # center x, center z, aperture x, aperture z
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None, units=DistanceUnits.MICRON):
+
+        boundaries = self._coherence_slits._boundary_shape.get_boundaries()
+
+        if units==DistanceUnits.MILLIMETERS: factor = 1e-3
+        elif units==DistanceUnits.MICRON:    factor = 1e-6
+        else: ValueError("Units not recognized")
+
+        coh_slits_h_center = abs(boundaries[1]-boundaries[0]) if coh_slits_h_center is None else factor*coh_slits_h_center
+        coh_slits_v_center = abs(boundaries[3]-boundaries[2]) if coh_slits_v_center is None else factor*coh_slits_v_center
+        coh_slits_h_aperture = 0.5*(boundaries[1]+boundaries[0]) if coh_slits_h_aperture is None else factor*coh_slits_h_aperture
+        coh_slits_v_aperture = 0.5*(boundaries[3]+boundaries[2]) if coh_slits_v_aperture is None else factor*coh_slits_v_aperture
+
+        self._coherence_slits_boundary_shape=Rectangle(x_left=-0.5 * coh_slits_h_aperture + coh_slits_h_center,
+                                                       x_right=0.5 * coh_slits_h_aperture + coh_slits_h_center,
+                                                       y_bottom=-0.5 * coh_slits_v_aperture + coh_slits_v_center,
+                                                       y_top=0.5 * coh_slits_v_aperture + coh_slits_v_center)
+
+    def get_coherence_slits_parameters(self, units=DistanceUnits.MICRON):  # center x, center z, aperture x, aperture z
+        boundaries = self._coherence_slits._boundary_shape.get_boundaries()
+
+        if units == DistanceUnits.MILLIMETERS: factor = 1e3
+        elif units == DistanceUnits.MICRON:    factor = 1e6
+        else: ValueError("Units not recognized")
+
+        coh_slits_h_center = factor * abs(boundaries[1] - boundaries[0])
+        coh_slits_v_center = factor * abs(boundaries[3] - boundaries[2])
+        coh_slits_h_aperture = factor * 0.5 * (boundaries[1] + boundaries[0])
+        coh_slits_v_aperture = factor * 0.5 * (boundaries[3] + boundaries[2])
+
+        return coh_slits_h_center, coh_slits_v_center, coh_slits_h_aperture, coh_slits_v_aperture
 
     def get_photon_beam(self, **kwargs):
         propagation_parameters = PropagationParameters(wavefront=self._input_wavefront.duplicate(), propagation_elements=None)
