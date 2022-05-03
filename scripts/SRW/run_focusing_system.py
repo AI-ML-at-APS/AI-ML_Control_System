@@ -44,21 +44,63 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os
 
-from wofry.propagator.propagator import PropagationManager, WavefrontDimension
-from wofrysrw.propagator.propagators2D.srw_fresnel_native import FresnelSRWNative, SRW_APPLICATION
+from beamline34IDC.simulation.facade import Implementors
+from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
+from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
 
-def initialize_propagator_2D():
-    propagation_manager = PropagationManager.Instance()
+from beamline34IDC.util.srw.common import plot_srw_wavefront_spatial_distribution, load_srw_wavefront
 
-    if not propagation_manager.is_initialized(SRW_APPLICATION):
-        if not propagation_manager.has_propagator(FresnelSRWNative.HANDLER_NAME, WavefrontDimension.TWO):
-            propagation_manager.add_propagator(FresnelSRWNative())
-        propagation_manager.set_initialized(True)
+if __name__ == "__main__":
+    verbose = False
 
-try:
-    initialize_propagator_2D()
-except Exception as e:
-    print("Error while initializing propagators", str(e))
+    os.chdir("../../work_directory")
 
-    raise e
+    input_beam = load_srw_wavefront("primary_optics_system_srw_wavefront.dat")
+
+    # Focusing Optics System -------------------------
+
+    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SRW)
+
+    focusing_system.initialize(input_photon_beam=input_beam, rewrite_height_error_profile_files=False)
+
+    # ----------------------------------------------------------------
+    # perturbation of the incident beam to make adjustements necessary
+
+    focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
+
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, debug_mode=False)
+
+    plot_srw_wavefront_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], title="Initial Beam")
+
+    #--------------------------------------------------
+    # interaction with the beamline
+
+    focusing_system.change_vkb_shape(10, movement=Movement.RELATIVE)
+
+    plot_srw_wavefront_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, debug_mode=False), xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], title="Change V Shape")
+
+    focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
+
+    plot_srw_wavefront_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, debug_mode=False), xrange=[-0.005, 0.005], yrange=None, title="Move V Pitch")
+
+    focusing_system.move_vkb_motor_4_translation(10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+
+    plot_srw_wavefront_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, debug_mode=False), xrange=[-0.005, 0.005], yrange=None, title="Move V Translation")
+
+    #--------------------------------------------------
+
+    focusing_system.change_hkb_shape(50, movement=Movement.RELATIVE)
+
+    plot_srw_wavefront_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, debug_mode=False), xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], title="Change H Shape")
+
+    focusing_system.move_hkb_motor_3_pitch(-0.2, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
+
+    plot_srw_wavefront_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, debug_mode=False), xrange=None, yrange=None, title="Move H Pitch")
+
+    focusing_system.move_hkb_motor_4_translation(20, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+
+    plot_srw_wavefront_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, debug_mode=False), xrange=None, yrange=None, title="Move H Translation")
+
+

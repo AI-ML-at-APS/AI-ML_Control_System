@@ -266,7 +266,7 @@ def write_dabam_file(figure_error_rms=None, dabam_entry_number=20, heigth_profil
         input_parameters.error_type_y = 0
         input_parameters.rms_y = 3.5
     input_parameters.kind_of_profile_x = 0
-    input_parameters.dimension_x = 20.0
+    input_parameters.dimension_x = 50.0
     input_parameters.step_x = 1.0
     input_parameters.power_law_exponent_beta_x = 2.0
     input_parameters.montecarlo_seed_x = seed

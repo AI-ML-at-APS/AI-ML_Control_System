@@ -56,6 +56,7 @@ from wofrysrw.propagator.wavefront2D.srw_wavefront import SRWWavefront
 from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
 from orangecontrib.ml.util.data_structures import DictionaryWrapper
 from srxraylib.metrology import dabam
+from oasys.util.error_profile_util import DabamInputParameters, calculate_dabam_profile, ErrorProfileInputParameters, calculate_heigth_profile
 from orangecontrib.srw.util.srw_util import write_error_profile_file
 
 from beamline34IDC.util.common import Histogram
@@ -76,8 +77,8 @@ def srw_wavefront_get_distribution_info(srw_wavefront, do_gaussian_fit=False):
     pixel_area = (x_array[1] - x_array[0]) * (y_array[1] - y_array[0])
 
     hh = z_array
-    hh_h = hh.sum(axis=1)
-    hh_v = hh.sum(axis=0)
+    hh_h = hh.sum(axis=0)
+    hh_v = hh.sum(axis=1)
     xx = x_array
     yy = y_array
 
@@ -130,9 +131,72 @@ def plot_srw_wavefront_spatial_distribution(srw_wavefront, title="X,Z", xrange=N
     if xrange is None: xrange = [x_array[0], x_array[-1]]
     if yrange is None: yrange = [y_array[0], y_array[-1]]
 
-    plt.imshow(X=z_array, extent=[xrange[0], xrange[1], yrange[0], yrange[1]], cmap=cm.rainbow)
-    plt.xlabel("horizontal direction [mm]")
-    plt.ylabel("vertical direction [mm]")
+    cursor_x = numpy.where(numpy.logical_and(x_array >= xrange[0], x_array <= xrange[1]))
+    cursor_y = numpy.where(numpy.logical_and(y_array >= yrange[0], y_array <= yrange[1]))
+
+    xx = x_array[cursor_x]
+    yy = y_array[cursor_y]
+    hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))]
+
+    hh_h = hh.sum(axis=0)
+    hh_v = hh.sum(axis=1)
+
+    fwhm_h, _, _ = get_fwhm(hh_h, xx)
+    sigma_h = get_sigma(hh_h, xx)
+    fwhm_v, _, _ = get_fwhm(hh_v, yy)
+    sigma_v = get_sigma(hh_v, yy)
+    centroid_h = get_average(hh_h, xx)
+    centroid_v = get_average(hh_v, yy)
+
+    integral_intensity = numpy.sum(hh) * (xx[1] - xx[0]) * (yy[1] - yy[0])
+    peak_intensity = numpy.average(hh[numpy.where(hh >= numpy.max(hh) * 0.90)]),
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [2.5, 1]})
+    fig.set_size_inches(9, 5)
+
+    ax1.imshow(X=hh,
+               extent=[xrange[0], xrange[1], yrange[0], yrange[1]],
+               aspect='auto',
+               cmap=cm.rainbow)
+    ax1.set_title(title)
+    ax1.set_xlabel("horizontal direction [mm]")
+    ax1.set_ylabel("vertical direction [mm]")
+
+    ax2.get_xaxis().set_visible(False)
+    ax2.get_yaxis().set_visible(False)
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
+    ax2.spines['bottom'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+
+    def as_si(x, ndp):
+        s = '{x:0.{ndp:d}e}'.format(x=x, ndp=ndp)
+        m, e = s.split('e')
+        return r'{m:s}\times 10^{{{e:d}}}'.format(m=m, e=int(e))
+
+    textstr = '\n'.join((
+        r'$fwhm(H)=%.3f$ $\mu$m' % (fwhm_h*1e3,),
+        r'$fwhm(V)=%.3f$ $\mu$m' % (fwhm_v*1e3,),
+        r'',
+        r'$\sigma(H)=%.3f$ $\mu$m' % (sigma_h*1e3,),
+        r'$\sigma(V)=%.3f$ $\mu$m' % (sigma_v*1e3,),
+        r'',
+        r'$centroid(H)=%.3f$ $\mu$m' % (centroid_h * 1e3,),
+        r'$centroid(V)=%.3f$ $\mu$m' % (centroid_v * 1e3,),
+        r'',
+        r'$Integral={0:s}$ $ph/s/0.1\%BW$'.format(as_si(integral_intensity[0] if isinstance(integral_intensity, tuple) else integral_intensity,2)),
+        r'$Peak={0:s}$ $ph/s/mm^2/0.1\%BW$'.format(as_si(peak_intensity[0] if isinstance(peak_intensity, tuple) else peak_intensity, 2))
+    ))
+
+    # place a text box in upper left in axes coords
+    ax2.text(0.05, 0.98, textstr, transform=ax2.transAxes, fontsize=10, verticalalignment='top',
+             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+
+    ax2.axhline(y=0.87, xmin=0.05, xmax=1.0, color='black', linestyle='-', linewidth=1)
+    ax2.axhline(y=0.72, xmin=0.05, xmax=1.0, color='black', linestyle='-', linewidth=1)
+    ax2.axhline(y=0.58, xmin=0.05, xmax=1.0, color='black', linestyle='-', linewidth=1)
+
+    plt.tight_layout()
     plt.show()
 
 import pickle
@@ -157,10 +221,10 @@ def write_dabam_file(figure_error_rms=None, dabam_entry_number=20, heigth_profil
     server.load(dabam_entry_number)
 
     input_parameters = DabamInputParameters(dabam_server=server)
-    input_parameters.si_to_user_units = 1000.0
+    input_parameters.si_to_user_units = 1.0
     input_parameters.center_y = 1
     input_parameters.modify_y = 2
-    input_parameters.new_length_y = 100.0
+    input_parameters.new_length_y = 0.1
     input_parameters.filler_value_y = 0.0
     if figure_error_rms is None:
         input_parameters.renormalize_y = 0
@@ -169,8 +233,8 @@ def write_dabam_file(figure_error_rms=None, dabam_entry_number=20, heigth_profil
         input_parameters.error_type_y = 0
         input_parameters.rms_y = 3.5
     input_parameters.kind_of_profile_x = 0
-    input_parameters.dimension_x = 20.0
-    input_parameters.step_x = 1.0
+    input_parameters.dimension_x = 0.05
+    input_parameters.step_x = 0.001
     input_parameters.power_law_exponent_beta_x = 2.0
     input_parameters.montecarlo_seed_x = seed
     input_parameters.error_type_x = 0

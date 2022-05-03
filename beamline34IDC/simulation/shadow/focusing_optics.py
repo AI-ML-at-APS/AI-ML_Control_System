@@ -159,7 +159,7 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         elif units == DistanceUnits.MILLIMETERS: factor = 1.0
         else: raise ValueError("Distance units not recognized")
 
-        round_digit = MotorResolution.getInstance().get_coh_slits_motors_resolution(units=units)
+        round_digit = MotorResolution.getInstance().get_coh_slits_motors_resolution(units=DistanceUnits.MILLIMETERS)
 
         if not coh_slits_h_center   is None: self._coherence_slits._oe.CX_SLIT = numpy.array([round(factor*coh_slits_h_center,   round_digit), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         if not coh_slits_v_center   is None: self._coherence_slits._oe.CZ_SLIT = numpy.array([round(factor*coh_slits_v_center,   round_digit), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -232,15 +232,13 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
     def _get_motor_4_translation(cls, element, units=DistanceUnits.MICRON):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
-        total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + element._oe.X_ROT)
+        pitch_angle = cls._get_motor_3_pitch(element, units=AngularUnits.RADIANS)
 
-        translation = numpy.average([element._oe.OFFY / numpy.sin(total_pitch_angle), element._oe.OFFZ / numpy.cos(total_pitch_angle)])
+        translation = numpy.average([element._oe.OFFY / numpy.sin(pitch_angle), element._oe.OFFZ / numpy.cos(pitch_angle)])
 
-        if units == DistanceUnits.MICRON: translation *= 1e3
-        elif units == DistanceUnits.MILLIMETERS: pass
+        if units == DistanceUnits.MICRON:        return translation*1e3
+        elif units == DistanceUnits.MILLIMETERS: return translation
         else: raise ValueError("Distance units not recognized")
-
-        return translation
 
     @classmethod
     def _get_q_distance(cls, element):
@@ -429,7 +427,7 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_motor_3_pitch(self._vkb, angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=units)[1])
+                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
@@ -439,7 +437,7 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_motor_4_transation(self._vkb, translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=units)[1])
+                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
@@ -449,7 +447,7 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_motor_3_pitch(self._hkb, angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution(units=units)[1])
+                                 round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
@@ -458,7 +456,7 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_motor_4_transation(self._hkb, translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_hkb_motor_4_translation_resolution(units=units)[1])
+                                      round_digit=MotorResolution.getInstance().get_hkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
@@ -472,7 +470,7 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_q_distance(self):
-        return self.__get_q_distance(self._vkb)
+        return self._get_q_distance(self._vkb)
 
         # H-KB -----------------------
 
@@ -531,12 +529,6 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
         return output_beam
 
     # PRIVATE -----------------------
-
-    @classmethod
-    def __get_q_distance(cls, element):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        return element._oe.SIMAG
 
     @classmethod
     def __change_shape(cls, element, q_distance, movement=Movement.ABSOLUTE):
@@ -722,7 +714,7 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
 
     def move_vkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self.__move_motor_1_2_bender(self.__vkb_bender_manager, pos_upstream, None, movement, units,
-                                     round_digit=MotorResolution.getInstance().get_vkb_motor_1_2_bender_resolution(units=units)[1])
+                                     round_digit=MotorResolution.getInstance().get_vkb_motor_1_2_bender_resolution(units=DistanceUnits.MICRON)[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
@@ -732,7 +724,7 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
     
     def move_vkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): 
         self.__move_motor_1_2_bender(self.__vkb_bender_manager, None, pos_downstream, movement, units,
-                                     round_digit=MotorResolution.getInstance().get_vkb_motor_1_2_bender_resolution(units=units)[1])
+                                     round_digit=MotorResolution.getInstance().get_vkb_motor_1_2_bender_resolution(units=DistanceUnits.MICRON)[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
@@ -746,9 +738,9 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_motor_3_pitch(self._vkb[0], angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=units)[1])
+                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
         self._move_motor_3_pitch(self._vkb[1], angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=units)[1])
+                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
@@ -759,9 +751,9 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_motor_4_transation(self._vkb[0], translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=units)[1])
+                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1])
         self._move_motor_4_transation(self._vkb[1], translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=units)[1])
+                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
@@ -774,7 +766,7 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
 
     def move_hkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self.__move_motor_1_2_bender(self.__hkb_bender_manager, pos_upstream, None, movement, units,
-                                     round_digit=MotorResolution.getInstance().get_hkb_motor_1_2_bender_resolution(units=units)[1])
+                                     round_digit=MotorResolution.getInstance().get_hkb_motor_1_2_bender_resolution(units=DistanceUnits.MICRON)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
@@ -783,7 +775,7 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
 
     def move_hkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self.__move_motor_1_2_bender(self.__hkb_bender_manager, None, pos_downstream, movement, units,
-                                     round_digit=MotorResolution.getInstance().get_hkb_motor_1_2_bender_resolution(units=units)[1])
+                                     round_digit=MotorResolution.getInstance().get_hkb_motor_1_2_bender_resolution(units=DistanceUnits.MICRON)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
@@ -795,9 +787,9 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_motor_3_pitch(self._hkb[0], angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution(units=units)[1])
+                                 round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
         self._move_motor_3_pitch(self._hkb[1], angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution(units=units)[1])
+                                 round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
@@ -807,9 +799,9 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_motor_4_transation(self._hkb[0], translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_hkb_motor_4_translation_resolution(units=units)[1])
+                                      round_digit=MotorResolution.getInstance().get_hkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1])
         self._move_motor_4_transation(self._hkb[1], translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_hkb_motor_4_translation_resolution(units=units)[1])
+                                      round_digit=MotorResolution.getInstance().get_hkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 

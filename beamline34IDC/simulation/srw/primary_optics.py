@@ -52,6 +52,8 @@ from syned.beamline.beamline_element import BeamlineElement
 from syned.beamline.shape import Rectangle
 
 from wofry.propagator.propagator import PropagationManager, PropagationParameters
+from wofrysrw.propagator.propagators2D.srw_fresnel_native import SRW_APPLICATION
+from wofrysrw.propagator.propagators2D.srw_propagation_mode import SRWPropagationMode
 
 from wofrysrw.beamline.srw_beamline import SRWBeamline, Where
 from wofrysrw.propagator.wavefront2D.srw_wavefront import WavefrontPropagationParameters
@@ -142,6 +144,8 @@ class __PrimaryOpticsSystem(AbstractPrimaryOptics):
 
 
     def get_photon_beam(self, **kwargs):
+        PropagationManager.Instance().set_propagation_mode(SRW_APPLICATION, SRWPropagationMode.WHOLE_BEAMLINE)
+
         propagation_parameters = PropagationParameters(wavefront=self.__source_wavefront.duplicate(), propagation_elements=None)
         propagation_parameters.set_additional_parameters("working_beamline", self.__beamline) # Propagation mode: WHOLE BEAMLINE
 

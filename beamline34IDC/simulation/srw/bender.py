@@ -44,21 +44,3 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-
-from wofry.propagator.propagator import PropagationManager, WavefrontDimension
-from wofrysrw.propagator.propagators2D.srw_fresnel_native import FresnelSRWNative, SRW_APPLICATION
-
-def initialize_propagator_2D():
-    propagation_manager = PropagationManager.Instance()
-
-    if not propagation_manager.is_initialized(SRW_APPLICATION):
-        if not propagation_manager.has_propagator(FresnelSRWNative.HANDLER_NAME, WavefrontDimension.TWO):
-            propagation_manager.add_propagator(FresnelSRWNative())
-        propagation_manager.set_initialized(True)
-
-try:
-    initialize_propagator_2D()
-except Exception as e:
-    print("Error while initializing propagators", str(e))
-
-    raise e
