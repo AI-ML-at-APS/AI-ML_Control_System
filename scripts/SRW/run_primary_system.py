@@ -67,5 +67,5 @@ if __name__ == "__main__":
 
     save_srw_wavefront(input_beam, "primary_optics_system_srw_wavefront.dat")
 
-    plot_srw_wavefront_spatial_distribution(input_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+    plot_srw_wavefront_spatial_distribution(input_beam, xrange=None, yrange=None, title="Wavefront incident on Coh-Slits")
 
