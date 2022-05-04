@@ -2,7 +2,6 @@ import numpy as np
 from scipy.optimize import curve_fit
 from scipy.optimize import differential_evolution
 
-
 def generalized_1D_gaussian(xdata_tuple: np.ndarray,  # array consisting of 21d points.
                             amplitude: float,
                             center_x: float,

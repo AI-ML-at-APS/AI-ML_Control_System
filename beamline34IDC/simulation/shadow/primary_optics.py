@@ -51,7 +51,7 @@ from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalEl
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 
 from beamline34IDC.simulation.facade.primary_optics_interface import AbstractPrimaryOptics
-from beamline34IDC.util.shadow.common import write_bragg_file, write_reflectivity_file, PreProcessorFiles, TTYInibitor
+from beamline34IDC.util.shadow.common import write_bragg_file, write_reflectivity_file, PreProcessorFiles, TTYInibitor, rotate_axis_system
 
 def shadow_primary_optics_factory_method():
     return __PrimaryOptics()
@@ -201,5 +201,7 @@ class __PrimaryOptics(AbstractPrimaryOptics):
             if not verbose:
                 try: fortran_suppressor.stop()
                 except: pass
+
+        output_beam = rotate_axis_system(output_beam, rotation_angle=180.0)
 
         return output_beam

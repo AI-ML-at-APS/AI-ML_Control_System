@@ -184,7 +184,7 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
 
     # PROTECTED GENERIC MOTOR METHODS
     @classmethod
-    def _move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS, round_digit=4):
+    def _move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS, round_digit=4, invert=False):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
         if units == AngularUnits.MILLIRADIANS: angle = angle * 1e-3
@@ -192,30 +192,32 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         elif units == AngularUnits.RADIANS:    pass
         else: raise ValueError("Angular units not recognized")
 
+        sign = -1 if invert else 1
+
         if movement == Movement.ABSOLUTE:
             if element.orientation_of_reflection_plane == Orientation.LEFT or \
                     element.orientation_of_reflection_plane == Orientation.RIGHT:
                 element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x,
                                                                      shift_y=element.displacement.shift_y,
-                                                                     rotation_x=round(angle, round_digit),
+                                                                     rotation_x=sign*round(angle, round_digit),
                                                                      rotation_y=element.displacement.rotation_y)
             else:
                 element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x,
                                                                      shift_y=element.displacement.shift_y,
                                                                      rotation_x=element.displacement.rotation_x,
-                                                                     rotation_y=round(angle, round_digit))
+                                                                     rotation_y=sign*round(angle, round_digit))
         elif movement == Movement.RELATIVE:
             if element.orientation_of_reflection_plane == Orientation.LEFT or \
                     element.orientation_of_reflection_plane == Orientation.RIGHT:
                 element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x,
                                                                      shift_y=element.displacement.shift_y,
-                                                                     rotation_x=element.displacement.rotation_x + round(angle, round_digit),
+                                                                     rotation_x=element.displacement.rotation_x + sign*round(angle, round_digit),
                                                                      rotation_y=element.displacement.rotation_y)
             else:
                 element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x,
                                                                      shift_y=element.displacement.shift_y,
                                                                      rotation_x=element.displacement.rotation_x,
-                                                                     rotation_y=element.displacement.rotation_y + round(angle, round_digit))
+                                                                     rotation_y=element.displacement.rotation_y + sign*round(angle, round_digit))
         else:  raise ValueError("Movement not recognized")
 
     @classmethod
@@ -253,12 +255,14 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         else:  raise ValueError("Movement not recognized")
 
     @classmethod
-    def _get_motor_3_pitch(cls, element, units=AngularUnits.MILLIRADIANS):
+    def _get_motor_3_pitch(cls, element, units=AngularUnits.MILLIRADIANS, invert=False):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
-        if element.orientation_of_reflection_plane == Orientation.UP or \
-                element.orientation_of_reflection_plane == Orientation.DOWN: pitch_angle = element._angle_radial - element.displacement.rotation_x
-        else:                                                                pitch_angle = element._angle_radial - element.displacement.rotation_y
+        sign = -1 if invert else 1
+
+        if element.orientation_of_reflection_plane == Orientation.LEFT or \
+                element.orientation_of_reflection_plane == Orientation.RIGHT: pitch_angle = element.grazing_angle + sign*element.displacement.rotation_x
+        else:                                                                 pitch_angle = element.grazing_angle + sign*element.displacement.rotation_y
 
         if units == AngularUnits.MILLIRADIANS:  return 1000 * pitch_angle
         elif units == AngularUnits.DEGREES:     return numpy.degrees(pitch_angle)
@@ -437,13 +441,13 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_motor_3_pitch(self._vkb, angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.RADIANS)[1])
+                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.RADIANS)[1], invert=True)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS):
-        return self._get_motor_3_pitch(self._vkb, units)
+        return self._get_motor_3_pitch(self._vkb, units, invert=True)
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_motor_4_transation(self._vkb, translation, movement, units,

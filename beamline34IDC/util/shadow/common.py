@@ -44,24 +44,20 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os
-import numpy
+import os, numpy
 import Shadow
 from Shadow.ShadowTools import write_shadow_surface
 from Shadow.ShadowPreprocessorsXraylib import prerefl, bragg
 from srxraylib.metrology import dabam
-from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
-from oasys.util.error_profile_util import DabamInputParameters, calculate_dabam_profile, ErrorProfileInputParameters, calculate_heigth_profile
+from oasys.util.error_profile_util import DabamInputParameters, calculate_dabam_profile
 from oasys.widgets import congruence
 from orangecontrib.ml.util.mocks import MockWidget
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement, ShadowSource, ShadowOEHistoryItem
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 import scipy.constants as codata
 
-from beamline34IDC.util.common import Histogram
-from beamline34IDC.util.gaussian_fit import calculate_2D_gaussian_fit
+from beamline34IDC.util.common import get_info, plot_2D, Flip, PlotMode, AspectRatio, ColorMap
 
 m2ev = codata.c * codata.h / codata.e
 
@@ -101,51 +97,37 @@ class HybridFailureException(Exception):
     def __init__(self, oe="OE"):
         super().__init__("Hybrid Algorithm failed for " + oe)
 
+
+def __get_arrays(shadow_beam, var_1, var_2, nbins=201, nolost=1, xrange=None, yrange=None):
+    ticket = shadow_beam._beam.histo2(var_1, var_2, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=0)
+
+    return ticket['bin_h_center'], ticket['bin_v_center'], ticket["histogram"]
+
+def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
+    x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins, nolost, xrange, yrange)
+
+    return get_info(x_array, y_array, z_array, None, None, do_gaussian_fit)  # ranges already calculated
+
+def __plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins=201, nolost=1, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
+    if plot_mode in [PlotMode.INTERNAL, PlotMode.BOTH]:
+        x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins, nolost, xrange, yrange)
+
+        plot_2D(x_array, y_array, z_array, title, None, None, int_um="", peak_um="", flip=Flip.BOTH, aspect_ratio=aspect_ratio, color_map=color_map)
+
+    if plot_mode in [PlotMode.NATIVE, PlotMode.BOTH]:
+        Shadow.ShadowTools.plotxy(shadow_beam._beam, var_1, var_2, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
+
 def get_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
-    return __shadow_beam_get_distribution_info(shadow_beam._beam.histo2(1, 3, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange), do_gaussian_fit=do_gaussian_fit)
+    return __get_shadow_beam_distribution(shadow_beam, 1, 3, nbins, nolost, xrange, yrange, do_gaussian_fit)
 
 def get_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
-    return __shadow_beam_get_distribution_info(shadow_beam._beam.histo2(4, 6, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange), do_gaussian_fit=do_gaussian_fit)
+    return __get_shadow_beam_distribution(shadow_beam, 4, 6, nbins, nolost, xrange, yrange, do_gaussian_fit)
 
-def __shadow_beam_get_distribution_info(ticket, do_gaussian_fit=False):
-    ticket['fwhm_h'], ticket['fwhm_quote_h'], ticket['fwhm_coordinates_h'] = get_fwhm(ticket['histogram_h'], ticket['bin_h_center'])
-    ticket['fwhm_v'], ticket['fwhm_quote_v'], ticket['fwhm_coordinates_v'] = get_fwhm(ticket['histogram_v'], ticket['bin_v_center'])
-    ticket['sigma_h'] = get_sigma(ticket['histogram_h'], ticket['bin_h_center'])
-    ticket['sigma_v'] = get_sigma(ticket['histogram_v'], ticket['bin_v_center'])
-    ticket['centroid_h'] = get_average(ticket['histogram_h'], ticket['bin_h_center'])
-    ticket['centroid_v'] = get_average(ticket['histogram_v'], ticket['bin_v_center'])
+def plot_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
+    __plot_shadow_beam_distribution(shadow_beam, 1, 3, nbins, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
 
-    histogram = ticket["histogram"].T # must be transposed to avoid confusion
-
-    peak_intensity = numpy.average(histogram[numpy.where(histogram >= numpy.max(histogram) * 0.90)])
-    integral_intensity = numpy.sum(histogram)
-
-    hh = ticket['bin_h_center']
-    vv = ticket['bin_v_center']
-
-    if do_gaussian_fit:
-        try:    gaussian_fit = calculate_2D_gaussian_fit(data_2D=histogram, x=hh, y=vv)
-        except: gaussian_fit = {}
-    else:       gaussian_fit = {}
-
-    return Histogram(hh, vv, histogram), \
-           DictionaryWrapper(
-               h_sigma=ticket['sigma_h'],
-               h_fwhm=ticket['fwhm_h'],
-               h_centroid=ticket['centroid_h'],
-               v_sigma=ticket['sigma_v'],
-               v_fwhm=ticket['fwhm_v'],
-               v_centroid=ticket['centroid_v'],
-               integral_intensity=integral_intensity,
-               peak_intensity=peak_intensity,
-               gaussian_fit=gaussian_fit
-    )
-
-def plot_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, title="X,Z", xrange=None, yrange=None):
-    return Shadow.ShadowTools.plotxy(shadow_beam._beam, 1, 3, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
-
-def plot_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, title="X',Z'", xrange=None, yrange=None):
-    return Shadow.ShadowTools.plotxy(shadow_beam._beam, 4, 6, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
+def plot_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, title="X',Z'", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
+    __plot_shadow_beam_distribution(shadow_beam, 4, 6, nbins, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
 
 def save_source_beam(source_beam, file_name="source_beam.dat"):
     source_beam.getOEHistory(0)._shadow_source_start.src.write("parameters_start_" + file_name)

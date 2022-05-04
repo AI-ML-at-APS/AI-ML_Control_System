@@ -186,7 +186,7 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
 
     # PROTECTED GENERIC MOTOR METHODS
     @classmethod
-    def _move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS, round_digit=4):
+    def _move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS, round_digit=4, invert=False):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
         if units == AngularUnits.MILLIRADIANS: angle = numpy.degrees(angle * 1e-3)
@@ -194,19 +194,23 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         elif units == AngularUnits.RADIANS:    angle = numpy.degrees(angle)
         else: raise ValueError("Angular units not recognized")
 
-        if movement == Movement.ABSOLUTE:   element._oe.X_ROT = round(angle - (90 - element._oe.T_INCIDENCE), round_digit)
-        elif movement == Movement.RELATIVE: element._oe.X_ROT += round(angle, round_digit)
+        sign = -1 if invert else 1
+
+        if movement == Movement.ABSOLUTE:   element._oe.X_ROT =  sign*round(angle - (90 - element._oe.T_INCIDENCE), round_digit)
+        elif movement == Movement.RELATIVE: element._oe.X_ROT += sign*round(angle, round_digit)
         else:  raise ValueError("Movement not recognized")
 
     @classmethod
-    def _move_motor_4_transation(cls, element, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON, round_digit=3):
+    def _move_motor_4_transation(cls, element, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON, round_digit=3, invert=False):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
         if units == DistanceUnits.MICRON: translation *= 1e-3
         elif units == DistanceUnits.MILLIMETERS: pass
         else: raise ValueError("Distance units not recognized")
 
-        total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + element._oe.X_ROT)
+        sign = -1 if invert else 1
+
+        total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + sign*element._oe.X_ROT)
 
         if movement == Movement.ABSOLUTE:
             element._oe.OFFY = round(translation, round_digit) * numpy.sin(total_pitch_angle)
@@ -218,10 +222,12 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
             raise ValueError("Movement not recognized")
 
     @classmethod
-    def _get_motor_3_pitch(cls, element, units=AngularUnits.MILLIRADIANS):
+    def _get_motor_3_pitch(cls, element, units=AngularUnits.MILLIRADIANS, invert=False):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
-        angle = 90 - element._oe.T_INCIDENCE + element._oe.X_ROT
+        sign = -1 if invert else 1
+
+        angle = (90 - element._oe.T_INCIDENCE) + sign*element._oe.X_ROT
 
         if units == AngularUnits.MILLIRADIANS:  return 1000 * numpy.radians(angle)
         elif units == AngularUnits.DEGREES:     return angle
@@ -229,10 +235,10 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         else: raise ValueError("Angular units not recognized")
 
     @classmethod
-    def _get_motor_4_translation(cls, element, units=DistanceUnits.MICRON):
+    def _get_motor_4_translation(cls, element, units=DistanceUnits.MICRON, invert=False):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
-        pitch_angle = cls._get_motor_3_pitch(element, units=AngularUnits.RADIANS)
+        pitch_angle = cls._get_motor_3_pitch(element, units=AngularUnits.RADIANS, invert=invert)
 
         translation = numpy.average([element._oe.OFFY / numpy.sin(pitch_angle), element._oe.OFFZ / numpy.cos(pitch_angle)])
 
@@ -427,23 +433,23 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_motor_3_pitch(self._vkb, angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
+                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1], invert=True)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS):
-        return self._get_motor_3_pitch(self._vkb, units)
+        return self._get_motor_3_pitch(self._vkb, units, invert=True)
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_motor_4_transation(self._vkb, translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1])
+                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1], invert=True)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_4_translation(self, units=DistanceUnits.MICRON):
-        return self._get_motor_4_translation(self._vkb, units)
+        return self._get_motor_4_translation(self._vkb, units, invert=True)
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_motor_3_pitch(self._hkb, angle, movement, units,
@@ -738,29 +744,29 @@ class __BendableFocusingOptics(_FocusingOpticsCommon):
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_motor_3_pitch(self._vkb[0], angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
+                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1], invert=True)
         self._move_motor_3_pitch(self._vkb[1], angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
+                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1], invert=True)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS):
         # motor 3/4 are identical for the two sides
-        return self._get_motor_3_pitch(self._vkb[0], units)
+        return self._get_motor_3_pitch(self._vkb[0], units, invert=True)
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_motor_4_transation(self._vkb[0], translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1])
+                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1], invert=True)
         self._move_motor_4_transation(self._vkb[1], translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1])
+                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1], invert=True)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_4_translation(self, units=DistanceUnits.MICRON):
         # motor 3/4 are identical for the two sides
-        return self._get_motor_4_translation(self._vkb[0], units)
+        return self._get_motor_4_translation(self._vkb[0], units, invert=True)
 
     # ---- H-KB ---------------------------------------------------------
 
