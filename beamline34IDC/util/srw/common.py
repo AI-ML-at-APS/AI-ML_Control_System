@@ -154,10 +154,7 @@ def plot_srw_wavefront_spatial_distribution(srw_wavefront, title="X,Z", xrange=N
     fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [2.5, 1]})
     fig.set_size_inches(9, 5)
 
-    ax1.imshow(X=hh,
-               extent=[xrange[0], xrange[1], yrange[0], yrange[1]],
-               aspect='auto',
-               cmap=cm.rainbow)
+    ax1.imshow(X=hh, extent=[xrange[0], xrange[1], yrange[0], yrange[1]], aspect='auto', cmap=cm.rainbow)
     ax1.set_title(title)
     ax1.set_xlabel("horizontal direction [mm]")
     ax1.set_ylabel("vertical direction [mm]")
@@ -189,9 +186,7 @@ def plot_srw_wavefront_spatial_distribution(srw_wavefront, title="X,Z", xrange=N
     ))
 
     # place a text box in upper left in axes coords
-    ax2.text(0.05, 0.98, textstr, transform=ax2.transAxes, fontsize=10, verticalalignment='top',
-             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-
+    ax2.text(0.05, 0.98, textstr, transform=ax2.transAxes, fontsize=10, verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
     ax2.axhline(y=0.87, xmin=0.05, xmax=1.0, color='black', linestyle='-', linewidth=1)
     ax2.axhline(y=0.72, xmin=0.05, xmax=1.0, color='black', linestyle='-', linewidth=1)
     ax2.axhline(y=0.58, xmin=0.05, xmax=1.0, color='black', linestyle='-', linewidth=1)

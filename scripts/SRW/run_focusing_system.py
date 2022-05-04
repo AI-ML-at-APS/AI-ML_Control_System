@@ -74,6 +74,8 @@ if __name__ == "__main__":
 
     plot_srw_wavefront_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], title="Initial Beam")
 
+    exit(0)
+
     #--------------------------------------------------
     # interaction with the beamline
 
