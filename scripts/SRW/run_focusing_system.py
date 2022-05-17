@@ -56,7 +56,7 @@ from beamline34IDC.util.common import PlotMode, AspectRatio, ColorMap
 if __name__ == "__main__":
     verbose = False
 
-    plot_mode = PlotMode.INTERNAL
+    plot_mode = PlotMode.NATIVE
     aspect_ratio = AspectRatio.AUTO
     color_map = ColorMap.GRAY
 

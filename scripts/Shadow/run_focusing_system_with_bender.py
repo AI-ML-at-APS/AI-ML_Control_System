@@ -52,7 +52,7 @@ from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnit
 
 from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
-
+from beamline34IDC.util.wrappers import PlotMode
 if __name__ == "__main__":
     verbose = False
 
@@ -88,17 +88,17 @@ if __name__ == "__main__":
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed)
 
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01], plot_mode=PlotMode.NATIVE)
 
     #--------------------------------------------------
     # interaction with the beamline
 
-    focusing_system.move_vkb_motor_2_bender(pos_downstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_2_bender(pos_downstream=-12.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+                                          xrange=[-0.01, 0.01], yrange=[-0.01, 0.01], plot_mode=PlotMode.NATIVE)
 
     focusing_system.move_vkb_motor_1_bender(pos_upstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
