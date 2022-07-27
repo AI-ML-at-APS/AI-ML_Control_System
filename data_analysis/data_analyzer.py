@@ -7,7 +7,7 @@ from single_shot_data import extract_shape_from_measurement_file
 root_dir = "/Users/lrebuffi/Library/CloudStorage/Box-Box/Luca_Documents"
 if not os.path.exists(root_dir): root_dir = "/Users/lrebuffi/Box Sync/Luca_Documents"
 
-home_dir = os.path.join(root_dir, "Simulations/APS/34-ID-C/Beamtime/Jul14-2022/bender_calibration")
+home_dir = os.path.join(root_dir, "AI-ML/34-ID-C/Beamtime/Jul14-2022/bender_calibration")
 
 directories = {"horizontal" : [os.path.join(home_dir, "slits_full", "horizontal"), os.path.join(home_dir, "slits_150_150", "horizontal")],
                "vertical"   : [os.path.join(home_dir, "slits_full", "vertical"),   os.path.join(home_dir, "slits_150_150", "vertical")]}
