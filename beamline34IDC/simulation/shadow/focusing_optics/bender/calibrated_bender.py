@@ -50,113 +50,43 @@ import os, numpy
 from oasys.widgets import congruence
 from orangecontrib.ml.util.mocks import MockWidget
 
-from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl.double_rod_bendable_ellispoid_mirror_bl import calculate_W0, calculate_taper_factor
+from oasys.widgets.abstract.benders.double_rod_bendable_ellispoid_mirror import calculate_W0, calculate_taper_factor, calculate_bender_correction
 
 from beamline34IDC.util.initializer import get_registered_ini_instance
 
-class BenderManager():
-    F_upstream = 0.0
-    F_downstream = 0.0
-    C_upstream = 0.0
-    C_downstream = 0.0
-    K_upstream = 0.0
-    K_downstream = 0.0
+class CalibratedBenderManager():
+    __P0_upstream = 0.0
+    __P0_downstream = 0.0
+    __P1_upstream = 0.0
+    __P1_downstream = 0.0
 
-    F_upstream_previous = 0.0
-    F_downstream_previous = 0.0
+    q_upstream_previous   = 0.0
+    q_downstream_previous = 0.0
 
     def __init__(self, kb_upstream, kb_downstream, verbose=False):
-        self._kb_upstream = kb_upstream
+        self._kb_upstream   = kb_upstream
         self._kb_downstream = kb_downstream
         self._verbose = verbose
 
     def load_calibration(self, key):
-        ini = get_registered_ini_instance(application_name="benders calibration")
+        ini = get_registered_ini_instance(application_name="benders calibration 2")
 
-        # F = C + KX, with X in micron
-        #
-        # -> K = (Fa-Fb)/(Xa-Xb)
-        # -> C = F - KX
-
-        pos_1_focus = ini.get_float_from_ini(key, "motor_1_focus")
-        pos_2_focus = ini.get_float_from_ini(key, "motor_2_focus")
-        pos_1_out_focus = ini.get_float_from_ini(key, "motor_1_+4mm")
-        pos_2_out_focus = ini.get_float_from_ini(key, "motor_2_+4mm")
-
-        force_1_focus = ini.get_float_from_ini(key, "force_1_focus")
-        force_2_focus = ini.get_float_from_ini(key, "force_2_focus")
-        force_1_out_focus = ini.get_float_from_ini(key, "force_1_+4mm")
-        force_2_out_focus = ini.get_float_from_ini(key, "force_2_+4mm")
-
-        self.K_upstream   = (force_1_focus - force_1_out_focus) / (pos_1_focus - pos_1_out_focus)
-        self.K_downstream = (force_2_focus - force_2_out_focus) / (pos_2_focus - pos_2_out_focus)
-
-        self.C_upstream   = force_1_focus - self.K_upstream * pos_1_focus
-        self.C_downstream = force_2_focus - self.K_downstream * pos_2_focus
-
-        self.F_upstream   = force_1_focus
-        self.F_downstream = force_2_focus
+        self.__P0_upstream   = ini.get_float_from_ini(key, "p0_up")
+        self.__P0_downstream = ini.get_float_from_ini(key, "p0_down")
+        self.__P1_upstream   = ini.get_float_from_ini(key, "p1_up")
+        self.__P1_downstream = ini.get_float_from_ini(key, "p1_down")
 
         if self._verbose: print(key + ", focus bender positions from calibration (up, down): ", self.get_positions())
 
     def get_positions(self):
-        return (self.F_upstream - self.C_upstream) / self.K_upstream, (self.F_downstream - self.C_downstream) / self.K_downstream
+        return (self._kb_upstream.get_q_distance - self.__P1_upstream)/self.__P0_upstream, \
+               (self._kb_dowstream.get_q_distance - self.__P1_downstream)/self.__P0_downstream
 
     def set_positions(self, pos_upstream, pos_downstream):
-        self.F_upstream   = self.C_upstream + pos_upstream * self.K_upstream
-        self.F_downstream = self.C_downstream + pos_downstream * self.K_downstream
-
-        try:
-            self.set_q_from_forces(self.F_upstream, self.F_downstream)
-        except:
-            if self._verbose: print("Q values not initialized")
-
-    def set_q_from_forces(self, F_upstream, F_downstream):
-        # f  = R0 * sin(alpha) / 2
-        # (1/p + 1/q) = 2 / R0 * sin(alpha)
-        # 1/R0 = (1/p + 1/q) * sin(alpha) / 2
-        #
-        # -> M0 = E * I0 / R0 = E * I0 * (1/p + 1/q) * sin(alpha) / 2
-        #
-        # F{u/d}   = M0 / r ] * [1 -+ eta * (L + 2r) / 2*q]
-        # F{u/d}   = [E * I0 * (1/p + 1/q) * sin(alpha) / 2r ] * [1 -+ eta * (L + 2r) / 2*q]
-
-        #  2 * F{u/d} * r / (E * I0 * sin(alpha)) = (1/p + 1/q) * [1 -+ (1/q) eta * (L + 2r) / 2]
-
-        # A = 2 * r / (E * I0 * sin(alpha))
-        # B = eta * (L + 2r) / 2
-
-        # A * F{u/d} = (1/p + 1/q) * (1 -+ B * (1/q) ] = 1/p -+ (B/p) * (1/q) + (1/q) -+ B *(1/q**2)
-        # -+ B (1/q**2) + (1 -+ B/p)* (1/q) - A * F{u/d} + 1/p = 0
-
-        def calculate_q(kb, F, side=0):
-            grazing_angle = numpy.radians(90 - kb.incidence_angle_respect_to_normal)
-            p = kb.object_side_focal_distance
-
-            A = 2 * kb.r / (kb.E * I0 * numpy.sin(grazing_angle))
-            B = kb.eta * (L + 2 * kb.r) / 2
-
-            if side == 0:
-                sign = -1  # upstream
-            else:
-                sign = 1
-
-            a = sign * B
-            b = 1 + sign * B / p
-            c = 1 / p - A * F
-
-            gamma = (-b + numpy.sqrt(b ** 2 - 4 * a * c)) / (2 * a)
-
-            return 1 / gamma
-
-        L = self._kb_upstream.dim_y_plus + self._kb_upstream.dim_y_minus
-        W0 = self._kb_upstream.W0 / self._kb_upstream.workspace_units_to_mm
-        I0 = (W0 * self._kb_upstream.h ** 3) / 12
-
-        self._kb_upstream.set_q_distance(calculate_q(self._kb_upstream, F_upstream, side=0))
+        self._kb_upstream.set_q_distance(self.__P0_upstream*pos_upstream + self.__P1_upstream)
         self._kb_upstream.calculate_bender_quantities()
 
-        self._kb_downstream.set_q_distance(calculate_q(self._kb_downstream, F_downstream, side=1))
+        self._kb_downstream.set_q_distance(self.__P0_downstream*pos_downstream + self.__P1_downstream)
         self._kb_downstream.calculate_bender_quantities()
 
     def remove_bender_files(self):
@@ -207,8 +137,6 @@ class _KBMockWidget(MockWidget):
     W2_out = 0.0
     alpha = 0.0
     W0 = 0.0
-    F_upstream = 0.0  # output of bender calculation
-    F_downstream = 0.0  # output of bender calculation
 
     def __init__(self, shadow_oe, verbose=False, workspace_units=2, label=None):
         super(_KBMockWidget, self).__init__(verbose=verbose, workspace_units=workspace_units)
@@ -242,6 +170,9 @@ class _KBMockWidget(MockWidget):
         self.shadow_oe._oe.SIMAG = q_distance
         self.image_side_focal_distance = q_distance
 
+    def get_q_distance(self):
+        return self.shadow_oe._oe.SIMAG
+
     def calculate_bender_quantities(self):
         W1 = self.dim_x_plus + self.dim_x_minus
         L = self.dim_y_plus + self.dim_y_minus
@@ -263,9 +194,9 @@ class VKBMockWidget(_KBMockWidget):
 
     def initialize_bender_parameters(self, label):
         self.output_file_name_full = congruence.checkFileName(("" if label is None else (label + "_")) + "VKB_bender_profile.dat")
-        self.R0 = 146.36857
+        self.R0  = 146.36857
         self.eta = 0.39548
-        self.W2 = 21.0
+        self.W2  = 21.0
 
 
 class HKBMockWidget(_KBMockWidget):
@@ -274,6 +205,6 @@ class HKBMockWidget(_KBMockWidget):
 
     def initialize_bender_parameters(self, label):
         self.output_file_name_full = congruence.checkFileName(("" if label is None else (label + "_")) + "HKB_bender_profile.dat")
-        self.R0 = 79.57061
+        self.R0  = 79.57061
         self.eta = 0.36055
-        self.W2 = 2.5
+        self.W2  = 2.5

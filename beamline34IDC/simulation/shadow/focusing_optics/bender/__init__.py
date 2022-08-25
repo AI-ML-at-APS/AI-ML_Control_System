@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------- #
-# Copyright (c) 2021, UChicago Argonne, LLC. All rights reserved.         #
+# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2021. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -44,14 +44,3 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-
-from beamline34IDC.simulation.shadow.focusing_optics.ideal_focusing_optics import IdealFocusingOptics
-from beamline34IDC.simulation.shadow.focusing_optics.two_oe_bendable_focusing_optics import TwoOEBendableFocusingOptics
-from beamline34IDC.simulation.shadow.focusing_optics.calibrated_bendable_focusing_optics import CalibratedBendableFocusingOptics
-def shadow_focusing_optics_factory_method(**kwargs):
-    try:
-        if kwargs["bender"] == 1: return TwoOEBendableFocusingOptics()
-        if kwargs["bender"] == 2: return CalibratedBendableFocusingOptics()
-        else:                        return IdealFocusingOptics()
-    except: return IdealFocusingOptics()
-
