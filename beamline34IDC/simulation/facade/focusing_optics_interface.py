@@ -50,9 +50,9 @@ from orangecontrib.ml.util.data_structures import DictionaryWrapper
 from beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, DistanceUnits
 
 def get_default_input_features(): # units: mm, mrad and micron for the bender
-    return DictionaryWrapper(coh_slits_h_aperture=0.15,#0.03,
+    return DictionaryWrapper(coh_slits_h_aperture=0.03,
                              coh_slits_h_center=0.0,
-                             coh_slits_v_aperture=0.15,#0.07,
+                             coh_slits_v_aperture=0.07,
                              coh_slits_v_center=0.0,
                              vkb_q_distance=231,
                              vkb_motor_4_translation=0.0,

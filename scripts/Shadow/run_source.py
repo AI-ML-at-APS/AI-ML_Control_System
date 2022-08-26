@@ -62,7 +62,7 @@ if __name__ == "__main__":
     source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.GAUSSIAN)
     source.initialize(n_rays=500000, random_seed=3245345, storage_ring=StorageRing.APS)
 
-    source.set_angular_acceptance_from_aperture(aperture=[0.2, 0.2], distance=50500)
+    source.set_angular_acceptance_from_aperture(aperture=[0.05, 0.09], distance=50500)
     source.set_energy(energy=[9998.0, 10002.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
 
     source_beam = source.get_source_beam(verbose=verbose)
