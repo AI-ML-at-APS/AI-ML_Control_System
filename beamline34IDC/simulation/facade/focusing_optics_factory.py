@@ -46,7 +46,7 @@
 # ----------------------------------------------------------------------- #
 
 from beamline34IDC.simulation.facade import Implementors
-from beamline34IDC.simulation.shadow.focusing_optics import shadow_focusing_optics_factory_method
+from beamline34IDC.simulation.shadow.focusing_optics_factory import shadow_focusing_optics_factory_method
 from beamline34IDC.simulation.srw.focusing_optics import srw_focusing_optics_factory_method
 
 from beamline34IDC.util.initializer import register_ini_instance, AlreadyInitializedError, IniMode

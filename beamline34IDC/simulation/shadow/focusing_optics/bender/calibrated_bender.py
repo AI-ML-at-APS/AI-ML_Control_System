@@ -50,7 +50,7 @@ import os, numpy
 from oasys.widgets import congruence
 from orangecontrib.ml.util.mocks import MockWidget
 
-from oasys.widgets.abstract.benders.double_rod_bendable_ellispoid_mirror import calculate_W0, calculate_taper_factor, calculate_bender_correction
+from oasys.widgets.abstract.benders.double_rod_bendable_ellispoid_mirror import calculate_W0, calculate_taper_factor, BenderDataToPlot
 
 from beamline34IDC.util.initializer import get_registered_ini_instance
 
@@ -63,7 +63,8 @@ class CalibratedBenderManager():
     q_upstream_previous   = 0.0
     q_downstream_previous = 0.0
 
-    def __init__(self, kb_upstream, kb_downstream, verbose=False):
+    def __init__(self, kb_raytracing, kb_upstream, kb_downstream, verbose=False):
+        self._kb_raytracing = kb_raytracing
         self._kb_upstream   = kb_upstream
         self._kb_downstream = kb_downstream
         self._verbose = verbose
@@ -78,9 +79,12 @@ class CalibratedBenderManager():
 
         if self._verbose: print(key + ", focus bender positions from calibration (up, down): ", self.get_positions())
 
+    def get_q_distances(self):
+        return self._kb_upstream.get_q_distance(), self._kb_downstream.get_q_distance()
+
     def get_positions(self):
-        return (self._kb_upstream.get_q_distance - self.__P1_upstream)/self.__P0_upstream, \
-               (self._kb_dowstream.get_q_distance - self.__P1_downstream)/self.__P0_downstream
+        return (self._kb_upstream.get_q_distance() - self.__P1_upstream)/self.__P0_upstream, \
+               (self._kb_downstream.get_q_distance() - self.__P1_downstream)/self.__P0_downstream
 
     def set_positions(self, pos_upstream, pos_downstream):
         self._kb_upstream.set_q_distance(self.__P0_upstream*pos_upstream + self.__P1_upstream)
@@ -88,6 +92,8 @@ class CalibratedBenderManager():
 
         self._kb_downstream.set_q_distance(self.__P0_downstream*pos_downstream + self.__P1_downstream)
         self._kb_downstream.calculate_bender_quantities()
+
+        self._kb_raytracing.set_q_distance(0.5*(self._kb_upstream.get_q_distance() + self._kb_downstream.get_q_distance()))
 
     def remove_bender_files(self):
         if os.path.exists(self._kb_upstream.output_file_name_full):   os.remove(self._kb_upstream.output_file_name_full)
