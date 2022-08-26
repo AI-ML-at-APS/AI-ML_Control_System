@@ -71,6 +71,6 @@ if __name__ == "__main__":
 
     save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
 
-    plot_shadow_beam_spatial_distribution(input_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+    plot_shadow_beam_spatial_distribution(input_beam, xrange=[-0.2, 0.2], yrange=[-0.2, 0.2])
 
     clean_up()

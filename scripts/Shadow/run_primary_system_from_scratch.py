@@ -65,8 +65,8 @@ if __name__ == "__main__":
     # Source -------------------------
     source = source_factory_method(implementor=implementor, kind_of_source=kind_of_source)
     source.initialize(storage_ring=StorageRing.APS, n_rays=500000, random_seed=3245345)
-    source.set_angular_acceptance_from_aperture(aperture=[0.05, 0.09], distance=50500)
-    source.set_energy(energy_range=[4999.0, 5001.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
+    source.set_angular_acceptance_from_aperture(aperture=[0.2, 0.2], distance=50500)
+    source.set_energy(energy=[9998.0, 10002.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
 
     # Primary Optics System -------------------------
     primary_system = primary_optics_factory_method(implementor=implementor)

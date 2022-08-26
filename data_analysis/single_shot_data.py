@@ -68,8 +68,8 @@ def extract_shape_from_measurement_file(file_name, data_set=DataSet.ABSOLUTE_PHA
         x     = x[index_i : index_f]
         shape = shape[index_i : index_f]
 
-    if   data_set == DataSet.ABSOLUTE_PHASE:          shape -= numpy.min(shape)
-    elif data_set == DataSet.DISPLACEMENT: shape -= numpy.average(shape)
+    if   data_set == DataSet.ABSOLUTE_PHASE: shape -= numpy.min(shape)
+    elif data_set == DataSet.DISPLACEMENT:   shape -= numpy.average(shape)
 
     x_ctrl       = numpy.linspace(x[0], x[-1], num=n_spline_points)
     shape_spline = spline_fit(x, shape, x_ctrl)
