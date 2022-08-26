@@ -120,7 +120,7 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
         vkb.SIMAG = -999
         vkb.SSOUR = 50667.983
         vkb.THETA = vkb_pitch_angle_shadow
-        vkb.T_IMAGE = 101.0
+        vkb.T_IMAGE = 108.0
         vkb.T_INCIDENCE = vkb_pitch_angle_shadow
         vkb.T_REFLECTION = vkb_pitch_angle_shadow
         vkb.T_SOURCE = 150.0
@@ -157,9 +157,9 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
         hkb.RWIDX1 = 24.75
         hkb.RWIDX2 = 24.75
         hkb.SIMAG = -999
-        hkb.SSOUR = 50768.983
+        hkb.SSOUR = 50775.983
         hkb.THETA = hkb_pitch_angle_shadow
-        hkb.T_IMAGE = 120.0
+        hkb.T_IMAGE = 123.0
         hkb.T_INCIDENCE = hkb_pitch_angle_shadow
         hkb.T_REFLECTION = hkb_pitch_angle_shadow
         hkb.T_SOURCE = 0.0
@@ -307,8 +307,8 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
 
         q_upstream, q_downstream = bender_manager.get_q_distances()
 
-        if not (q_upstream == bender_manager.q_upstream_previous) and (q_downstream == bender_manager.q_downstream_previous) and \
-                os.path.exists(upstream_widget.output_file_name_full) and os.path.exists(downstream_widget.output_file_name_full):
+        if (q_upstream != bender_manager.q_upstream_previous) or (q_downstream != bender_manager.q_downstream_previous) or \
+                (not os.path.exists(upstream_widget.output_file_name_full)) or (not os.path.exists(downstream_widget.output_file_name_full)):
             upstream_bender_data   = calculate_bender(upstream_widget)
             downstream_bender_data = calculate_bender(downstream_widget)
 
