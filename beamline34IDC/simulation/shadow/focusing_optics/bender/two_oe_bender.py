@@ -48,9 +48,9 @@
 import os, numpy
 
 from oasys.widgets import congruence
-from orangecontrib.ml.util.mocks import MockWidget
-
 from oasys.widgets.abstract.benders.double_rod_bendable_ellispoid_mirror import calculate_W0, calculate_taper_factor
+
+from orangecontrib.ml.util.mocks import MockWidget
 
 from beamline34IDC.util.initializer import get_registered_ini_instance
 
