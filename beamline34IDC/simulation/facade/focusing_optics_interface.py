@@ -58,14 +58,14 @@ def get_default_input_features(): # units: mm, mrad and micron for the bender
                              vkb_motor_4_translation=0.0,
                              vkb_motor_3_pitch_angle=0.003,
                              vkb_motor_3_delta_pitch_angle=0.0,
-                             vkb_motor_1_bender_position=138.0,#142.5,
-                             vkb_motor_2_bender_position=243.5, #299.5,
+                             vkb_motor_1_bender_position=144.0, #138.0,#142.5,
+                             vkb_motor_2_bender_position=231.5, #243.5, #299.5,
                              hkb_q_distance=123,
                              hkb_motor_4_translation=0.0,
                              hkb_motor_3_pitch_angle=0.003,
                              hkb_motor_3_delta_pitch_angle=0.0,
                              hkb_motor_1_bender_position=215.5,#250.0515,
-                             hkb_motor_2_bender_position=110.5 #157.0341
+                             hkb_motor_2_bender_position=112.5 #157.0341
                              )
 
 class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):

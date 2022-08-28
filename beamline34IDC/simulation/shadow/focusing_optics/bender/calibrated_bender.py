@@ -86,6 +86,10 @@ class CalibratedBenderManager():
         return (self._kb_upstream.get_q_distance() - self.__P1_upstream)/self.__P0_upstream, \
                (self._kb_downstream.get_q_distance() - self.__P1_downstream)/self.__P0_downstream
 
+    def get_position_for_focus(self, q_distance):
+        return (q_distance - self.__P1_upstream)/self.__P0_upstream, \
+               (q_distance - self.__P1_downstream)/self.__P0_downstream
+
     def set_positions(self, pos_upstream, pos_downstream):
         self._kb_upstream.set_q_distance(self.__P0_upstream*pos_upstream + self.__P1_upstream)
         self._kb_upstream.calculate_bender_quantities()
