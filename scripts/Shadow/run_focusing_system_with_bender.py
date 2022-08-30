@@ -45,10 +45,12 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os
+import sys
 
 from beamline34IDC.simulation.facade import Implementors
 from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
 from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
+from beamline34IDC.simulation.facade.focusing_optics_interface import get_default_input_features
 from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
 from beamline34IDC.util.wrappers import PlotMode
@@ -66,11 +68,27 @@ if __name__ == "__main__":
 
     focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW, bender=2)
 
+    input_features = get_default_input_features()
+
+    #input_features.set_parameter("coh_slits_h_aperture", 0.15)
+    #input_features.set_parameter("coh_slits_v_aperture", 0.15)
+    #input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
+    #input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
+    #input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
+    #input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
+
+    input_features.set_parameter("coh_slits_h_aperture", 0.03)
+    input_features.set_parameter("coh_slits_v_aperture", 0.07)
+    input_features.set_parameter("vkb_motor_1_bender_position", 141.5)
+    input_features.set_parameter("vkb_motor_2_bender_position", 236.5)
+    input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
+    input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
+
+
     focusing_system.initialize(input_photon_beam=input_beam,
+                               input_features=input_features,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
-
-
 
     print("Initial V-KB bender positions and q (up, down) ",
           focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON),
@@ -88,9 +106,9 @@ if __name__ == "__main__":
 
     focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
 
-    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed)
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01], plot_mode=PlotMode.NATIVE)
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.INTERNAL)
 
     #--------------------------------------------------
     # interaction with the beamline
@@ -99,15 +117,17 @@ if __name__ == "__main__":
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.01, 0.01], yrange=[-0.01, 0.01], plot_mode=PlotMode.NATIVE)
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed),
+                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.INTERNAL)
 
     focusing_system.move_vkb_motor_1_bender(pos_upstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed),
+                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.INTERNAL)
+
+    sys.exit(0)
 
     focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
 

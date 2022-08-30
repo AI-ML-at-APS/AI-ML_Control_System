@@ -334,7 +334,7 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
             z_bender_correction = raytracing_mirror_profile-raytracing_ideal_profile
 
             ST.write_shadow_surface(z_bender_correction.T, numpy.round(upstream_bender_data.x, 6), numpy.round(upstream_bender_data.y, 6), raytracing_widget.output_file_name_full)
-
+            '''
             from matplotlib import cm
             from matplotlib import pyplot as plt
 
@@ -351,7 +351,7 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
 
             axis.plot_surface(x_to_plot, y_to_plot, z_to_plot, rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
             plt.show()
-
+            '''
         raytracing_widget.shadow_oe._oe.F_RIPPLE = 1
         raytracing_widget.shadow_oe._oe.F_G_S = 2
         raytracing_widget.shadow_oe._oe.FILE_RIP = bytes(raytracing_widget.output_file_name_full, 'utf-8')

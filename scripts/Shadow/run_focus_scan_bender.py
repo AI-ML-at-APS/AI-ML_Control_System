@@ -44,15 +44,36 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os
+import os, numpy
+import sys
 
 from beamline34IDC.simulation.facade import Implementors
 from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
+from beamline34IDC.facade.focusing_optics_interface import Movement, DistanceUnits
+from beamline34IDC.simulation.facade.focusing_optics_interface import get_default_input_features
 
-from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
+from beamline34IDC.util.shadow.common import get_shadow_beam_spatial_distribution, plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
 from beamline34IDC.util.wrappers import PlotMode
+
+from matplotlib import cm
+from matplotlib import pyplot as plt
+
+def plot_3D(xx, yy, zz, label):
+
+    figure = plt.figure(figsize=(10, 7))
+    figure.patch.set_facecolor('white')
+
+    axis = figure.add_subplot(111, projection='3d')
+    axis.set_zlabel(label + " [mm]")
+    axis.set_xlabel("Abs pos up [mm]")
+    axis.set_ylabel("Abs pos down [mm]")
+
+    x_to_plot, y_to_plot = numpy.meshgrid(xx, yy)
+
+    axis.plot_surface(x_to_plot, y_to_plot, zz, rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
+    plt.show()
+
 
 if __name__ == "__main__":
     verbose = False
@@ -67,7 +88,16 @@ if __name__ == "__main__":
 
     focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW, bender=2)
 
+    input_features = get_default_input_features()
+    input_features.set_parameter("coh_slits_h_aperture", 0.03)
+    input_features.set_parameter("coh_slits_v_aperture", 0.07)
+    input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
+    input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
+    input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
+    input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
+
     focusing_system.initialize(input_photon_beam=input_beam,
+                               input_features=input_features,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
@@ -84,42 +114,76 @@ if __name__ == "__main__":
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01], plot_mode=PlotMode.NATIVE)
+    v_pos_up   = focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON)
+    v_pos_down = focusing_system.get_vkb_motor_2_bender(units=DistanceUnits.MICRON)
+    h_pos_up   = focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON)
+    h_pos_down = focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON)
 
-    pos_up   = focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON)
-    pos_down = focusing_system.get_vkb_motor_2_bender(units=DistanceUnits.MICRON)
+    n_points = 31
+    rel_pos = [-15, 15]
 
-    for i in range(-10, 11):
-        focusing_system.move_vkb_motor_1_bender(pos_upstream=pos_up+i,   movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON)
-        focusing_system.move_vkb_motor_2_bender(pos_downstream=pos_down+i, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON)
+    v_abs_pos_up   = numpy.linspace(rel_pos[0], rel_pos[1], n_points) + v_pos_up
+    v_abs_pos_down = numpy.linspace(rel_pos[0], rel_pos[1], n_points) + v_pos_down
+    h_abs_pos_up   = numpy.linspace(rel_pos[0], rel_pos[1], n_points) + h_pos_up
+    h_abs_pos_down = numpy.linspace(rel_pos[0], rel_pos[1], n_points) + h_pos_down
 
-        plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed),
-                                              xrange=[-0.01, 0.01], yrange=[-0.01, 0.01], plot_mode=PlotMode.NATIVE)
+    sigma_v = numpy.zeros((len(v_abs_pos_up), len(v_abs_pos_down)))
+    fwhm_v  = numpy.zeros((len(v_abs_pos_up), len(v_abs_pos_down)))
+    sigma_h = numpy.zeros((len(h_abs_pos_up), len(h_abs_pos_down)))
+    fwhm_h  = numpy.zeros((len(h_abs_pos_up), len(h_abs_pos_down)))
 
-        print("V-KB Relative movement: " + str(i),
-              focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON),
-              focusing_system.get_vkb_motor_2_bender(units=DistanceUnits.MICRON),
-              focusing_system.get_vkb_q_distance())
+    positions_v = numpy.zeros((2, n_points))
+    positions_v[0, :] = v_abs_pos_up
+    positions_v[1, :] = v_abs_pos_down
+    positions_h = numpy.zeros((2, n_points))
+    positions_h[0, :] = h_abs_pos_up
+    positions_h[1, :] = h_abs_pos_down
+    with open("positions_v.npy", 'wb') as f: numpy.save(f, positions_v, allow_pickle=False)
+    with open("positions_h.npy", 'wb') as f: numpy.save(f, positions_h, allow_pickle=False)
 
-    focusing_system.move_vkb_motor_1_bender(pos_upstream=-10,  movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
-    focusing_system.move_vkb_motor_2_bender(pos_downstream=10, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    for i in range(n_points):
+        focusing_system.move_vkb_motor_1_bender(pos_upstream=v_abs_pos_up[i],
+                                                movement=Movement.ABSOLUTE,
+                                                units=DistanceUnits.MICRON)
+        focusing_system.move_hkb_motor_1_bender(pos_upstream=h_abs_pos_up[i],
+                                                movement=Movement.ABSOLUTE,
+                                                units=DistanceUnits.MICRON)
 
-    pos_up   = focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON)
-    pos_down = focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON)
+        for j in range(n_points):
+            focusing_system.move_vkb_motor_2_bender(pos_downstream=v_abs_pos_down[j],
+                                                    movement=Movement.ABSOLUTE,
+                                                    units=DistanceUnits.MICRON)
+            focusing_system.move_hkb_motor_2_bender(pos_downstream=h_abs_pos_down[j],
+                                                    movement=Movement.ABSOLUTE,
+                                                    units=DistanceUnits.MICRON)
 
-    for i in range(-10, 11):
-        focusing_system.move_hkb_motor_1_bender(pos_upstream=pos_up+i,   movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON)
-        focusing_system.move_hkb_motor_2_bender(pos_downstream=pos_down+i, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON)
+            try:
+                _, dict = get_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose,
+                                                                                               near_field_calculation=True,
+                                                                                               debug_mode=False,
+                                                                                               random_seed=random_seed),
+                                                               nbins=201, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
 
-        plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed),
-                                              xrange=[-0.01, 0.01], yrange=[-0.01, 0.01], plot_mode=PlotMode.NATIVE)
+                sigma_v[i, j] = dict.get_parameter("v_sigma")
+                fwhm_v[i, j]  = dict.get_parameter("v_fwhm")
+                sigma_h[i, j] = dict.get_parameter("h_sigma")
+                fwhm_h[i, j]  = dict.get_parameter("h_fwhm")
+            except:
+                pass
 
-        print("H-KB Relative movement: " + str(i),
-              focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON),
-              focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON),
-              focusing_system.get_hkb_q_distance())
+            #print("V-KB absolute movement (U,D): " + str(abs_pos_up[i]) + "," + str(abs_pos_down[j]),
+            #      focusing_system.get_vkb_q_distance())
 
-    focusing_system.move_hkb_motor_1_bender(pos_upstream=-10,  movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
-    focusing_system.move_hkb_motor_2_bender(pos_downstream=10, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+        print("Percentage completed: " + str(round(100*(1+i)*n_points / n_points**2, 2)))
+
+    with open("sigma_v.npy", 'wb') as f: numpy.save(f, sigma_v, allow_pickle=False)
+    with open("fwhm_v.npy", 'wb')  as f: numpy.save(f, fwhm_v, allow_pickle=False)
+    with open("sigma_h.npy", 'wb') as f: numpy.save(f, sigma_h, allow_pickle=False)
+    with open("fwhm_h.npy", 'wb')  as f: numpy.save(f, fwhm_h, allow_pickle=False)
+
+    plot_3D(v_abs_pos_up, v_abs_pos_down, sigma_v, "Sigma (V)")
+    plot_3D(h_abs_pos_up, h_abs_pos_down, sigma_h, "Sigma (H)")
+    plot_3D(v_abs_pos_up, v_abs_pos_down, fwhm_v, "FWHM (V)")
+    plot_3D(h_abs_pos_up, h_abs_pos_down, fwhm_h, "FWHM (H)")
 
     clean_up()
