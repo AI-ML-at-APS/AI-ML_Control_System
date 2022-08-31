@@ -97,7 +97,7 @@ class CalibratedBenderManager():
         self._kb_downstream.set_q_distance(self.__P0_downstream*pos_downstream + self.__P1_downstream)
         self._kb_downstream.calculate_bender_quantities()
 
-        self._kb_raytracing.set_q_distance(0.5*(self._kb_upstream.get_q_distance() + self._kb_downstream.get_q_distance()))
+        if not self._kb_raytracing is None: self._kb_raytracing.set_q_distance(0.5*(self._kb_upstream.get_q_distance() + self._kb_downstream.get_q_distance()))
 
     def remove_bender_files(self):
         if os.path.exists(self._kb_upstream.output_file_name_full):   os.remove(self._kb_upstream.output_file_name_full)

@@ -49,7 +49,7 @@ import os.path
 import numpy
 import Shadow
 
-from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement
+from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement, ShadowBeam
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 
 from beamline34IDC.util.shadow.common import HybridFailureException, rotate_axis_system, get_hybrid_input_parameters
@@ -72,14 +72,16 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
 
         super().initialize(input_photon_beam, input_features, **kwargs)
 
-        self.__vkb_bender_manager = CalibratedBenderManager(kb_upstream=VKBMockWidget(self._vkb[0], verbose=True, label="Upstream"),
+        self.__vkb_bender_manager = CalibratedBenderManager(kb_raytracing=None,
+                                                            kb_upstream=VKBMockWidget(self._vkb[0], verbose=True, label="Upstream"),
                                                             kb_downstream=VKBMockWidget(self._vkb[1], verbose=True, label="Downstream"))
         self.__vkb_bender_manager.load_calibration("V-KB")
         self.__vkb_bender_manager.set_positions(input_features.get_parameter("vkb_motor_1_bender_position"),
                                                 input_features.get_parameter("vkb_motor_2_bender_position"))
         self.__vkb_bender_manager.remove_bender_files()
 
-        self.__hkb_bender_manager = CalibratedBenderManager(kb_upstream=HKBMockWidget(self._hkb[0], verbose=True, label="Upstream"),
+        self.__hkb_bender_manager = CalibratedBenderManager(kb_raytracing=None,
+                                                            kb_upstream=HKBMockWidget(self._hkb[0], verbose=True, label="Upstream"),
                                                             kb_downstream=HKBMockWidget(self._hkb[1], verbose=True, label="Downstream"))
         self.__hkb_bender_manager.load_calibration("H-KB")
         self.__hkb_bender_manager.set_positions(input_features.get_parameter("hkb_motor_1_bender_position"),
@@ -114,7 +116,7 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
         vkb_up.SIMAG = -999
         vkb_up.SSOUR = 50667.983
         vkb_up.THETA = vkb_pitch_angle_shadow
-        vkb_up.T_IMAGE = 101.0
+        vkb_up.T_IMAGE = 108.0
         vkb_up.T_INCIDENCE = vkb_pitch_angle_shadow
         vkb_up.T_REFLECTION = vkb_pitch_angle_shadow
         vkb_up.T_SOURCE = 150.0
@@ -145,7 +147,7 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
         vkb_down.SIMAG = -999
         vkb_down.SSOUR = 50667.983
         vkb_down.THETA = vkb_pitch_angle_shadow
-        vkb_down.T_IMAGE = 101.0
+        vkb_down.T_IMAGE = 108.0
         vkb_down.T_INCIDENCE = vkb_pitch_angle_shadow
         vkb_down.T_REFLECTION = vkb_pitch_angle_shadow
         vkb_down.T_SOURCE = 150.0
@@ -182,9 +184,9 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
         hkb_up.RWIDX1 = 24.75
         hkb_up.RWIDX2 = 24.75
         hkb_up.SIMAG = -999
-        hkb_up.SSOUR = 50768.983
+        hkb_up.SSOUR = 50775.983
         hkb_up.THETA = hkb_pitch_angle_shadow
-        hkb_up.T_IMAGE = 120.0
+        hkb_up.T_IMAGE = 123.0
         hkb_up.T_INCIDENCE = hkb_pitch_angle_shadow
         hkb_up.T_REFLECTION = hkb_pitch_angle_shadow
         hkb_up.T_SOURCE = 0.0
@@ -214,9 +216,9 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
         hkb_down.RWIDX1 = 24.75
         hkb_down.RWIDX2 = 24.75
         hkb_down.SIMAG = -999
-        hkb_down.SSOUR = 50768.983
+        hkb_down.SSOUR = 50775.983
         hkb_down.THETA = hkb_pitch_angle_shadow
-        hkb_down.T_IMAGE = 120.0
+        hkb_down.T_IMAGE = 123.0
         hkb_down.T_INCIDENCE = hkb_pitch_angle_shadow
         hkb_down.T_REFLECTION = hkb_pitch_angle_shadow
         hkb_down.T_SOURCE = 0.0
@@ -396,13 +398,13 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
     # PRIVATE METHODS
 
     def __trace_kb(self, bender_manager, input_beam, widget_class_name, oe_name, remove_lost_rays):
-        upstream_widget = bender_manager._kb_upstream
+        upstream_widget   = bender_manager._kb_upstream
         downstream_widget = bender_manager._kb_downstream
 
-        upstream_oe = upstream_widget.shadow_oe.duplicate()
+        upstream_oe   = upstream_widget.shadow_oe.duplicate()
         downstream_oe = downstream_widget.shadow_oe.duplicate()
 
-        upstream_oe._oe.RLEN1 = 0.0  # no positive part
+        upstream_oe._oe.RLEN1   = 0.0  # no positive part
         downstream_oe._oe.RLEN2 = 0.0  # no negative part
 
         # trace both sides separately and get the beams:
@@ -432,23 +434,24 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
             if do_calculation:
                 widget.shadow_oe._oe.FILE_RIP = bytes(widget.ms_defect_file_name, 'utf-8')  # restore original error profile
 
-                apply_bender_surface(widget=widget, shadow_oe=widget.shadow_oe, input_beam=input_beam)
+                apply_bender_surface(widget=widget, shadow_oe=widget.shadow_oe)
             else:
                 widget.shadow_oe._oe.F_RIPPLE = 1
                 widget.shadow_oe._oe.F_G_S = 2
                 widget.shadow_oe._oe.FILE_RIP = bytes(widget.output_file_name_full, 'utf-8')
 
-        if (bender_manager.F_upstream == bender_manager.F_upstream_previous) and (bender_manager.F_downstream == bender_manager.F_downstream_previous) and \
-                os.path.exists(upstream_widget.output_file_name_full) and os.path.exists(downstream_widget.output_file_name_full):
-            # trace both the beam on the whole bender widget
-            calculate_bender(input_beam, upstream_widget, do_calculation=False)
-            calculate_bender(input_beam, downstream_widget, do_calculation=False)
-        else:
+        q_upstream, q_downstream = bender_manager.get_q_distances()
+
+        if (q_upstream != bender_manager.q_upstream_previous) or (q_downstream != bender_manager.q_downstream_previous) or \
+                (not os.path.exists(upstream_widget.output_file_name_full)) or (not os.path.exists(downstream_widget.output_file_name_full)):            # trace both the beam on the whole bender widget
             calculate_bender(input_beam, upstream_widget)
             calculate_bender(input_beam, downstream_widget)
+        else:
+            calculate_bender(input_beam, upstream_widget, do_calculation=False)
+            calculate_bender(input_beam, downstream_widget, do_calculation=False)
 
-        bender_manager.F_upstream_previous = bender_manager.F_upstream
-        bender_manager.F_downstream_previous = bender_manager.F_downstream
+        bender_manager.q_upstream_previous   = q_upstream
+        bender_manager.q_downstream_previous = q_downstream
 
         # Redo raytracing with the bender correction as error profile
         return self._trace_oe(input_beam=input_beam,

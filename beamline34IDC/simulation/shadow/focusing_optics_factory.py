@@ -47,7 +47,7 @@
 
 from beamline34IDC.simulation.shadow.focusing_optics.ideal_focusing_optics import IdealFocusingOptics
 from beamline34IDC.simulation.shadow.focusing_optics.two_oe_bendable_focusing_optics import TwoOEBendableFocusingOptics
-from beamline34IDC.simulation.shadow.focusing_optics.calibrated_bendable_focusing_optics import CalibratedBendableFocusingOptics
+from beamline34IDC.simulation.shadow.focusing_optics.one_oe_bendable_focusing_optics import CalibratedBendableFocusingOptics
 def shadow_focusing_optics_factory_method(**kwargs):
     try:
         if kwargs["bender"] == 1: return TwoOEBendableFocusingOptics()

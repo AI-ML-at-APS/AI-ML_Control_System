@@ -309,18 +309,12 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
 
         if (q_upstream != bender_manager.q_upstream_previous) or (q_downstream != bender_manager.q_downstream_previous) or \
                 (not os.path.exists(upstream_widget.output_file_name_full)) or (not os.path.exists(downstream_widget.output_file_name_full)):
-            upstream_bender_data   = calculate_bender(upstream_widget)
-            downstream_bender_data = calculate_bender(downstream_widget)
+            upstream_bender_data      = calculate_bender(upstream_widget)
+            downstream_bender_data    = calculate_bender(downstream_widget)
 
-            upstream_mirror_profile   = upstream_bender_data.z_bender_correction + upstream_bender_data.ideal_profile
-            downstream_mirror_profile = downstream_bender_data.z_bender_correction + downstream_bender_data.ideal_profile
-
-            dim_y = len(upstream_bender_data.y)
-
-            raytracing_mirror_profile = numpy.zeros(upstream_mirror_profile.shape)
-
-            raytracing_mirror_profile[:, 0:dim_y] = upstream_mirror_profile[:, 0:dim_y]
-            raytracing_mirror_profile[:, dim_y:]  = downstream_mirror_profile[:, dim_y:]
+            dim_x     = len(upstream_bender_data.x)
+            dim_y     = len(upstream_bender_data.y)
+            separator = int(dim_y/2)
 
             ideal_profile = ideal_height_profile(y=upstream_bender_data.y,
                                                  p=raytracing_widget.object_side_focal_distance,
@@ -328,10 +322,17 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
                                                  grazing_angle=numpy.radians(90 - raytracing_widget.incidence_angle_respect_to_normal))
             ideal_profile -= numpy.min(ideal_profile)
 
-            raytracing_ideal_profile = numpy.zeros(upstream_mirror_profile.shape)
-            for i in range(raytracing_ideal_profile.shape[0]): raytracing_ideal_profile[i, :] = numpy.copy(ideal_profile)
+            upstream_bender_correction_profile   = ideal_profile - upstream_bender_data.bender_profile
+            downstream_bender_correction_profile = ideal_profile - downstream_bender_data.bender_profile
 
-            z_bender_correction = raytracing_mirror_profile-raytracing_ideal_profile
+            bender_correction_profile = numpy.zeros(dim_y)
+            bender_correction_profile[0:separator] = upstream_bender_correction_profile[0:separator]
+            bender_correction_profile[separator:]  = downstream_bender_correction_profile[separator:]
+
+            z_bender_correction = numpy.zeros((dim_x, dim_y))
+            for i in range(z_bender_correction.shape[0]): z_bender_correction[i, :] = numpy.copy(bender_correction_profile)
+
+            z_bender_correction += upstream_bender_data.z_figure_error
 
             ST.write_shadow_surface(z_bender_correction.T, numpy.round(upstream_bender_data.x, 6), numpy.round(upstream_bender_data.y, 6), raytracing_widget.output_file_name_full)
             '''
@@ -352,6 +353,7 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
             axis.plot_surface(x_to_plot, y_to_plot, z_to_plot, rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
             plt.show()
             '''
+
         raytracing_widget.shadow_oe._oe.F_RIPPLE = 1
         raytracing_widget.shadow_oe._oe.F_G_S = 2
         raytracing_widget.shadow_oe._oe.FILE_RIP = bytes(raytracing_widget.output_file_name_full, 'utf-8')

@@ -68,16 +68,10 @@ if __name__ == "__main__":
 
     # Focusing Optics System -------------------------
 
-    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW, bender=2)
+    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW,
+                                                     bender=2)
 
     input_features = get_default_input_features()
-
-    #input_features.set_parameter("coh_slits_h_aperture", 0.15)
-    #input_features.set_parameter("coh_slits_v_aperture", 0.15)
-    #input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
-    #input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
-    #input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
-    #input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
 
     input_features.set_parameter("coh_slits_h_aperture", 0.15)
     input_features.set_parameter("coh_slits_v_aperture", 0.15)
@@ -109,33 +103,28 @@ if __name__ == "__main__":
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    ticket = focnew(output_beam._beam)
-    print("FocNew (X,Z): ", ticket["x_waist"], ticket["z_waist"])
-
     plot_shadow_beam_spatial_distribution(output_beam, nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
-
 
     sys.exit(0)
 
     #--------------------------------------------------
     # interaction with the beamline
 
-    focusing_system.move_vkb_motor_2_bender(pos_downstream=-12.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_2_bender(pos_downstream=-15.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.INTERNAL)
+                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
 
-    focusing_system.move_vkb_motor_1_bender(pos_upstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_1_bender(pos_upstream=-15.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("VKB Q", focusing_system.get_vkb_q_distance())
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.INTERNAL)
+                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
 
-    sys.exit(0)
-
+    '''
     focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
@@ -145,16 +134,24 @@ if __name__ == "__main__":
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
-
+    '''
     #--------------------------------------------------
 
-    focusing_system.move_hkb_motor_1_bender(pos_upstream=5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_1_bender(pos_upstream=-15.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     print("HKB Q", focusing_system.get_hkb_q_distance())
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
+                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
 
+    focusing_system.move_hkb_motor_2_bender(pos_downstream=-15.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+
+    print("HKB Q", focusing_system.get_hkb_q_distance())
+
+    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
+                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
+
+    '''
     focusing_system.move_hkb_motor_3_pitch(0.2, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
@@ -164,7 +161,7 @@ if __name__ == "__main__":
 
     plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
                                           xrange=None, yrange=None)
-
+    '''
     # ----------------------------------------------------------------
 
     clean_up()

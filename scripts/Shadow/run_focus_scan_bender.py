@@ -52,9 +52,8 @@ from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory
 from beamline34IDC.facade.focusing_optics_interface import Movement, DistanceUnits
 from beamline34IDC.simulation.facade.focusing_optics_interface import get_default_input_features
 
-from beamline34IDC.util.shadow.common import get_shadow_beam_spatial_distribution, plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
+from beamline34IDC.util.shadow.common import get_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
-from beamline34IDC.util.wrappers import PlotMode
 
 from matplotlib import cm
 from matplotlib import pyplot as plt
@@ -89,8 +88,8 @@ if __name__ == "__main__":
     focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW, bender=2)
 
     input_features = get_default_input_features()
-    input_features.set_parameter("coh_slits_h_aperture", 0.03)
-    input_features.set_parameter("coh_slits_v_aperture", 0.07)
+    input_features.set_parameter("coh_slits_h_aperture", 0.15)
+    input_features.set_parameter("coh_slits_v_aperture", 0.15)
     input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
     input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
     input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
@@ -121,6 +120,8 @@ if __name__ == "__main__":
 
     n_points = 31
     rel_pos = [-15, 15]
+    xrange = [-0.005, 0.005]
+    yrange = [-0.005, 0.005]
 
     v_abs_pos_up   = numpy.linspace(rel_pos[0], rel_pos[1], n_points) + v_pos_up
     v_abs_pos_down = numpy.linspace(rel_pos[0], rel_pos[1], n_points) + v_pos_down
@@ -140,6 +141,11 @@ if __name__ == "__main__":
     positions_h[1, :] = h_abs_pos_down
     with open("positions_v.npy", 'wb') as f: numpy.save(f, positions_v, allow_pickle=False)
     with open("positions_h.npy", 'wb') as f: numpy.save(f, positions_h, allow_pickle=False)
+
+    min_v = +numpy.inf
+    pos_min_v = None
+    min_h = +numpy.inf
+    pos_min_h = None
 
     for i in range(n_points):
         focusing_system.move_vkb_motor_1_bender(pos_upstream=v_abs_pos_up[i],
@@ -162,17 +168,25 @@ if __name__ == "__main__":
                                                                                                near_field_calculation=True,
                                                                                                debug_mode=False,
                                                                                                random_seed=random_seed),
-                                                               nbins=201, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+                                                               nbins=201, xrange=xrange, yrange=yrange)
 
-                sigma_v[i, j] = dict.get_parameter("v_sigma")
+                s_v = dict.get_parameter("v_sigma")
+                s_h = dict.get_parameter("h_sigma")
+
+                if s_v < min_v:
+                    min_v = s_v
+                    pos_min_v = [v_abs_pos_up[i], v_abs_pos_down[j]]
+
+                if s_h < min_h:
+                    min_h = s_h
+                    pos_min_h = [h_abs_pos_up[i], h_abs_pos_down[j]]
+
+                sigma_v[i, j] = s_v
                 fwhm_v[i, j]  = dict.get_parameter("v_fwhm")
-                sigma_h[i, j] = dict.get_parameter("h_sigma")
+                sigma_h[i, j] = s_h
                 fwhm_h[i, j]  = dict.get_parameter("h_fwhm")
             except:
                 pass
-
-            #print("V-KB absolute movement (U,D): " + str(abs_pos_up[i]) + "," + str(abs_pos_down[j]),
-            #      focusing_system.get_vkb_q_distance())
 
         print("Percentage completed: " + str(round(100*(1+i)*n_points / n_points**2, 2)))
 
@@ -180,6 +194,9 @@ if __name__ == "__main__":
     with open("fwhm_v.npy", 'wb')  as f: numpy.save(f, fwhm_v, allow_pickle=False)
     with open("sigma_h.npy", 'wb') as f: numpy.save(f, sigma_h, allow_pickle=False)
     with open("fwhm_h.npy", 'wb')  as f: numpy.save(f, fwhm_h, allow_pickle=False)
+
+    print("V-KB: sigma min " + str(min_v) + " found at (U,D): " + str(pos_min_v))
+    print("H-KB: sigma min " + str(min_h) + " found at (U,D): " + str(pos_min_h))
 
     plot_3D(v_abs_pos_up, v_abs_pos_down, sigma_v, "Sigma (V)")
     plot_3D(h_abs_pos_up, h_abs_pos_down, sigma_h, "Sigma (H)")
