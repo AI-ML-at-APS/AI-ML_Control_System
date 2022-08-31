@@ -50,7 +50,7 @@ import os, numpy
 from oasys.widgets import congruence
 from orangecontrib.ml.util.mocks import MockWidget
 
-from oasys.widgets.abstract.benders.double_rod_bendable_ellispoid_mirror import calculate_W0, calculate_taper_factor, BenderDataToPlot
+from oasys.widgets.abstract.benders.double_rod_bendable_ellispoid_mirror import calculate_W0, calculate_taper_factor
 
 from beamline34IDC.util.initializer import get_registered_ini_instance
 
@@ -122,8 +122,9 @@ class _KBMockWidget(MockWidget):
     bender_bin_y = 200
 
     E = 131000
-    h = 10
-    r = 10
+    h = 10.0
+    r = 14.62
+    l = 70.18
     output_file_name_full = "mirror_bender.dat"
     which_length = 1  # 0 - full length, 1 - partial length
     optimized_length = 72.0  # only optically active surface
@@ -193,7 +194,7 @@ class _KBMockWidget(MockWidget):
 
         if not q is None:
             self.alpha = calculate_taper_factor(W1, self.W2, L, p, q, grazing_angle)
-            self.W0 = calculate_W0(W1, self.alpha, L, p, q, grazing_angle)  # W at the center
+            self.W0    = calculate_W0(W1, self.alpha, L, p, q, grazing_angle)  # W at the center
         else:
             self.W0 = (self.W2 + W1) / 2
 
@@ -204,8 +205,8 @@ class VKBMockWidget(_KBMockWidget):
 
     def initialize_bender_parameters(self, label):
         self.output_file_name_full = congruence.checkFileName(("" if label is None else (label + "_")) + "VKB_bender_profile.dat")
-        self.R0  = 146.36857
-        self.eta = 0.39548
+        self.R0  = 152.76
+        self.eta = 0.3257
         self.W2  = 21.0
 
 
@@ -215,6 +216,6 @@ class HKBMockWidget(_KBMockWidget):
 
     def initialize_bender_parameters(self, label):
         self.output_file_name_full = congruence.checkFileName(("" if label is None else (label + "_")) + "HKB_bender_profile.dat")
-        self.R0  = 79.57061
-        self.eta = 0.36055
+        self.R0  = 81.63
+        self.eta = 0.329
         self.W2  = 2.5

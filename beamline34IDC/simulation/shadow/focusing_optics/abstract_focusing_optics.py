@@ -92,7 +92,7 @@ class FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
             vkb_error_profile_file = write_dabam_file(dabam_entry_number=92, heigth_profile_file_name="VKB-LTP_shadow.dat", seed=8787)
             hkb_error_profile_file = write_dabam_file(dabam_entry_number=93, heigth_profile_file_name="HKB-LTP_shadow.dat", seed=2345345)
         else:
-            vkb_error_profile_file = "VKB-LTP_shadow.dat"
+            vkb_error_profile_file = "VKB-LTP-2_shadow.dat"
             hkb_error_profile_file = "HKB-LTP_shadow.dat"
 
         coherence_slits = Shadow.OE()

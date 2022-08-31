@@ -55,6 +55,8 @@ from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distributi
 from beamline34IDC.util import clean_up
 from beamline34IDC.util.wrappers import PlotMode
 
+from Shadow.ShadowTools import focnew
+
 if __name__ == "__main__":
     verbose = False
 
@@ -77,13 +79,12 @@ if __name__ == "__main__":
     #input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
     #input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
 
-    input_features.set_parameter("coh_slits_h_aperture", 0.03)
-    input_features.set_parameter("coh_slits_v_aperture", 0.07)
-    input_features.set_parameter("vkb_motor_1_bender_position", 141.5)
-    input_features.set_parameter("vkb_motor_2_bender_position", 236.5)
+    input_features.set_parameter("coh_slits_h_aperture", 0.15)
+    input_features.set_parameter("coh_slits_v_aperture", 0.15)
+    input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
+    input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
     input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
     input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
-
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                input_features=input_features,
@@ -108,7 +109,13 @@ if __name__ == "__main__":
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.INTERNAL)
+    ticket = focnew(output_beam._beam)
+    print("FocNew (X,Z): ", ticket["x_waist"], ticket["z_waist"])
+
+    plot_shadow_beam_spatial_distribution(output_beam, nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
+
+
+    sys.exit(0)
 
     #--------------------------------------------------
     # interaction with the beamline
