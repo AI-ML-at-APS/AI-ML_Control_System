@@ -52,6 +52,6 @@ def shadow_focusing_optics_factory_method(**kwargs):
     try:
         if kwargs["bender"] == 1: return TwoOEBendableFocusingOptics()
         if kwargs["bender"] == 2: return CalibratedBendableFocusingOptics()
-        else:                        return IdealFocusingOptics()
+        else:                     return IdealFocusingOptics()
     except: return IdealFocusingOptics()
 

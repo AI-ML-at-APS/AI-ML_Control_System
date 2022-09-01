@@ -59,8 +59,6 @@ def simulated_focusing_optics_factory_method(implementor=Implementors.SHADOW, **
     except AlreadyInitializedError: pass
     try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="benders calibration", ini_file_name="benders_calibration.ini")
     except AlreadyInitializedError: pass
-    try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="benders calibration 2", ini_file_name="benders_calibration_2.ini")
-    except AlreadyInitializedError: pass
 
     if implementor==Implementors.SHADOW: return shadow_focusing_optics_factory_method(**kwargs)
     elif implementor==Implementors.SRW:  return srw_focusing_optics_factory_method(**kwargs)

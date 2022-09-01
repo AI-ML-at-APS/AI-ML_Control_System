@@ -78,7 +78,7 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
         self.__vkb_bender_manager = CalibratedBenderManager(kb_raytracing = VKBMockWidget(shadow_oe=self._vkb, verbose=True, label="Raytracing"),
                                                             kb_upstream   = VKBMockWidget(shadow_oe=self._vkb.duplicate(), verbose=True, label="Upstream"),
                                                             kb_downstream = VKBMockWidget(shadow_oe=self._vkb.duplicate(), verbose=True, label="Downstream"))
-        self.__vkb_bender_manager.load_calibration("V-KB")
+        self.__vkb_bender_manager.load_calibration("V-KB", power=kwargs["power"])
         self.__vkb_bender_manager.set_positions(input_features.get_parameter("vkb_motor_1_bender_position"),
                                                 input_features.get_parameter("vkb_motor_2_bender_position"))
         self.__vkb_bender_manager.remove_bender_files()
@@ -87,7 +87,7 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
                                                             kb_upstream   = HKBMockWidget(shadow_oe=self._hkb.duplicate(), verbose=True, label="Upstream"),
                                                             kb_downstream = HKBMockWidget(shadow_oe=self._hkb.duplicate(), verbose=True, label="Downstream"))
 
-        self.__hkb_bender_manager.load_calibration("H-KB")
+        self.__hkb_bender_manager.load_calibration("H-KB", power=kwargs["power"])
         self.__hkb_bender_manager.set_positions(input_features.get_parameter("hkb_motor_1_bender_position"),
                                                 input_features.get_parameter("hkb_motor_2_bender_position"))
         self.__hkb_bender_manager.remove_bender_files()

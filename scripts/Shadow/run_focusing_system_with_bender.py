@@ -73,8 +73,16 @@ if __name__ == "__main__":
 
     input_features = get_default_input_features()
 
+    # V-KB: sigma min 0.0001629649204142607 found at (U,D): [139.0, 245.5]
+    # H-KB: sigma min 0.0003935166620993736 found at (U,D): [218.5, 108.5]
+
+    #
     input_features.set_parameter("coh_slits_h_aperture", 0.15)
     input_features.set_parameter("coh_slits_v_aperture", 0.15)
+    #input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
+    #input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
+    #input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
+    #input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
     input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
     input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
     input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
@@ -82,6 +90,7 @@ if __name__ == "__main__":
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                input_features=input_features,
+                               power=1,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
@@ -93,6 +102,9 @@ if __name__ == "__main__":
           focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON),
           focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON),
           focusing_system.get_hkb_q_distance())
+
+    #focusing_system.change_hkb_shape(q_distance=123, movement=Movement.ABSOLUTE)
+    #focusing_system.change_vkb_shape(q_distance=231, movement=Movement.ABSOLUTE)
 
     # ----------------------------------------------------------------
     # perturbation of the incident beam to make adjustements necessary

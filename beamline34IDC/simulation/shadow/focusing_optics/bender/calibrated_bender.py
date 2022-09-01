@@ -59,23 +59,37 @@ class CalibratedBenderManager():
     __P0_downstream = 0.0
     __P1_upstream = 0.0
     __P1_downstream = 0.0
+    __P2_upstream = 0.0
+    __P2_downstream = 0.0
+    __power = 1
 
     q_upstream_previous   = 0.0
     q_downstream_previous = 0.0
 
-    def __init__(self, kb_raytracing, kb_upstream, kb_downstream, verbose=False):
+    def __init__(self, kb_raytracing=None, kb_upstream=None, kb_downstream=None, verbose=False):
         self._kb_raytracing = kb_raytracing
         self._kb_upstream   = kb_upstream
         self._kb_downstream = kb_downstream
         self._verbose = verbose
 
-    def load_calibration(self, key):
-        ini = get_registered_ini_instance(application_name="benders calibration 2")
+    def load_calibration(self, key, power=1):
+        ini = get_registered_ini_instance(application_name="benders calibration")
+        if power==1:
+            self.__P0_upstream   = ini.get_float_from_ini(key, "p0_up")
+            self.__P0_downstream = ini.get_float_from_ini(key, "p0_down")
+            self.__P1_upstream   = ini.get_float_from_ini(key, "p1_up")
+            self.__P1_downstream = ini.get_float_from_ini(key, "p1_down")
+        elif power==2:
+            self.__P0_upstream   = ini.get_float_from_ini(key + "-2", "p0_up")
+            self.__P0_downstream = ini.get_float_from_ini(key + "-2", "p0_down")
+            self.__P1_upstream   = ini.get_float_from_ini(key + "-2", "p1_up")
+            self.__P1_downstream = ini.get_float_from_ini(key + "-2", "p1_down")
+            self.__P2_upstream   = ini.get_float_from_ini(key + "-2", "p2_up")
+            self.__P2_downstream = ini.get_float_from_ini(key + "-2", "p2_down")
+        else:
+            raise ValueError("Polynomial grade not supported")
 
-        self.__P0_upstream   = ini.get_float_from_ini(key, "p0_up")
-        self.__P0_downstream = ini.get_float_from_ini(key, "p0_down")
-        self.__P1_upstream   = ini.get_float_from_ini(key, "p1_up")
-        self.__P1_downstream = ini.get_float_from_ini(key, "p1_down")
+        self.__power = power
 
         if self._verbose: print(key + ", focus bender positions from calibration (up, down): ", self.get_positions())
 
@@ -83,18 +97,30 @@ class CalibratedBenderManager():
         return self._kb_upstream.get_q_distance(), self._kb_downstream.get_q_distance()
 
     def get_positions(self):
-        return (self._kb_upstream.get_q_distance() - self.__P1_upstream)/self.__P0_upstream, \
-               (self._kb_downstream.get_q_distance() - self.__P1_downstream)/self.__P0_downstream
+        if self.__power == 1:
+            return (self._kb_upstream.get_q_distance()   - self.__P1_upstream)/self.__P0_upstream, \
+                   (self._kb_downstream.get_q_distance() - self.__P1_downstream)/self.__P0_downstream
+        elif self.__power == 2:
+            return (-self.__P1_upstream   + numpy.sqrt(self.__P1_upstream**2   - 4*self.__P0_upstream*(  self.__P2_upstream   - self._kb_upstream.get_q_distance())))  /(2*self.__P0_upstream), \
+                   (-self.__P1_downstream + numpy.sqrt(self.__P1_downstream**2 - 4*self.__P0_downstream*(self.__P2_downstream - self._kb_downstream.get_q_distance())))/(2*self.__P0_downstream)
 
     def get_position_for_focus(self, q_distance):
-        return (q_distance - self.__P1_upstream)/self.__P0_upstream, \
-               (q_distance - self.__P1_downstream)/self.__P0_downstream
+        if self.__power == 1:
+            return (q_distance - self.__P1_upstream)/self.__P0_upstream, \
+                   (q_distance - self.__P1_downstream)/self.__P0_downstream
+        elif self.__power == 2:
+            return (-self.__P1_upstream + numpy.sqrt(self.__P1_upstream**2 - 4*self.__P0_upstream*(self.__P2_upstream-q_distance)))/(2*self.__P0_upstream)
+            return (-self.__P1_downstream + numpy.sqrt(self.__P1_downstream**2 - 4*self.__P0_downstream*(self.__P2_downstream-q_distance)))/(2*self.__P0_downstream)
 
     def set_positions(self, pos_upstream, pos_downstream):
-        self._kb_upstream.set_q_distance(self.__P0_upstream*pos_upstream + self.__P1_upstream)
-        self._kb_upstream.calculate_bender_quantities()
+        if self.__power==1:
+            self._kb_upstream.set_q_distance(self.__P0_upstream*pos_upstream + self.__P1_upstream)
+            self._kb_downstream.set_q_distance(self.__P0_downstream*pos_downstream + self.__P1_downstream)
+        elif self.__power == 2:
+            self._kb_upstream.set_q_distance(self.__P0_upstream*pos_upstream**2 + self.__P1_upstream*pos_upstream + self.__P2_upstream)
+            self._kb_downstream.set_q_distance(self.__P0_downstream*pos_downstream*22 + self.__P1_downstream*pos_downstream + self.__P2_downstream)
 
-        self._kb_downstream.set_q_distance(self.__P0_downstream*pos_downstream + self.__P1_downstream)
+        self._kb_upstream.calculate_bender_quantities()
         self._kb_downstream.calculate_bender_quantities()
 
         if not self._kb_raytracing is None: self._kb_raytracing.set_q_distance(0.5*(self._kb_upstream.get_q_distance() + self._kb_downstream.get_q_distance()))

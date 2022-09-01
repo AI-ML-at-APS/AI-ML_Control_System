@@ -104,7 +104,7 @@ plot_axis(axes[1, 1], horizontal_downward[1], "Horizontal, slits 150: downward",
 plot_axis(axes[0, 2], vertical_upward[0],     "Vertical, slits full: upward",     2, 220, escluded=[])
 plot_axis(axes[0, 3], vertical_downward[0],   "Vertical, slits full: downward",   2, 220, escluded=[0, 1, 2])
 plot_axis(axes[1, 2], vertical_upward[1],     "Vertical, slits 150: upward",      2, 220, escluded=[0, 1])
-plot_axis(axes[1, 3], vertical_downward[1],   "Vertical, slits 150: downward",    2, 220, escluded=[1])
+plot_axis(axes[1, 3], vertical_downward[1],   "Vertical, slits 150: downward",    2, 220, escluded=[0, 1])
 
 plt.show()
 
