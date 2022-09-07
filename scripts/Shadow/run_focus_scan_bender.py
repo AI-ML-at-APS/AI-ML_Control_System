@@ -102,8 +102,8 @@ if __name__ == "__main__":
     h_pos_up   = focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON)
     h_pos_down = focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON)
 
-    n_points = [31, 31]
-    rel_pos = [-15.0, 15.0]
+    n_points = [21, 11]
+    rel_pos = [-5.0, 5.0]
     xrange = [-0.005, 0.005]
     yrange = [-0.005, 0.005]
 
@@ -155,6 +155,8 @@ if __name__ == "__main__":
                 s_v = dict.get_parameter("v_sigma")
                 s_h = dict.get_parameter("h_sigma")
 
+                print(s_v, [v_abs_pos_up[i], v_abs_pos_down[j]], s_h, [h_abs_pos_up[i], h_abs_pos_down[j]])
+
                 if s_v < min_v:
                     min_v = s_v
                     pos_min_v = [v_abs_pos_up[i], v_abs_pos_down[j]]
@@ -165,8 +167,9 @@ if __name__ == "__main__":
 
                 sigma_v[i, j] = s_v
                 sigma_h[i, j] = s_h
-            except:
+            except Exception as e:
                 pass
+                raise e
 
         print("Percentage completed: " + str(round(100*(1+i)*n_points[0] / (n_points[0]*n_points[1]), 2)))
 

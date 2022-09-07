@@ -45,11 +45,13 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os, numpy
+
 import Shadow
 from Shadow.ShadowTools import write_shadow_surface
 from Shadow.ShadowPreprocessorsXraylib import prerefl, bragg
 from srxraylib.metrology import dabam
 from oasys.util.error_profile_util import DabamInputParameters, calculate_dabam_profile
+from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
 from oasys.widgets import congruence
 from orangecontrib.ml.util.mocks import MockWidget
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement, ShadowSource, ShadowOEHistoryItem
@@ -57,7 +59,9 @@ from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 import scipy.constants as codata
 
-from beamline34IDC.util.common import get_info, plot_2D, Flip, PlotMode, AspectRatio, ColorMap
+from beamline34IDC.util.common import get_info, plot_2D, Flip, PlotMode, AspectRatio, ColorMap, Histogram
+from beamline34IDC.util.gaussian_fit import calculate_2D_gaussian_fit
+from orangecontrib.ml.util.data_structures import DictionaryWrapper
 
 m2ev = codata.c * codata.h / codata.e
 
@@ -104,9 +108,34 @@ def __get_arrays(shadow_beam, var_1, var_2, nbins=201, nolost=1, xrange=None, yr
     return ticket['bin_h_center'], ticket['bin_v_center'], ticket["histogram"]
 
 def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
-    x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins, nolost, xrange, yrange)
+    ticket = shadow_beam._beam.histo2(var_1, var_2, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=1)
 
-    return get_info(x_array, y_array, z_array, None, None, do_gaussian_fit)  # ranges already calculated
+    hh   = ticket["histogram"]
+    xx   = ticket['bin_h_center']
+    yy   = ticket['bin_v_center']
+    hh_h = ticket['histogram_h']
+    hh_v = ticket['histogram_v']
+
+    if do_gaussian_fit:
+        try:    gaussian_fit = calculate_2D_gaussian_fit(data_2D=hh, x=xx, y=yy)
+        except Exception as e:
+            print("Gaussian fit failed: ", e)
+            gaussian_fit = {}
+    else:
+        gaussian_fit = {}
+
+    return Histogram(hh=xx, vv=yy, data_2D=hh), \
+           DictionaryWrapper(
+               h_sigma=get_sigma(hh_h, xx),
+               h_fwhm=ticket['fwhm_h'],
+               h_centroid=get_average(hh_v, yy),
+               v_sigma=get_sigma(hh_v, yy),
+               v_fwhm=ticket['fwhm_v'],
+               v_centroid=get_average(hh_h, xx),
+               integral_intensity=ticket['intensity'],
+               peak_intensity=numpy.average(hh[numpy.where(hh >= numpy.max(hh) * 0.95)]),
+               gaussian_fit=gaussian_fit
+    )
 
 def __plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins=201, nolost=1, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
     if plot_mode in [PlotMode.INTERNAL, PlotMode.BOTH]:

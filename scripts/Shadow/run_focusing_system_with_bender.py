@@ -76,6 +76,8 @@ if __name__ == "__main__":
     # V-KB: sigma min 0.0001629649204142607 found at (U,D): [139.0, 245.5]
     # H-KB: sigma min 0.0003935166620993736 found at (U,D): [218.5, 108.5]
 
+    # V-KB: sigma min 0.00037730694191372074 found at (U,D): [142.00000000000003, 240.5]
+    # H-KB: sigma min 0.00016296492041427147 found at (U,D): [216.5, 112.5]
     #
     input_features.set_parameter("coh_slits_h_aperture", 0.15)
     input_features.set_parameter("coh_slits_v_aperture", 0.15)
@@ -83,10 +85,10 @@ if __name__ == "__main__":
     #input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
     #input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
     #input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
-    input_features.set_parameter("vkb_motor_1_bender_position", 140.0)
-    input_features.set_parameter("vkb_motor_2_bender_position", 241.5)
-    input_features.set_parameter("hkb_motor_1_bender_position", 218.5)
-    input_features.set_parameter("hkb_motor_2_bender_position", 108.5)
+    input_features.set_parameter("vkb_motor_1_bender_position", 142.0)
+    input_features.set_parameter("vkb_motor_2_bender_position", 240.5)
+    input_features.set_parameter("hkb_motor_1_bender_position", 214.5)
+    input_features.set_parameter("hkb_motor_2_bender_position", 112.5)
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                input_features=input_features,
@@ -113,11 +115,11 @@ if __name__ == "__main__":
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
     plot_shadow_beam_spatial_distribution(output_beam, nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
+    plot_shadow_beam_spatial_distribution(output_beam, nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.INTERNAL)
 
-    _, dict = get_shadow_beam_spatial_distribution(output_beam,
-                                                   nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
+    _, dict = get_shadow_beam_spatial_distribution(output_beam, nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
 
-    print("Initial Sigma (HxV): ", dict.get_parameter("h_sigma")*1e6, " x ", dict.get_parameter("v_sigma")*1e6, " nm")
+    print("Initial Sigma (HxV): ", round(dict.get_parameter("h_sigma")*1e6, 0), " x ", round(dict.get_parameter("v_sigma")*1e6, 0), " nm")
 
     sys.exit(0)
 
