@@ -51,7 +51,7 @@ from beamline34IDC.simulation.facade import Implementors
 from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
 from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
 from beamline34IDC.simulation.facade.focusing_optics_interface import get_default_input_features
-from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
+from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, get_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
 from beamline34IDC.util.wrappers import PlotMode
 
@@ -83,10 +83,10 @@ if __name__ == "__main__":
     #input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
     #input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
     #input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
-    input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
-    input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
-    input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
-    input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
+    input_features.set_parameter("vkb_motor_1_bender_position", 140.0)
+    input_features.set_parameter("vkb_motor_2_bender_position", 241.5)
+    input_features.set_parameter("hkb_motor_1_bender_position", 218.5)
+    input_features.set_parameter("hkb_motor_2_bender_position", 108.5)
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                input_features=input_features,
@@ -103,10 +103,7 @@ if __name__ == "__main__":
           focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON),
           focusing_system.get_hkb_q_distance())
 
-    #focusing_system.change_hkb_shape(q_distance=123, movement=Movement.ABSOLUTE)
-    #focusing_system.change_vkb_shape(q_distance=231, movement=Movement.ABSOLUTE)
-
-    # ----------------------------------------------------------------
+     # ----------------------------------------------------------------
     # perturbation of the incident beam to make adjustements necessary
 
     random_seed = 2120 # for repeatability
@@ -116,6 +113,11 @@ if __name__ == "__main__":
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
     plot_shadow_beam_spatial_distribution(output_beam, nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
+
+    _, dict = get_shadow_beam_spatial_distribution(output_beam,
+                                                   nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
+
+    print("Initial Sigma (HxV): ", dict.get_parameter("h_sigma")*1e6, " x ", dict.get_parameter("v_sigma")*1e6, " nm")
 
     sys.exit(0)
 

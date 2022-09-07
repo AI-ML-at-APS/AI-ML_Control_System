@@ -55,24 +55,7 @@ from beamline34IDC.simulation.facade.focusing_optics_interface import get_defaul
 from beamline34IDC.util.shadow.common import get_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from beamline34IDC.util import clean_up
 
-from matplotlib import cm
-from matplotlib import pyplot as plt
-
-def plot_3D(xx, yy, zz, label):
-
-    figure = plt.figure(figsize=(10, 7))
-    figure.patch.set_facecolor('white')
-
-    axis = figure.add_subplot(111, projection='3d')
-    axis.set_zlabel(label + " [mm]")
-    axis.set_xlabel("Abs pos up [mm]")
-    axis.set_ylabel("Abs pos down [mm]")
-
-    x_to_plot, y_to_plot = numpy.meshgrid(xx, yy)
-
-    axis.plot_surface(x_to_plot, y_to_plot, zz, rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
-    plt.show()
-
+from plot_focus_scan_bender import plot_3D
 
 if __name__ == "__main__":
     verbose = False
@@ -97,6 +80,7 @@ if __name__ == "__main__":
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                input_features=input_features,
+                               power=1,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
@@ -118,36 +102,34 @@ if __name__ == "__main__":
     h_pos_up   = focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON)
     h_pos_down = focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON)
 
-    n_points = 31
-    rel_pos = [-15, 15]
+    n_points = [31, 31]
+    rel_pos = [-15.0, 15.0]
     xrange = [-0.005, 0.005]
     yrange = [-0.005, 0.005]
 
-    v_abs_pos_up   = numpy.linspace(rel_pos[0], rel_pos[1], n_points) + v_pos_up
-    v_abs_pos_down = numpy.linspace(rel_pos[0], rel_pos[1], n_points) + v_pos_down
-    h_abs_pos_up   = numpy.linspace(rel_pos[0], rel_pos[1], n_points) + h_pos_up
-    h_abs_pos_down = numpy.linspace(rel_pos[0], rel_pos[1], n_points) + h_pos_down
+    v_abs_pos_up   = numpy.linspace(rel_pos[0], rel_pos[1], n_points[0]) + v_pos_up
+    v_abs_pos_down = numpy.linspace(rel_pos[0], rel_pos[1], n_points[1]) + v_pos_down
+    h_abs_pos_up   = numpy.linspace(rel_pos[0], rel_pos[1], n_points[0]) + h_pos_up
+    h_abs_pos_down = numpy.linspace(rel_pos[0], rel_pos[1], n_points[1]) + h_pos_down
 
     sigma_v = numpy.zeros((len(v_abs_pos_up), len(v_abs_pos_down)))
-    fwhm_v  = numpy.zeros((len(v_abs_pos_up), len(v_abs_pos_down)))
     sigma_h = numpy.zeros((len(h_abs_pos_up), len(h_abs_pos_down)))
-    fwhm_h  = numpy.zeros((len(h_abs_pos_up), len(h_abs_pos_down)))
 
-    positions_v = numpy.zeros((2, n_points))
-    positions_v[0, :] = v_abs_pos_up
-    positions_v[1, :] = v_abs_pos_down
-    positions_h = numpy.zeros((2, n_points))
-    positions_h[0, :] = h_abs_pos_up
-    positions_h[1, :] = h_abs_pos_down
-    with open("positions_v.npy", 'wb') as f: numpy.save(f, positions_v, allow_pickle=False)
-    with open("positions_h.npy", 'wb') as f: numpy.save(f, positions_h, allow_pickle=False)
+    positions_up = numpy.zeros((2, n_points[0]))
+    positions_up[0, :] = v_abs_pos_up
+    positions_up[1, :] = h_abs_pos_up
+    positions_down = numpy.zeros((2, n_points[1]))
+    positions_down[0, :] = v_abs_pos_down
+    positions_down[1, :] = h_abs_pos_down
+    with open("positions_up.npy", 'wb') as f: numpy.save(f, positions_up, allow_pickle=False)
+    with open("positions_down.npy", 'wb') as f: numpy.save(f, positions_down, allow_pickle=False)
 
     min_v = +numpy.inf
     pos_min_v = None
     min_h = +numpy.inf
     pos_min_h = None
 
-    for i in range(n_points):
+    for i in range(n_points[0]):
         focusing_system.move_vkb_motor_1_bender(pos_upstream=v_abs_pos_up[i],
                                                 movement=Movement.ABSOLUTE,
                                                 units=DistanceUnits.MICRON)
@@ -155,7 +137,7 @@ if __name__ == "__main__":
                                                 movement=Movement.ABSOLUTE,
                                                 units=DistanceUnits.MICRON)
 
-        for j in range(n_points):
+        for j in range(n_points[1]):
             focusing_system.move_vkb_motor_2_bender(pos_downstream=v_abs_pos_down[j],
                                                     movement=Movement.ABSOLUTE,
                                                     units=DistanceUnits.MICRON)
@@ -182,25 +164,19 @@ if __name__ == "__main__":
                     pos_min_h = [h_abs_pos_up[i], h_abs_pos_down[j]]
 
                 sigma_v[i, j] = s_v
-                fwhm_v[i, j]  = dict.get_parameter("v_fwhm")
                 sigma_h[i, j] = s_h
-                fwhm_h[i, j]  = dict.get_parameter("h_fwhm")
             except:
                 pass
 
-        print("Percentage completed: " + str(round(100*(1+i)*n_points / n_points**2, 2)))
+        print("Percentage completed: " + str(round(100*(1+i)*n_points[0] / (n_points[0]*n_points[1]), 2)))
 
     with open("sigma_v.npy", 'wb') as f: numpy.save(f, sigma_v, allow_pickle=False)
-    with open("fwhm_v.npy", 'wb')  as f: numpy.save(f, fwhm_v, allow_pickle=False)
     with open("sigma_h.npy", 'wb') as f: numpy.save(f, sigma_h, allow_pickle=False)
-    with open("fwhm_h.npy", 'wb')  as f: numpy.save(f, fwhm_h, allow_pickle=False)
 
     print("V-KB: sigma min " + str(min_v) + " found at (U,D): " + str(pos_min_v))
     print("H-KB: sigma min " + str(min_h) + " found at (U,D): " + str(pos_min_h))
 
-    plot_3D(v_abs_pos_up, v_abs_pos_down, sigma_v, "Sigma (V)")
-    plot_3D(h_abs_pos_up, h_abs_pos_down, sigma_h, "Sigma (H)")
-    plot_3D(v_abs_pos_up, v_abs_pos_down, fwhm_v, "FWHM (V)")
-    plot_3D(h_abs_pos_up, h_abs_pos_down, fwhm_h, "FWHM (H)")
+    plot_3D(v_abs_pos_up, v_abs_pos_down, sigma_v*1e6, "Sigma (V)")
+    plot_3D(h_abs_pos_up, h_abs_pos_down, sigma_h*1e6, "Sigma (H)")
 
     clean_up()
