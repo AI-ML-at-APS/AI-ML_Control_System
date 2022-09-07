@@ -155,8 +155,6 @@ if __name__ == "__main__":
                 s_v = dict.get_parameter("v_sigma")
                 s_h = dict.get_parameter("h_sigma")
 
-                print(s_v, [v_abs_pos_up[i], v_abs_pos_down[j]], s_h, [h_abs_pos_up[i], h_abs_pos_down[j]])
-
                 if s_v < min_v:
                     min_v = s_v
                     pos_min_v = [v_abs_pos_up[i], v_abs_pos_down[j]]
