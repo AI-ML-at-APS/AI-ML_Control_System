@@ -102,8 +102,8 @@ if __name__ == "__main__":
     h_pos_up   = focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON)
     h_pos_down = focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON)
 
-    n_points = [21, 11]
-    rel_pos = [-5.0, 5.0]
+    n_points = [25, 25]
+    rel_pos = [-6.0, 6.0]
     xrange = [-0.005, 0.005]
     yrange = [-0.005, 0.005]
 
