@@ -73,24 +73,21 @@ if __name__ == "__main__":
 
     input_features = get_default_input_features()
 
-    # V-KB: sigma min 0.0001629649204142607 found at (U,D): [139.0, 245.5]
-    # H-KB: sigma min 0.0003935166620993736 found at (U,D): [218.5, 108.5]
-
-    # V-KB: sigma min 0.00037730694191372074 found at (U,D): [142.00000000000003, 240.5]
+    # V-KB: sigma min 0.00037730694191372074 found at (U,D): [142.0, 240.5]
     # H-KB: sigma min 0.00016296492041427147 found at (U,D): [216.5, 112.5]
     #
     input_features.set_parameter("coh_slits_h_aperture", 0.03)
     input_features.set_parameter("coh_slits_v_aperture", 0.07)
-    #input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
-    #input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
-    #input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
-    #input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
+    input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
+    input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
+    input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
+    input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
     #input_features.set_parameter("coh_slits_h_aperture", 0.15)
     #input_features.set_parameter("coh_slits_v_aperture", 0.15)
-    input_features.set_parameter("vkb_motor_1_bender_position", 142.0)
-    input_features.set_parameter("vkb_motor_2_bender_position", 240.5)
-    input_features.set_parameter("hkb_motor_1_bender_position", 214.5)
-    input_features.set_parameter("hkb_motor_2_bender_position", 112.5)
+    #input_features.set_parameter("vkb_motor_1_bender_position", 141.5)
+    #input_features.set_parameter("vkb_motor_2_bender_position", 239.5)
+    #input_features.set_parameter("hkb_motor_1_bender_position", 216.5)
+    #input_features.set_parameter("hkb_motor_2_bender_position", 113.0)
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                input_features=input_features,
