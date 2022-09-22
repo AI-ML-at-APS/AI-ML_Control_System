@@ -66,10 +66,10 @@ class MotorResolution:
     __coh_slits_motors_resolution        = [1e-7, 7]  # mm
     __vkb_motor_1_2_bender_resolution    = [1e-7, 7]  # mm
     __vkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
-    __vkb_motor_4_translation_resolution = [1e-4, 3]  # mm
+    __vkb_motor_4_translation_resolution = [1e-4, 4]  # mm
     __hkb_motor_1_2_bender_resolution    = [1e-7, 7]  # mm
     __hkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
-    __hkb_motor_4_translation_resolution = [1e-4, 3]  # mm
+    __hkb_motor_4_translation_resolution = [1e-4, 4]  # mm
 
     @staticmethod
     def getInstance():
