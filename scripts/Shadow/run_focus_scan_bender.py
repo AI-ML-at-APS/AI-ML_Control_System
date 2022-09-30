@@ -47,13 +47,13 @@
 import os, numpy
 import sys
 
-from beamline34IDC.simulation.facade import Implementors
-from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from beamline34IDC.facade.focusing_optics_interface import Movement, DistanceUnits
-from beamline34IDC.simulation.facade.focusing_optics_interface import get_default_input_features
+from aps_ai.beamline34IDC.simulation.facade import Implementors
+from aps_ai.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
+from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, DistanceUnits
+from aps_ai.beamline34IDC.simulation.facade.focusing_optics_interface import get_default_input_features
 
-from beamline34IDC.util.shadow.common import get_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
-from beamline34IDC.util import clean_up
+from aps_ai.common.util.shadow.common import get_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
+from aps_ai.common.util import clean_up
 
 from plot_focus_scan_bender import plot_3D
 

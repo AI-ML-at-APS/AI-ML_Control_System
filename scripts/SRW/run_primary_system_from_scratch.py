@@ -46,10 +46,10 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
-from beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
-from beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
-from beamline34IDC.util.srw.common import save_srw_wavefront, plot_srw_wavefront_spatial_distribution
+from aps_ai.beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
+from aps_ai.beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
+from aps_ai.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
+from aps_ai.common.util.srw.common import save_srw_wavefront, plot_srw_wavefront_spatial_distribution
 
 if __name__ == "__main__":
     verbose = False

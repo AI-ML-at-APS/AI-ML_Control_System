@@ -54,7 +54,7 @@ try:
 except:
     pass
 
-from beamline34IDC.util.shadow.common import get_shadow_beam_spatial_distribution, plot_shadow_beam_spatial_distribution, load_shadow_beam
+from aps_ai.common.util.shadow.common import get_shadow_beam_spatial_distribution, plot_shadow_beam_spatial_distribution, load_shadow_beam
 
 def plot_3D(xx, yy, zz):
     figure = plt.figure(figsize=(10, 7))

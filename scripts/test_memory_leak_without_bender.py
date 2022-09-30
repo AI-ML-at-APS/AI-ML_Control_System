@@ -1,11 +1,11 @@
 import os
 
-from beamline34IDC.simulation.facade import Implementors
-from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
+from aps_ai.beamline34IDC.simulation.facade import Implementors
+from aps_ai.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
+from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
 
-from beamline34IDC.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
-from beamline34IDC.util import clean_up
+from aps_ai.common.util.shadow.common import plot_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
+from aps_ai.common.util import clean_up
 
 if __name__ == "__main__":
     verbose = False

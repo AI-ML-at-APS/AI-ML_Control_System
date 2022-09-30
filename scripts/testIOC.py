@@ -45,9 +45,9 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from beamline34IDC.facade import focusing_optics_factory, ExecutionMode
-from beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from beamline34IDC.hardware.facade import Implementors, Beamline
+from aps_ai.beamline34IDC.facade import focusing_optics_factory, ExecutionMode
+from aps_ai.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
+from aps_ai.beamline34IDC.hardware.facade import Implementors, Beamline
 
 focusing_optics = focusing_optics_factory.focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
 focusing_optics.initialize()

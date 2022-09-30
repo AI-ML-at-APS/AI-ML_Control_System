@@ -46,14 +46,14 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from beamline34IDC.simulation.facade import Implementors
-from beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
-from beamline34IDC.simulation.facade.source_factory import source_factory_method
-from beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
-from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
+from aps_ai.beamline34IDC.simulation.facade import Implementors
+from aps_ai.beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
+from aps_ai.beamline34IDC.simulation.facade.source_factory import source_factory_method
+from aps_ai.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
+from aps_ai.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
+from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
 
-from beamline34IDC.util.srw.common import plot_srw_wavefront_spatial_distribution, save_srw_wavefront
+from aps_ai.common.util.srw.common import plot_srw_wavefront_spatial_distribution, save_srw_wavefront
 
 
 if __name__ == "__main__":

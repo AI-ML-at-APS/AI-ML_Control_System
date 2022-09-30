@@ -46,12 +46,12 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from beamline34IDC.simulation.facade import Implementors
-from beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
+from aps_ai.beamline34IDC.simulation.facade import Implementors
+from aps_ai.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
+from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
 
-from beamline34IDC.util.wrappers import get_distribution_info, plot_distribution, load_beam, save_beam
-from beamline34IDC.util.common import PlotMode, AspectRatio, ColorMap
+from aps_ai.common.util.wrappers import get_distribution_info, plot_distribution, load_beam, save_beam
+from aps_ai.common.util.common import PlotMode, AspectRatio, ColorMap
 
 if __name__ == "__main__":
     verbose = False
