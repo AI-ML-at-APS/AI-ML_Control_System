@@ -1,2 +1,2 @@
-# ML_Control_System
-ML Control System for the Beamline 34-ID-C @ APS
+# AI-ML_Control_System
+AI-ML Control Systems for the auto-alignment of APS and APS-U beamlines.
