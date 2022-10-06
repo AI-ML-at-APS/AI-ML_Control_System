@@ -46,7 +46,6 @@
 # ----------------------------------------------------------------------- #
 import numpy as np
 import scipy
-from aps_ai.common.util.shadow.common import EmptyBeamException
 from aps_ai.beamline34IDC.optimization import common, movers, configs
 from typing import List, Tuple, Callable, NoReturn
 
@@ -95,7 +94,6 @@ class ScipyOptimizer(common.OptimizationCommon):
                   guess_range: List[float] = None,
                   trial_count: int = 0,
                   verbose: bool = False) -> Tuple[object, List[float], bool]:
-
         if initial_guess is None or trial_count > 0:
             initial_guess = [np.random.uniform(m1, m2) for (m1, m2) in guess_range]
 
@@ -104,7 +102,7 @@ class ScipyOptimizer(common.OptimizationCommon):
         lossfn_obj_this = self.TrialInstanceLossFunction(self, verbose=verbose)
         guess_loss = lossfn_obj_this.loss(initial_guess, verbose=False)
 
-        while guess_loss == self._out_of_bounds_loss:
+        while guess_loss == self._no_beam_loss:
             print("Initial guess", initial_guess, "produces beam out of bounds. Trying another guess.")
             initial_guess = [np.random.uniform(m1, m2) for (m1, m2) in guess_range]
             print('initial guess is', initial_guess)
@@ -130,6 +128,7 @@ class ScipyOptimizer(common.OptimizationCommon):
                guess_range: List[float] = None,
                accept_all_solutions: bool = False) -> Tuple[List[object], List[float], List[float], bool]:
         """Supply zeros to the initial guess to start from the initial posiiton."""
+        self._check_initial_loss(verbose=verbose)
 
         if guess_range is None:
             guess_range = [np.array(configs.DEFAULT_MOVEMENT_RANGES[mt]) / 2 for mt in self.motor_types]
@@ -142,15 +141,16 @@ class ScipyOptimizer(common.OptimizationCommon):
             initial_guess = np.atleast_1d(initial_guess)
             if len(initial_guess) != len(self.motor_types): raise ValueError("Invalid initial guess supplied.")
 
-        self._check_initial_loss(verbose=verbose)
-
         for n_trial in range(n_guesses):
-            result, solution, success_status = self._optimize(guess_range=guess_range, verbose=verbose)
+            result, solution, success_status = self._optimize(initial_guess=initial_guess,
+                                                              guess_range=guess_range,
+                                                              verbose=verbose)
 
             if accept_all_solutions or success_status:
                 return self.results_all, self.guesses_all, solution, True
 
             if n_trial < n_guesses:
+                print("Initial mpoisitons", self.initial_motor_positions)
                 self.focusing_system = movers.move_motors(self.focusing_system, self.motor_types,
                                                           self.initial_motor_positions, movement='absolute')
 
