@@ -49,9 +49,9 @@ import numpy as np
 from aps_ai.beamline34IDC.simulation.facade.focusing_optics_interface import Movement
 
 
-
-# All distance movements are in millimeters: motors 3 and the 'q' parameter.
-def get_movement(movement):
+# Using distance units of micrometers
+# All distance movements are in micrometers: motors 3 and the 'q' parameter.
+def get_movement(movement) -> object:
     movement_types = {'relative': Movement.RELATIVE,
                       'absolute': Movement.ABSOLUTE}
     if movement in movement_types:
@@ -63,17 +63,21 @@ def get_movement(movement):
 def get_motor_move_fn(focusing_system, motor):
     motor_move_fns = {'hkb_4': focusing_system.move_hkb_motor_4_translation,
                       'hkb_3': focusing_system.move_hkb_motor_3_pitch,
-                      'hkb_q': focusing_system.change_hkb_shape,
+                      #hkb_q': focusing_system.change_hkb_shape,
                       'vkb_4': focusing_system.move_vkb_motor_4_translation,
                       'vkb_3': focusing_system.move_vkb_motor_3_pitch,
-                      'vkb_q': focusing_system.change_vkb_shape,
-                      'hkb_1_2': focusing_system.move_hkb_motor_1_2_bender,
-                      'vkb_1_2': focusing_system.move_vkb_motor_1_2_bender}
+                      #'vkb_q': focusing_system.change_vkb_shape,
+                      'hkb_1': focusing_system.move_hkb_motor_1_bender,
+                      'hkb_2': focusing_system.move_hkb_motor_2_bender,
+                      'vkb_1': focusing_system.move_vkb_motor_1_bender,
+                      'vkb_2': focusing_system.move_vkb_motor_2_bender}
+                      
     if motor in motor_move_fns:
         return motor_move_fns[motor]
     if motor in motor_move_fns.values():
         return motor
     raise ValueError
+
 
 def move_motors(focusing_system, motors, translations, movement='relative'):
     movement = get_movement(movement)
@@ -82,17 +86,19 @@ def move_motors(focusing_system, motors, translations, movement='relative'):
     if np.ndim(translations) == 0:
         translations = [translations]
     for motor, trans in zip(motors, translations):
+        #if trans == 0: continue
         motor_move_fn = get_motor_move_fn(focusing_system, motor)
-        if motor in ['hkb_1_2', 'vkb_1_2']:
-            if np.ndim(trans) == 0 and movement == Movement.RELATIVE:
-                motor_move_fn(trans, trans, movement=movement)
-            elif np.ndim(trans) == 1:
-                motor_move_fn(trans[0], trans[1], movement=movement)
-            else:
-                raise ValueError("For absolute movement for motors 1 and 2, " +
-                                 "translation for both the bender motors should be supplied together")
-        else:
-            motor_move_fn(trans, movement=movement)
+
+        #if motor in ['hkb_1_2', 'vkb_1_2']:
+        #    if np.ndim(trans) == 0 and movement == Movement.RELATIVE:
+        #        motor_move_fn(trans, trans, movement=movement)
+        #    elif np.ndim(trans) == 1:
+        #        motor_move_fn(trans[0], trans[1], movement=movement)
+        #    else:
+        #        raise ValueError("For absolute movement for motors 1 and 2, " +
+        #                         "translation for both the bender motors should be supplied together")
+        #else:
+        motor_move_fn(trans, movement=movement)
     return focusing_system
 
 
@@ -103,11 +109,13 @@ def get_motor_absolute_position_fn(focusing_system, motor):
                          'vkb_4': focusing_system.get_vkb_motor_4_translation,
                          'vkb_3': focusing_system.get_vkb_motor_3_pitch,
                          'vkb_q': focusing_system.get_vkb_q_distance,
-                         'hkb_1_2': focusing_system.get_hkb_motor_1_2_bender,
-                         'vkb_1_2': focusing_system.get_vkb_motor_1_2_bender}
+                         'hkb_1': focusing_system.get_hkb_motor_1_bender,
+                         'hkb_2': focusing_system.get_hkb_motor_2_bender,
+                         'vkb_1': focusing_system.get_vkb_motor_1_bender,
+                         'vkb_2': focusing_system.get_vkb_motor_2_bender}
     if motor in motor_get_pos_fns:
         return motor_get_pos_fns[motor]
-    if motor in motor_get_pos_fns.values():
+    if motor in motor_get_pos_fns.values(): 
         return motor
     raise ValueError
 

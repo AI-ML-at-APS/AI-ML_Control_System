@@ -46,9 +46,9 @@
 # ----------------------------------------------------------------------- #
 import numpy as np
 import skopt
-from aps_ai.common.util.shadow.common import EmptyBeamException
-from aps_ai.beamline34IDC.optimization import common, movers, configs
+from aps_ai.beamline34IDC.optimization import common,  configs
 from typing import List, Tuple, Callable, NoReturn
+from aps_ai.beamline34IDC.facade.focusing_optics_interface import DistanceUnits
 
 
 class SkoptGaussianProcessOptimizer(common.OptimizationCommon):
@@ -118,6 +118,7 @@ class SkoptGaussianProcessOptimizer(common.OptimizationCommon):
 
 
 class SkoptDiscreteGPOptimizer(SkoptGaussianProcessOptimizer):
+    """This is not working right now."""
     class TrialInstanceLossFunction(common.OptimizationCommon.TrialInstanceLossFunction):
         def loss(self, x_absolute_this: List[float], verbose: bool = None) -> float:
             if np.ndim(x_absolute_this) > 0:
@@ -125,7 +126,7 @@ class SkoptDiscreteGPOptimizer(SkoptGaussianProcessOptimizer):
             x_relative_this = x_absolute_this - self.x_absolute_prev
             self.x_absolute_prev = x_absolute_this
 
-            x_relative_this_float = self.opt_common.transform_to_float(self.opt_common.motor_types, x_relative_this)
+            x_relative_this_float = self.opt_common._transform_to_float(x_relative_this)
             self.current_loss = self.opt_common.loss_function(x_relative_this_float, verbose=False)
             verbose = verbose if verbose is not None else self.verbose
             if verbose:
@@ -133,21 +134,36 @@ class SkoptDiscreteGPOptimizer(SkoptGaussianProcessOptimizer):
                       "trans", x_absolute_this, "current loss", self.current_loss)
             return self.current_loss
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._distance_resolution_scaling = self._get_distance_resolution_scaling()
+
     @staticmethod
-    def transform_to_integer(motor_types: List[str], motor_values: List[float]):
+    def _get_distance_resolution_scaling():
+        if configs.DEFAULT_INPUT_DISTANCE_UNITS == DistanceUnits.MILLIMETERS:
+            distance_resolution_scaling = 1
+        elif configs.DEFAULT_INPUT_DISTANCE_UNITS == DistanceUnits.MICRONS:
+            distance_resolution_scaling = 1e-3
+        else:
+            raise ValueError
+        return distance_resolution_scaling
+
+    def _transform_to_integer(self, motor_values: List[float]):
+
         int_values = []
-        for mt, mval in zip(motor_types, motor_values):
-            res_this = configs.DEFAULT_MOTOR_RESOLUTIONS[mt]
+        for mt, mval in zip(self.motor_types, motor_values):
+            res_this = configs.DEFAULT_MOTOR_RESOLUTIONS[mt] * self._distance_resolution_scaling
             int_values.append((np.squeeze(mval) // res_this).astype('int'))
         return int_values
 
-    @staticmethod
-    def transform_to_float(motor_types: List[str], integer_values: List[int]):
+    def _transform_to_float(self, integer_values: List[int]):
         float_values = []
-        for mt, mval in zip(motor_types, integer_values):
-            res_this = configs.DEFAULT_MOTOR_RESOLUTIONS[mt]
+        for mt, mval in zip(self.motor_types, integer_values):
+            res_this = configs.DEFAULT_MOTOR_RESOLUTIONS[mt] * self._distance_resolution_scaling
+
             if np.ndim(mval) > 0:
                 mval = np.array(mval)
+            print('float', mval * res_this)
             float_values.append(np.squeeze(mval) * res_this)
         return float_values
 
@@ -165,8 +181,8 @@ class SkoptDiscreteGPOptimizer(SkoptGaussianProcessOptimizer):
             bounds = np.array([bounds])
         if len(bounds) != len(self.motor_types):
             raise ValueError
-        bounds_int = self.transform_to_integer(self.motor_types, bounds)
-        print(bounds_int)
+        bounds_int = self._transform_to_integer(bounds)
+        print("Bounds in integers...", bounds_int)
         self._opt_params = extra_options
         self._opt_params.update({'dimensions': bounds_int, 'n_calls':n_calls})
 
@@ -185,4 +201,5 @@ class SkoptDiscreteGPOptimizer(SkoptGaussianProcessOptimizer):
         if accept_all_solutions or success_status:
                 return self.results_all, self.guesses_all, solution, True
 
+        solution = self._transform_to_float(solution)
         return self.results_all, self.guesses_all, solution, False
