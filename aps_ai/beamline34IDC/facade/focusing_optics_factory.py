@@ -49,7 +49,7 @@
 # DESIGN PATTERN: FACTORY METHOD
 #
 
-from aps_ai.beamline34IDC.facade import ExecutionMode
+from aps_ai.common.facade.parameters import ExecutionMode
 from aps_ai.beamline34IDC.simulation.facade.focusing_optics_factory import simulated_focusing_optics_factory_method
 from aps_ai.beamline34IDC.hardware.facade.focusing_optics_factory import hardware_focusing_optics_factory_method
 

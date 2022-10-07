@@ -50,7 +50,7 @@ import Shadow
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 
-from aps_ai.beamline34IDC.simulation.facade.primary_optics_interface import AbstractPrimaryOptics
+from aps_ai.common.simulation.facade.primary_optics_interface import AbstractPrimaryOptics
 from aps_ai.common.util.shadow.common import write_bragg_file, write_reflectivity_file, PreProcessorFiles, TTYInibitor, rotate_axis_system
 
 def shadow_primary_optics_factory_method():

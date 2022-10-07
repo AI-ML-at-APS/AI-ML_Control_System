@@ -50,10 +50,11 @@ import os, numpy, time
 from epics import caget, caput
 
 from aps_ai.common.util.initializer import AlreadyInitializedError, register_ini_instance, IniMode
+from aps_ai.common.facade.parameters import AngularUnits, DistanceUnits, Movement
+from aps_ai.common.hardware.facade.parameters import Beamline, Directions
 
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps_ai.beamline34IDC.hardware.facade import Beamline
-from aps_ai.beamline34IDC.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics, Directions
+from aps_ai.common.hardware.epics.optics import AbstractEpicsOptics
+from aps_ai.beamline34IDC.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
 
 def epics_focusing_optics_factory_method(**kwargs):
     try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
@@ -88,7 +89,7 @@ class Motors:
     SAMPLE_STAGE_Z        = {Beamline.REAL : '34idc:lab:m3'   , Beamline.VIRTUAL : '34idSim:lab:m3'   } # fine Z motion
     SAMPLE_STAGE_Z_COARSE = {Beamline.REAL : '34idc:mxv:c0:m1', Beamline.VIRTUAL : '34idSim:mxv:c0:m1'} # coarse Z motion
 
-class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
+class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractHardwareFocusingOptics):
     
     def __init__(self, **kwargs):
         try:    beamline = kwargs["beamline"]
@@ -129,90 +130,54 @@ class __EpicsFocusingOptics(AbstractHardwareFocusingOptics):
     # V-KB -----------------------
 
     def move_vkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_translational_motor(Motors.VKB_MOTOR_1[self.__beamline], pos_upstream, movement, units)
+        self._move_translational_motor(Motors.VKB_MOTOR_1[self.__beamline], pos_upstream, movement, units)
 
     def get_vkb_motor_1_bender(self, units=DistanceUnits.MICRON):
-        return self.__get_translational_motor_position(Motors.VKB_MOTOR_1[self.__beamline], units)
+        return self._get_translational_motor_position(Motors.VKB_MOTOR_1[self.__beamline], units)
 
     def move_vkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_translational_motor(Motors.VKB_MOTOR_2[self.__beamline], pos_downstream, movement, units)
+        self._move_translational_motor(Motors.VKB_MOTOR_2[self.__beamline], pos_downstream, movement, units)
 
     def get_vkb_motor_2_bender(self, units=DistanceUnits.MICRON):
-        return self.__get_translational_motor_position(Motors.VKB_MOTOR_2[self.__beamline], units)
+        return self._get_translational_motor_position(Motors.VKB_MOTOR_2[self.__beamline], units)
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): 
-        self.__move_rotational_motor(Motors.VKB_MOTOR_3[self.__beamline], angle, movement, units)
+        self._move_rotational_motor(Motors.VKB_MOTOR_3[self.__beamline], angle, movement, units)
 
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): 
-        return self.__get_rotational_motor_angle(Motors.VKB_MOTOR_3[self.__beamline], units)
+        return self._get_rotational_motor_angle(Motors.VKB_MOTOR_3[self.__beamline], units)
     
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): 
-        self.__move_translational_motor(Motors.VKB_MOTOR_4[self.__beamline], translation, movement, units)
+        self._move_translational_motor(Motors.VKB_MOTOR_4[self.__beamline], translation, movement, units)
         
     def get_vkb_motor_4_translation(self, units=DistanceUnits.MICRON):  
-        return self.__get_translational_motor_position(Motors.VKB_MOTOR_4[self.__beamline], units)
+        return self._get_translational_motor_position(Motors.VKB_MOTOR_4[self.__beamline], units)
 
     # H-KB -----------------------
 
     def move_hkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self.__move_translational_motor(Motors.HKB_MOTOR_1[self.__beamline], pos_upstream, movement, units)
+        self._move_translational_motor(Motors.HKB_MOTOR_1[self.__beamline], pos_upstream, movement, units)
 
     def get_hkb_motor_1_bender(self, units=DistanceUnits.MICRON):
-        return self.__get_translational_motor_position(Motors.HKB_MOTOR_1[self.__beamline], units)
+        return self._get_translational_motor_position(Motors.HKB_MOTOR_1[self.__beamline], units)
 
     def move_hkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self.__move_translational_motor(Motors.HKB_MOTOR_2[self.__beamline], pos_downstream, movement, units)
 
     def get_hkb_motor_2_bender(self, units=DistanceUnits.MICRON): 
-        return self.__get_translational_motor_position(Motors.HKB_MOTOR_2[self.__beamline], units)
+        return self._get_translational_motor_position(Motors.HKB_MOTOR_2[self.__beamline], units)
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self.__move_rotational_motor(Motors.HKB_MOTOR_3[self.__beamline], angle, movement, units)
+        self._move_rotational_motor(Motors.HKB_MOTOR_3[self.__beamline], angle, movement, units)
         
     def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): 
         return self.__get_rotational_motor_angle(Motors.HKB_MOTOR_3[self.__beamline], units)
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): 
-        self.__move_translational_motor(Motors.HKB_MOTOR_4[self.__beamline], translation, movement, units)
+        self._move_translational_motor(Motors.HKB_MOTOR_4[self.__beamline], translation, movement, units)
     
     def get_hkb_motor_4_translation(self, units=DistanceUnits.MICRON): 
-        return self.__get_translational_motor_position(Motors.HKB_MOTOR_4[self.__beamline], units)
-
-    # PRIVATE METHODS
-    
-    @classmethod
-    def __move_translational_motor(cls, motor, pos, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        if units == DistanceUnits.MILLIMETERS: pos *= 1e3
-        elif units == DistanceUnits.MICRON: pass
-        else: raise ValueError("Distance units not recognized")
-
-        if movement   == Movement.ABSOLUTE: caput(motor + ".VAL", pos)
-        elif movement == Movement.RELATIVE: caput(motor + ".RLV", pos)
-        else: raise ValueError("Movement not recognized")
-
-    @classmethod
-    def __move_rotational_motor(cls, motor, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        if units == AngularUnits.MILLIRADIANS: pass
-        elif units == AngularUnits.DEGREES:    angle = 1e3 * numpy.radians(angle)
-        elif units == AngularUnits.RADIANS:    angle = 1e3 * angle
-        else: raise ValueError("Angular units not recognized")
-
-        if movement   == Movement.ABSOLUTE: caput(motor + ".VAL", angle)
-        elif movement == Movement.RELATIVE: caput(motor + ".RLV", angle)
-        else:  raise ValueError("Movement not recognized")
-
-    @classmethod
-    def __get_translational_motor_position(cls, motor, units=DistanceUnits.MICRON):
-        if units == DistanceUnits.MICRON:        return caget(motor + ".VAL")
-        elif units == DistanceUnits.MILLIMETERS: return 1e-3*caget(motor + ".VAL")
-        else: raise ValueError("Distance units not recognized")
-
-    @classmethod
-    def __get_rotational_motor_angle(cls, motor, units=AngularUnits.MILLIRADIANS):
-        if units == AngularUnits.MILLIRADIANS:  return caget(motor)
-        elif units == AngularUnits.DEGREES:     return numpy.degrees(caget(motor)*1e-3)
-        elif units == AngularUnits.RADIANS:     return caget(motor)*1e-3
-        else: raise ValueError("Angular units not recognized")
+        return self._get_translational_motor_position(Motors.HKB_MOTOR_4[self.__beamline], units)
 
         
     # get radiation characteristics ------------------------------

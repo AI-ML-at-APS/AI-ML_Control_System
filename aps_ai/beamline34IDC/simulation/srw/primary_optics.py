@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import numpy
-from aps_ai.beamline34IDC.simulation.facade.primary_optics_interface import AbstractPrimaryOptics
+from aps_ai.common.simulation.facade.primary_optics_interface import AbstractPrimaryOptics
 
 from syned.beamline.element_coordinates import ElementCoordinates
 from syned.beamline.beamline_element import BeamlineElement

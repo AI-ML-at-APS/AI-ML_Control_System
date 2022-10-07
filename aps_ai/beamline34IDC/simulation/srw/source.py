@@ -52,7 +52,7 @@ from wofrysrw.storage_ring.srw_electron_beam import SRWElectronBeam
 from wofrysrw.storage_ring.light_sources.srw_undulator_light_source import SRWUndulatorLightSource
 from wofrysrw.storage_ring.magnetic_structures.srw_undulator import SRWUndulator
 
-from aps_ai.beamline34IDC.simulation.facade.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
+from aps_ai.common.simulation.facade.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
 from aps_ai.common.util.shadow.common import codata, m2ev
 
 def srw_source_factory_method(kind_of_source=Sources.GAUSSIAN):

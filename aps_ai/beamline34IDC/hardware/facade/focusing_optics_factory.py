@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps_ai.beamline34IDC.hardware.facade import Implementors
+from aps_ai.common.hardware.facade.parameters import Implementors
 from aps_ai.beamline34IDC.hardware.epics.focusing_optics import epics_focusing_optics_factory_method
 from aps_ai.beamline34IDC.hardware.bluesky.focusing_optics import bluesky_focusing_optics_factory_method
 

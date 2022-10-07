@@ -1,5 +1,6 @@
-recursive-include beamline34IDC *.pyx
-recursive-include beamline34IDC *.py
+recursive-include aps_ai *.pyx
+recursive-include aps_ai *.py
+recursive-include scripts *.py
 
 recursive-include work_directory HKB.dat Pt.dat Si111.dat VKB.dat
 

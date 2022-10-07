@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------- #
-# Copyright (c) 2021, UChicago Argonne, LLC. All rights reserved.         #
+# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2021. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -45,15 +45,6 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps_ai.common.simulation.facade.parameters import Implementors
-from aps_ai.beamline34IDC.simulation.shadow.primary_optics import shadow_primary_optics_factory_method
-from aps_ai.beamline34IDC.simulation.srw.primary_optics import srw_primary_optics_factory_method
-
-#############################################################################
-# DESIGN PATTERN: FACTORY METHOD
-#
-
-def primary_optics_factory_method(implementor=Implementors.SHADOW):
-    if implementor==Implementors.SHADOW: return shadow_primary_optics_factory_method()
-    elif implementor==Implementors.SRW:  return srw_primary_optics_factory_method()
-    else: raise ValueError("Implementor not recognized")
+class Implementors:
+    SHADOW = 0
+    SRW = 1

@@ -46,7 +46,7 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from aps_ai.beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
+from aps_ai.common.simulation.facade.source_interface import Sources, StorageRing
 from aps_ai.beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
 from aps_ai.common.util.srw.common import plot_srw_wavefront_spatial_distribution, get_srw_wavefront_distribution_info, save_srw_wavefront
 

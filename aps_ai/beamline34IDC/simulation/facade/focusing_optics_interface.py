@@ -46,8 +46,8 @@
 # ----------------------------------------------------------------------- #
 
 from orangecontrib.ml.util.data_structures import DictionaryWrapper
-
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, DistanceUnits
+from aps_ai.common.facade.parameters import Movement, DistanceUnits
+from aps_ai.beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics
 
 def get_default_input_features(): # units: mm, mrad and micron for the bender
     return DictionaryWrapper(coh_slits_h_aperture=0.03,

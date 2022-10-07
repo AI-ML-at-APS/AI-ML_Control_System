@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps_ai.beamline34IDC.simulation.facade import Implementors
+from aps_ai.common.simulation.facade.parameters import Implementors
 from aps_ai.beamline34IDC.simulation.shadow.focusing_optics_factory import shadow_focusing_optics_factory_method
 from aps_ai.beamline34IDC.simulation.srw.focusing_optics import srw_focusing_optics_factory_method
 

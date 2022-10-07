@@ -45,8 +45,9 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps_ai.beamline34IDC.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics, Directions
+from aps_ai.common.facade.parameters import AngularUnits, DistanceUnits, Movement
+from aps_ai.common.hardware.facade.parameters import Directions
+from aps_ai.beamline34IDC.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
 
 def bluesky_focusing_optics_factory_method(**kwargs):
     return __BlueskyFocusingOptics(**kwargs)

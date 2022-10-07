@@ -49,11 +49,6 @@ from orangecontrib.ml.util.data_structures import DictionaryWrapper
 
 from aps_ai.beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, DistanceUnits
 
-class Directions:
-    HORIZONTAL = 0
-    VERTICAL = 1
-    BOTH = 2
-
 class AbstractHardwareFocusingOptics(AbstractFocusingOptics):
     def initialize(self, **kwargs): raise NotImplementedError()
 

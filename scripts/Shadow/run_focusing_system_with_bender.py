@@ -47,9 +47,9 @@
 import os
 import sys
 
-from aps_ai.beamline34IDC.simulation.facade import Implementors
-from aps_ai.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
+from aps_ai.common.facade.parameters import ExecutionMode, DistanceUnits, AngularUnits, Movement
+from aps_ai.common.simulation.facade.parameters import Implementors
+from aps_ai.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method
 from aps_ai.beamline34IDC.simulation.facade.focusing_optics_interface import get_default_input_features
 from aps_ai.common.util.shadow.common import plot_shadow_beam_spatial_distribution, get_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from aps_ai.common.util import clean_up

@@ -46,7 +46,7 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from aps_ai.beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
+from aps_ai.common.simulation.facade.source_interface import Sources, StorageRing
 from aps_ai.beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
 from aps_ai.common.util.shadow.common import plot_shadow_beam_spatial_distribution, plot_shadow_beam_divergence_distribution, get_shadow_beam_spatial_distribution, save_source_beam
 from aps_ai.common.util import clean_up

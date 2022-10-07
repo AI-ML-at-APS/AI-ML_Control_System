@@ -46,7 +46,7 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from aps_ai.beamline34IDC.simulation.facade.source_interface import Sources, StorageRing
+from aps_ai.common.simulation.facade.source_interface import Sources, StorageRing
 from aps_ai.beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
 from aps_ai.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
 from aps_ai.common.util.shadow.common import save_shadow_beam, PreProcessorFiles

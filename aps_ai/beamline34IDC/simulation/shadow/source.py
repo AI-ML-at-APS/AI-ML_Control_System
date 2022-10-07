@@ -54,14 +54,12 @@ from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, S
 from orangecontrib.shadow_advanced_tools.widgets.sources.attributes.hybrid_undulator_attributes import HybridUndulatorAttributes
 import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as HU
 
-from aps_ai.beamline34IDC.simulation.facade.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
+from aps_ai.common.simulation.facade.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
 from aps_ai.common.util.shadow.common import TTYInibitor
 
 def shadow_source_factory_method(kind_of_source=Sources.GAUSSIAN):
-    if kind_of_source == Sources.GAUSSIAN:
-        return __ShadowGaussianUndulatorSource()
-    elif kind_of_source == Sources.UNDULATOR:
-        return __ShadowHybridUndulatorSource()
+    if kind_of_source == Sources.GAUSSIAN:    return __ShadowGaussianUndulatorSource()
+    elif kind_of_source == Sources.UNDULATOR: return __ShadowHybridUndulatorSource()
     else:
         raise ValueError("Kind of Source not recognized")
 
