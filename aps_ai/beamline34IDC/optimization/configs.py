@@ -46,9 +46,11 @@
 # ----------------------------------------------------------------------- #
 
 import numpy as np
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import MotorResolution
 
-motor_resolutions = MotorResolution.getInstance()
+from aps_ai.beamline34IDC.facade.focusing_optics_interface import MotorResolutionRegistry
+
+motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("34-ID-C")
+
 # not sure about the movement ranges for hkb4 and vkb4
 DEFAULT_MOVEMENT_RANGES = {#'hkb_4': [-0.200, 0.200], 
                            #'vkb_4': [-0.200, 0.200], 
@@ -64,16 +66,16 @@ DEFAULT_MOVEMENT_RANGES = {#'hkb_4': [-0.200, 0.200],
 
 # I am adding this because the focusing system interface does not currently contain resolution
 # values for hkb_q, vkb_q, hkb_1_2, and vkb_1_2 motors.
-DEFAULT_MOTOR_RESOLUTIONS = {'hkb_4': motor_resolutions.get_hkb_motor_4_translation_resolution()[0],
-                             'vkb_4': motor_resolutions.get_vkb_motor_4_translation_resolution()[0],
-                             'hkb_3': motor_resolutions.get_hkb_motor_3_pitch_resolution()[0],
-                             'vkb_3': motor_resolutions.get_vkb_motor_3_pitch_resolution()[0],
+DEFAULT_MOTOR_RESOLUTIONS = {'hkb_4': motor_resolutions.get_motor_resolution("hkb_motor_4_translation")[0],
+                             'vkb_4': motor_resolutions.get_motor_resolution("vkb_motor_4_translation")[0],
+                             'hkb_3': motor_resolutions.get_motor_resolution("hkb_motor_3_pitch")[0],
+                             'vkb_3': motor_resolutions.get_motor_resolution("vkb_motor_3_pitch")[0],
                              'hkb_q': 0.1, # in mm
                              'vkb_q': 0.1, # in mm
-                             'hkb_1': motor_resolutions.get_hkb_motor_1_2_bender_resolution()[0], 
-                             'vkb_1': motor_resolutions.get_vkb_motor_1_2_bender_resolution()[0], 
-                             'hkb_2': motor_resolutions.get_hkb_motor_1_2_bender_resolution()[0],
-                             'vkb_2': motor_resolutions.get_vkb_motor_1_2_bender_resolution()[0],
+                             'hkb_1': motor_resolutions.get_motor_resolution("hkb_motor_1_2_bender")[0],
+                             'vkb_1': motor_resolutions.get_motor_resolution("vkb_motor_1_2_bender")[0],
+                             'hkb_2': motor_resolutions.get_motor_resolution("hkb_motor_1_2_bender")[0],
+                             'vkb_2': motor_resolutions.get_motor_resolution("vkb_motor_1_2_bender")[0],
                              }
 
 DEFAULT_MOTOR_TOLERANCES = DEFAULT_MOTOR_RESOLUTIONS

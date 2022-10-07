@@ -48,7 +48,7 @@ import numpy as np
 import skopt
 from aps_ai.beamline34IDC.optimization import common,  configs
 from typing import List, Tuple, Callable, NoReturn
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import DistanceUnits
+from aps_ai.common.facade.parameters import DistanceUnits
 
 
 class SkoptGaussianProcessOptimizer(common.OptimizationCommon):

@@ -46,7 +46,7 @@
 # ----------------------------------------------------------------------- #
 
 import numpy as np
-from aps_ai.beamline34IDC.simulation.facade.focusing_optics_interface import Movement
+from aps_ai.common.facade.parameters import Movement
 
 
 # Using distance units of micrometers
