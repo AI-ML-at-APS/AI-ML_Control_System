@@ -218,7 +218,7 @@ def __load_shadow_file(shadow_element, file_name):
 
     for name, value in config_parser.items("dummy_section"):
         if value.isdigit(): value = int(value)
-        elif value.replace('.','',1).replace('-','',1).replace('E','',1).isdigit(): value = float(value)
+        elif value.replace('.', '', 1).replace('-', '', 2).replace('E', '', 1).isdigit(): value = float(value)
         else: value = value.encode()
 
         setattr(shadow_element, name, value)
