@@ -63,7 +63,8 @@ class __PrimaryOptics(AbstractPrimaryOptics):
         self.__optical_system = None
 
     def initialize(self, source_photon_beam, **kwargs):
-
+        try: relative_source_position = kwargs["relative_source_position"]
+        except: relative_source_position = 0.0
         self.__source_beam = source_photon_beam
 
         energies = ShadowPhysics.getEnergyFromShadowK(self.__source_beam._beam.rays[:, 10])
@@ -92,7 +93,7 @@ class __PrimaryOptics(AbstractPrimaryOptics):
         white_beam_slits.T_IMAGE = 0.0
         white_beam_slits.T_INCIDENCE = 0.0
         white_beam_slits.T_REFLECTION = 180.0
-        white_beam_slits.T_SOURCE = 27000.0
+        white_beam_slits.T_SOURCE = 27000.0 + relative_source_position # only 1 undulator is running
 
         primary_mirror_1 = Shadow.OE()
         primary_mirror_1.ALPHA = 90.0

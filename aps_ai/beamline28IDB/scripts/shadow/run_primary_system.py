@@ -52,9 +52,10 @@ from aps_ai.common.simulation.facade.source_factory import Implementors
 from aps_ai.common.util.shadow.common import load_source_beam, save_shadow_beam, plot_shadow_beam_spatial_distribution
 from aps_ai.common.util import clean_up
 
+import Shadow
 
 if __name__ == "__main__":
-    verbose = False
+    verbose = True
 
     os.chdir("../../../../work_directory/28-ID")
 
@@ -65,12 +66,14 @@ if __name__ == "__main__":
 
     # Primary Optics System -------------------------
     primary_system = primary_optics_factory_method(implementor=Implementors.SHADOW)
-    primary_system.initialize(source_photon_beam=source_beam)
+    primary_system.initialize(source_photon_beam=source_beam, relative_source_position=1300)
 
     output_beam = primary_system.get_photon_beam(verbose=verbose)
 
     save_shadow_beam(output_beam, "primary_optics_system_beam.dat")
 
     plot_shadow_beam_spatial_distribution(output_beam)#, xrange=[-0.2, 0.2], yrange=[-0.2, 0.2])
+
+    Shadow.ShadowTools.histo1(output_beam._beam, 11, nolost=1, ref=23, xrange=[19650, 20150])
 
     clean_up()

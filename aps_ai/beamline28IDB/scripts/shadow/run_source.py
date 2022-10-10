@@ -61,8 +61,6 @@ if __name__ == "__main__":
 
     source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.UNDULATOR)
     source.initialize(n_rays=1000000, random_seed=56565, verbose=True, storage_ring=StorageRing.APS)
-
-    #source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
     source.set_K_on_specific_harmonic(harmonic_energy=4000, harmonic_number=1, which=source.KDirection.VERTICAL)
     source.set_energy(photon_energy_distribution=source.PhotonEnergyDistributions.RANGE, energy=[17500.0, 20500.0], energy_points=300)
     source.set_undulator_parameters(longitudinal_central_position=-1.3, waist_position_user_defined=0.6814)
@@ -71,6 +69,7 @@ if __name__ == "__main__":
                                     source_dimension_wf_h_slit_points=200,
                                     source_dimension_wf_v_slit_points=100,
                                     source_dimension_wf_distance=25.5)
+
     source_beam = source.get_source_beam(verbose=verbose)
     save_source_beam(source_beam, "undulator_source.dat")
 
