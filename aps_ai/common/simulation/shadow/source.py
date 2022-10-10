@@ -202,6 +202,45 @@ class __ShadowHybridUndulatorSource(AbstractSource):
         self.__widget.number_of_rays = n_rays
         self.__widget.seed = random_seed
 
+    def set_wavefront_parameters(self,
+                                 source_dimension_wf_h_slit_gap,
+                                 source_dimension_wf_v_slit_gap,
+                                 source_dimension_wf_h_slit_points,
+                                 source_dimension_wf_v_slit_points,
+                                 source_dimension_wf_distance,
+                                 horizontal_range_modification_factor_at_resizing=0.5,
+                                 horizontal_resolution_modification_factor_at_resizing=5.0,
+                                 vertical_range_modification_factor_at_resizing=0.5,
+                                 vertical_resolution_modification_factor_at_resizing=5.0):
+        self.__widget.source_dimension_wf_h_slit_gap    = source_dimension_wf_h_slit_gap
+        self.__widget.source_dimension_wf_v_slit_gap    = source_dimension_wf_v_slit_gap
+        self.__widget.source_dimension_wf_h_slit_points = source_dimension_wf_h_slit_points
+        self.__widget.source_dimension_wf_v_slit_points = source_dimension_wf_v_slit_points
+        self.__widget.source_dimension_wf_distance      = source_dimension_wf_distance
+
+        self.__widget.horizontal_range_modification_factor_at_resizing      = horizontal_range_modification_factor_at_resizing
+        self.__widget.horizontal_resolution_modification_factor_at_resizing = horizontal_resolution_modification_factor_at_resizing
+        self.__widget.vertical_range_modification_factor_at_resizing        = vertical_range_modification_factor_at_resizing
+        self.__widget.vertical_resolution_modification_factor_at_resizing   = vertical_resolution_modification_factor_at_resizing
+
+    def set_undulator_parameters(self,
+                                 number_of_periods = 71,
+                                 undulator_period=0.033,
+                                 horizontal_central_position=0.0,
+                                 vertical_central_position = 0.0,
+                                 longitudinal_central_position = 0.0,
+                                 waist_position_user_defined = 0.0):
+        self.__widget.number_of_periods = number_of_periods
+        self.__widget.undulator_period = undulator_period
+        self.__widget.horizontal_central_position = horizontal_central_position
+        self.__widget.vertical_central_position = vertical_central_position
+        self.__widget.longitudinal_central_position = longitudinal_central_position
+        if waist_position_user_defined != 0.0:
+            self.__widget.waist_position_calculation = 2
+            self.__widget.waist_position_user_defined = waist_position_user_defined
+        else:
+            self.__widget.waist_position_calculation = 0
+
     def set_angular_acceptance(self, divergence=[1e-4, 1e-4]):
         if divergence is None:
             self.__aperture = None
@@ -381,6 +420,22 @@ class __ShadowHybridUndulatorSource(AbstractSource):
 
             self.auto_expand = 0
             self.auto_expand_rays = 0
+
+            self.waist_position_calculation = 0 # none
+            self.waist_position = 0.0
+            self.waist_position_auto = 0
+            self.waist_position_auto_h = 0.0
+            self.waist_position_auto_v = 0.0
+            self.waist_back_propagation_parameters = 1
+            self.waist_horizontal_range_modification_factor_at_resizing = 0.5
+            self.waist_horizontal_resolution_modification_factor_at_resizing = 5.0
+            self.waist_vertical_range_modification_factor_at_resizing = 0.5
+            self.waist_vertical_resolution_modification_factor_at_resizing = 5.0
+            self.which_waist = 2
+            self.number_of_waist_fit_points = 10
+            self.degree_of_waist_fit = 3
+            self.use_sigma_or_fwhm = 0
+            self.waist_position_user_defined = 0.0
 
             self.kind_of_sampler = 1
             self.save_srw_result = 0

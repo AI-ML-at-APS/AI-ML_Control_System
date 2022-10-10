@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------- #
-# Copyright (c) 2021, UChicago Argonne, LLC. All rights reserved.         #
+# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2021. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -44,42 +44,3 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-from aps_ai.common.facade.parameters import MotorResolutionRegistry, MotorResolutionSet, MotorType, MotorResolution, DistanceUnits, Movement, AngularUnits
-
-motors = {}
-motors["vkb_motor_bender"]      = MotorResolution(1.0,  MotorType.OTHER)         # Bimorph mirror: bender is an actuator, "position" is in Volt
-motors["vkb_motor_pitch"]       = MotorResolution(1e-4, MotorType.ROTATIONAL)    # deg
-motors["vkb_motor_translation"] = MotorResolution(1e-4, MotorType.TRANSLATIONAL) # mm
-motors["hkb_motor_bender"]      = MotorResolution(1e-7, MotorType.TRANSLATIONAL) # mm
-motors["hkb_motor_pitch"]       = MotorResolution(1e-4, MotorType.ROTATIONAL)    # deg
-motors["hkb_motor_translation"] = MotorResolution(1e-4, MotorType.TRANSLATIONAL) # mm
-
-MotorResolutionRegistry.getInstance().register_motor_resolution_set(MotorResolutionSet(motors=motors), "28-ID-B")
-
-class AbstractFocusingOptics():
-
-    #####################################################################################
-    # This methods represent the run-time interface, to interact with the optical system
-    # in real time, like in the real beamline
-
-    # V-KB -----------------------
-
-    def move_vkb_motor_bender(self, actuator_value, movement=Movement.ABSOLUTE): raise NotImplementedError()
-    def get_vkb_motor_bender(self): raise NotImplementedError()
-    def move_vkb_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def get_vkb_motor_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def move_vkb_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_vkb_motor_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
-
-    # H-KB -----------------------
-
-    def move_hkb_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_hkb_motor_1_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def move_hkb_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_hkb_motor_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def move_hkb_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def get_hkb_motor_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def move_hkb_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_hkb_motor_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
-
-    def get_photon_beam(self, **kwargs): raise NotImplementedError()

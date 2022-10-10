@@ -46,25 +46,31 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from aps_ai.beamline34IDC.simulation.facade.source_factory import Implementors
+from aps_ai.common.simulation.facade.source_interface import Sources, StorageRing
+from aps_ai.common.simulation.facade.source_factory import source_factory_method, Implementors
+from aps_ai.common.util.srw.common import save_srw_wavefront, plot_srw_wavefront_spatial_distribution
+
 from aps_ai.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
-from aps_ai.common.util.srw.common import load_srw_wavefront, save_srw_wavefront, plot_srw_wavefront_spatial_distribution
 
 if __name__ == "__main__":
     verbose = False
 
-    os.chdir("../../work_directory")
+    os.chdir("../../../../work_directory/34-ID")
+
+    implementor    = Implementors.SRW
+    kind_of_source = Sources.UNDULATOR
 
     # Source -------------------------
-    source_beam = load_srw_wavefront("srw_undulator_source.dat")
+    source = source_factory_method(implementor=implementor, kind_of_source=kind_of_source)
+    source.initialize(storage_ring=StorageRing.APS)
+    source.set_energy(energy=5000)
 
     # Primary Optics System -------------------------
-    primary_system = primary_optics_factory_method(implementor=Implementors.SRW)
-    primary_system.initialize(source_photon_beam=source_beam)
+    primary_system = primary_optics_factory_method(implementor=implementor)
+    primary_system.initialize(source_photon_beam=source.get_source_beam(verbose=verbose))
 
     input_beam = primary_system.get_photon_beam(verbose=verbose)
 
     save_srw_wavefront(input_beam, "primary_optics_system_srw_wavefront.dat")
 
-    plot_srw_wavefront_spatial_distribution(input_beam, xrange=None, yrange=None, title="Wavefront incident on Coh-Slits")
-
+    plot_srw_wavefront_spatial_distribution(input_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])

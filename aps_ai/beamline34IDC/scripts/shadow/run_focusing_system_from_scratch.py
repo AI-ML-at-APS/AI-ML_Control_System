@@ -44,54 +44,62 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os
 
 from aps_ai.common.simulation.facade.parameters import Implementors
-from aps_ai.common.util.common import PlotMode, AspectRatio, ColorMap
+from aps_ai.common.simulation.facade.source_interface import Sources, StorageRing
+from aps_ai.common.simulation.facade.source_factory import source_factory_method
+from aps_ai.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
+from aps_ai.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
 
-from aps_ai.common.util.srw.common import get_srw_wavefront_distribution_info, plot_srw_wavefront_spatial_distribution, \
-    load_srw_wavefront, save_srw_wavefront
-from aps_ai.common.util.shadow.common import get_shadow_beam_spatial_distribution, get_shadow_beam_divergence_distribution, \
-    plot_shadow_beam_divergence_distribution, plot_shadow_beam_spatial_distribution, \
-    load_shadow_beam, load_source_beam, save_shadow_beam, save_source_beam
+from aps_ai.common.util.shadow.common import plot_shadow_beam_spatial_distribution, save_shadow_beam, PreProcessorFiles
+from aps_ai.common.util import clean_up
 
-def load_beam(implementor, file_name, **kwargs):
-    if implementor == Implementors.SRW: return load_srw_wavefront(file_name)
-    elif implementor == Implementors.SHADOW:
-        try:
-            if kwargs["which_beam"] == "source": return load_source_beam(file_name)
-            else:                                return load_shadow_beam(file_name)
-        except: return load_shadow_beam(file_name)
 
-def save_beam(beam, file_name, implementor=Implementors.SHADOW, **kwargs):
-    if implementor == Implementors.SRW: save_srw_wavefront(srw_wavefront=beam, file_name=file_name)
-    elif implementor == Implementors.SHADOW:
-        try:
-            if kwargs["which_beam"] == "source": save_source_beam(source_beam=beam, file_name=file_name)
-            else:                                save_shadow_beam(shadow_beam=beam, file_name=file_name)
-        except: save_shadow_beam(shadow_beam=beam, file_name=file_name)
+if __name__ == "__main__":
 
-def get_distribution_info(implementor, beam, xrange=None, yrange=None, title="X,Z", do_gaussian_fit=False, **kwargs):
-    if implementor == Implementors.SRW: return get_srw_wavefront_distribution_info(beam, title, xrange, yrange, do_gaussian_fit)
-    elif implementor == Implementors.SHADOW:
-        try:    nbins = kwargs["nbins"]
-        except: nbins = 201
-        try:    nolost = kwargs["nolost"]
-        except: nolost = 1
+    os.chdir("../../../../work_directory/34-ID")
 
-        try:
-            if kwargs["distribution"] == "spatial": return get_shadow_beam_spatial_distribution(beam, nbins, nolost, title, xrange, yrange)
-            elif kwargs["distribution"] == "divergence": return get_shadow_beam_divergence_distribution(beam, nbins, nolost, title, xrange, yrange)
-        except: return get_shadow_beam_spatial_distribution(beam, nbins, nolost, title, xrange, yrange)
+    clean_up()
 
-def plot_distribution(implementor, beam, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, **kwargs):
-    if implementor == Implementors.SRW: plot_srw_wavefront_spatial_distribution(beam, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
-    elif implementor == Implementors.SHADOW:
-        try: nbins = kwargs["nbins"]
-        except: nbins = 201
-        try: nolost = kwargs["nolost"]
-        except: nolost = 1
+    verbose = False
 
-        try:
-            if kwargs["distribution"] == "spatial":      plot_shadow_beam_spatial_distribution(beam, nbins, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
-            elif kwargs["distribution"] == "divergence": plot_shadow_beam_divergence_distribution(beam, nbins, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
-        except: plot_shadow_beam_spatial_distribution(beam, nbins, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
+    implementor    = Implementors.SHADOW
+    kind_of_source = Sources.GAUSSIAN
+
+    # Source -------------------------
+    source = source_factory_method(implementor=implementor, kind_of_source=kind_of_source)
+    source.initialize(storage_ring=StorageRing.APS, n_rays=5000000, random_seed=3245345)
+    source.set_angular_acceptance_from_aperture(aperture=[0.2, 0.2], distance=50500)
+    source.set_energy(energy=[9998.0, 10002.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
+
+    # Primary Optics System -------------------------
+    primary_system = primary_optics_factory_method(implementor=implementor)
+    primary_system.initialize(source_photon_beam=source.get_source_beam(verbose=verbose), rewrite_preprocessor_files=PreProcessorFiles.YES_FULL_RANGE)
+
+    # Focusing Optics System -------------------------
+
+    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=implementor)
+
+    focusing_system.initialize(input_photon_beam=primary_system.get_photon_beam(verbose=verbose),
+                               rewrite_preprocessor_files=PreProcessorFiles.NO,
+                               rewrite_height_error_profile_files=False)
+
+    focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
+
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=34534565)
+
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+
+    save_shadow_beam(output_beam, "focusing_optics_system.dat")
+
+    '''
+    focusing_system.modify_coherence_slits(coh_slits_h_center=0.05)
+    focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, AngularUnits.MILLIRADIANS)
+    focusing_system.move_hkb_motor_4_translation(-0.1, movement=Movement.RELATIVE)
+
+    output_beam = focusing_system.get_photon_beam(verbose=verbose)
+
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
+    '''
+    clean_up()

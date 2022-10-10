@@ -1,6 +1,6 @@
 import os
 
-from aps_ai.beamline34IDC.simulation.facade import Implementors
+from aps_ai.common.simulation.facade.parameters import Implementors
 from aps_ai.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
 from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits, DistanceUnits
 

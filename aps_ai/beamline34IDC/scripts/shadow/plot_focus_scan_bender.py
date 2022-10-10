@@ -19,7 +19,7 @@ def plot_3D(xx, yy, zz, label):
 
 
 if __name__ == "__main__":
-    os.chdir("../../work_directory")
+    os.chdir("../../../../work_directory/34-ID")
 
     with open("positions_up.npy", 'rb') as f: positions_up = numpy.load(f)
     with open("positions_down.npy", 'rb') as f: positions_down = numpy.load(f)

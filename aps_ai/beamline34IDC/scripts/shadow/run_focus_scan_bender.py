@@ -47,7 +47,7 @@
 import os, numpy
 import sys
 
-from aps_ai.beamline34IDC.simulation.facade import Implementors
+from aps_ai.common.simulation.facade.parameters import Implementors
 from aps_ai.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
 from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, DistanceUnits
 from aps_ai.beamline34IDC.simulation.facade.focusing_optics_interface import get_default_input_features
@@ -60,7 +60,7 @@ from plot_focus_scan_bender import plot_3D
 if __name__ == "__main__":
     verbose = False
 
-    os.chdir("../../work_directory")
+    os.chdir("../../../../work_directory/34-ID")
 
     clean_up()
 

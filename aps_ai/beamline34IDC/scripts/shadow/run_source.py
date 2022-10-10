@@ -46,30 +46,44 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from aps_ai.beamline34IDC.simulation.facade.source_factory import Implementors
-from aps_ai.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
-from aps_ai.common.util.shadow.common import load_source_beam, save_shadow_beam, plot_shadow_beam_spatial_distribution, PreProcessorFiles
+from aps_ai.common.simulation.facade.source_interface import Sources, StorageRing
+from aps_ai.common.simulation.facade.source_factory import source_factory_method, Implementors
+from aps_ai.common.util.shadow.common import plot_shadow_beam_spatial_distribution, plot_shadow_beam_divergence_distribution, get_shadow_beam_spatial_distribution, save_source_beam
 from aps_ai.common.util import clean_up
 
-
 if __name__ == "__main__":
+
     verbose = False
 
-    os.chdir("../../work_directory")
+    os.chdir("../../../../work_directory/34-ID")
 
     clean_up()
 
-    # Source -------------------------
-    source_beam = load_source_beam("gaussian_undulator_source.dat")
+    source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.GAUSSIAN)
+    source.initialize(n_rays=1000000, random_seed=3245345, storage_ring=StorageRing.APS)
 
-    # Primary Optics System -------------------------
-    primary_system = primary_optics_factory_method(implementor=Implementors.SHADOW)
-    primary_system.initialize(source_photon_beam=source_beam, rewrite_preprocessor_files=PreProcessorFiles.YES_SOURCE_RANGE)
+    source.set_angular_acceptance_from_aperture(aperture=[0.16, 0.16], distance=50500)
+    source.set_energy(energy=[9998.0, 10002.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
 
-    input_beam = primary_system.get_photon_beam(verbose=verbose)
+    source_beam = source.get_source_beam(verbose=verbose)
 
-    save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
+    save_source_beam(source_beam, "gaussian_undulator_source.dat")
 
-    plot_shadow_beam_spatial_distribution(input_beam, xrange=[-0.2, 0.2], yrange=[-0.2, 0.2])
+    plot_shadow_beam_spatial_distribution(source_beam)
+    plot_shadow_beam_divergence_distribution(source_beam, plot_mode=1)
+
+    '''
+    source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.UNDULATOR)
+    source.initialize(n_rays=50000, random_seed=3245345, verbose=True, storage_ring=StorageRing.APS)
+
+    source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
+    source.set_K_on_specific_harmonic(harmonic_energy=6000, harmonic_number=1, which=source.KDirection.VERTICAL)
+    source.set_energy(photon_energy_distribution=source.PhotonEnergyDistributions.ON_HARMONIC, harmonic_number=1)
+
+    plot_shadow_beam_spatial_distribution(source.get_source_beam(ignore_aperture=True), xrange=[-1, 1], yrange=[-0.05, 0.05])
+    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-1, 1], yrange=[-0.05, 0.05])
+    '''
+
+    shadow_histogram = get_shadow_beam_spatial_distribution(source_beam, xrange=[-1, 1], yrange=[-0.05, 0.05])
 
     clean_up()

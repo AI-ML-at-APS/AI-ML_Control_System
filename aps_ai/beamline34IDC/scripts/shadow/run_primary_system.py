@@ -44,54 +44,32 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os
 
-from aps_ai.common.simulation.facade.parameters import Implementors
-from aps_ai.common.util.common import PlotMode, AspectRatio, ColorMap
+from aps_ai.common.simulation.facade.source_factory import Implementors
+from aps_ai.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
+from aps_ai.common.util.shadow.common import load_source_beam, save_shadow_beam, plot_shadow_beam_spatial_distribution, PreProcessorFiles
+from aps_ai.common.util import clean_up
 
-from aps_ai.common.util.srw.common import get_srw_wavefront_distribution_info, plot_srw_wavefront_spatial_distribution, \
-    load_srw_wavefront, save_srw_wavefront
-from aps_ai.common.util.shadow.common import get_shadow_beam_spatial_distribution, get_shadow_beam_divergence_distribution, \
-    plot_shadow_beam_divergence_distribution, plot_shadow_beam_spatial_distribution, \
-    load_shadow_beam, load_source_beam, save_shadow_beam, save_source_beam
 
-def load_beam(implementor, file_name, **kwargs):
-    if implementor == Implementors.SRW: return load_srw_wavefront(file_name)
-    elif implementor == Implementors.SHADOW:
-        try:
-            if kwargs["which_beam"] == "source": return load_source_beam(file_name)
-            else:                                return load_shadow_beam(file_name)
-        except: return load_shadow_beam(file_name)
+if __name__ == "__main__":
+    verbose = False
 
-def save_beam(beam, file_name, implementor=Implementors.SHADOW, **kwargs):
-    if implementor == Implementors.SRW: save_srw_wavefront(srw_wavefront=beam, file_name=file_name)
-    elif implementor == Implementors.SHADOW:
-        try:
-            if kwargs["which_beam"] == "source": save_source_beam(source_beam=beam, file_name=file_name)
-            else:                                save_shadow_beam(shadow_beam=beam, file_name=file_name)
-        except: save_shadow_beam(shadow_beam=beam, file_name=file_name)
+    os.chdir("../../../../work_directory/34-ID")
 
-def get_distribution_info(implementor, beam, xrange=None, yrange=None, title="X,Z", do_gaussian_fit=False, **kwargs):
-    if implementor == Implementors.SRW: return get_srw_wavefront_distribution_info(beam, title, xrange, yrange, do_gaussian_fit)
-    elif implementor == Implementors.SHADOW:
-        try:    nbins = kwargs["nbins"]
-        except: nbins = 201
-        try:    nolost = kwargs["nolost"]
-        except: nolost = 1
+    clean_up()
 
-        try:
-            if kwargs["distribution"] == "spatial": return get_shadow_beam_spatial_distribution(beam, nbins, nolost, title, xrange, yrange)
-            elif kwargs["distribution"] == "divergence": return get_shadow_beam_divergence_distribution(beam, nbins, nolost, title, xrange, yrange)
-        except: return get_shadow_beam_spatial_distribution(beam, nbins, nolost, title, xrange, yrange)
+    # Source -------------------------
+    source_beam = load_source_beam("gaussian_undulator_source.dat")
 
-def plot_distribution(implementor, beam, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, **kwargs):
-    if implementor == Implementors.SRW: plot_srw_wavefront_spatial_distribution(beam, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
-    elif implementor == Implementors.SHADOW:
-        try: nbins = kwargs["nbins"]
-        except: nbins = 201
-        try: nolost = kwargs["nolost"]
-        except: nolost = 1
+    # Primary Optics System -------------------------
+    primary_system = primary_optics_factory_method(implementor=Implementors.SHADOW)
+    primary_system.initialize(source_photon_beam=source_beam, rewrite_preprocessor_files=PreProcessorFiles.YES_SOURCE_RANGE)
 
-        try:
-            if kwargs["distribution"] == "spatial":      plot_shadow_beam_spatial_distribution(beam, nbins, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
-            elif kwargs["distribution"] == "divergence": plot_shadow_beam_divergence_distribution(beam, nbins, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
-        except: plot_shadow_beam_spatial_distribution(beam, nbins, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
+    input_beam = primary_system.get_photon_beam(verbose=verbose)
+
+    save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
+
+    plot_shadow_beam_spatial_distribution(input_beam, xrange=[-0.2, 0.2], yrange=[-0.2, 0.2])
+
+    clean_up()

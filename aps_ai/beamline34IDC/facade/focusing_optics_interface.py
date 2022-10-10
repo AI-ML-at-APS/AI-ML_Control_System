@@ -55,7 +55,7 @@ motors["hkb_motor_1_2_bender"]    = MotorResolution(1e-7, MotorType.TRANSLATIONA
 motors["hkb_motor_3_pitch"]       = MotorResolution(1e-4, MotorType.ROTATIONAL)    # deg
 motors["hkb_motor_4_translation"] = MotorResolution(1e-4, MotorType.TRANSLATIONAL) # mm
 
-MotorResolutionRegistry.register_motor_resolution_set(MotorResolutionSet(motors=motors), "34-ID-C")
+MotorResolutionRegistry.getInstance().register_motor_resolution_set(MotorResolutionSet(motors=motors), "34-ID-C")
 
 class AbstractFocusingOptics():
 

@@ -47,14 +47,14 @@
 import os
 
 from aps_ai.common.simulation.facade.source_interface import Sources, StorageRing
-from aps_ai.beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
+from aps_ai.common.simulation.facade.source_factory import source_factory_method, Implementors
 from aps_ai.common.util.srw.common import plot_srw_wavefront_spatial_distribution, get_srw_wavefront_distribution_info, save_srw_wavefront
 
 if __name__ == "__main__":
 
     verbose = False
 
-    os.chdir("../../work_directory")
+    os.chdir("../../../../work_directory/34-ID")
 
     source = source_factory_method(implementor=Implementors.SRW, kind_of_source=Sources.UNDULATOR)
     source.initialize(storage_ring=StorageRing.APS)

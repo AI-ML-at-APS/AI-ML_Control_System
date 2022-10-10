@@ -60,7 +60,7 @@ from Shadow.ShadowTools import focnew
 if __name__ == "__main__":
     verbose = False
 
-    os.chdir("../../work_directory")
+    os.chdir("../../../../work_directory/34-ID")
 
     clean_up()
 

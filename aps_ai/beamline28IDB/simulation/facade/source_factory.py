@@ -44,45 +44,17 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os
+from aps_ai.common.simulation.shadow.source import shadow_source_factory_method
+from aps_ai.common.simulation.srw.source import srw_source_factory_method
+from aps_ai.common.simulation.facade.source_interface import Sources
+from aps_ai.common.simulation.facade.parameters import Implementors
 
-from aps_ai.beamline34IDC.simulation.facade import Implementors
-from aps_ai.common.simulation.facade.source_interface import Sources, StorageRing
-from aps_ai.beamline34IDC.simulation.facade.source_factory import source_factory_method
-from aps_ai.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
-from aps_ai.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
+#############################################################################
+# DESIGN PATTERN: FACTORY METHOD
+#
 
-from aps_ai.common.util.srw.common import plot_srw_wavefront_spatial_distribution
+def source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.GAUSSIAN):
+    if implementor==Implementors.SHADOW: return shadow_source_factory_method(kind_of_source=kind_of_source)
+    elif implementor==Implementors.SRW:  return srw_source_factory_method(kind_of_source=kind_of_source)
+    else: raise ValueError("Implementor not recognized")
 
-if __name__ == "__main__":
-
-    os.chdir("../../work_directory")
-
-    verbose = False
-
-    implementor    = Implementors.SRW
-    kind_of_source = Sources.UNDULATOR
-
-    # Source -------------------------
-    source = source_factory_method(implementor=implementor, kind_of_source=kind_of_source)
-    source.initialize(storage_ring=StorageRing.APS)
-    source.set_energy(energy=5000.0)
-
-    # Primary Optics System -------------------------
-    primary_system = primary_optics_factory_method(implementor=implementor)
-    primary_system.initialize(source_photon_beam=source.get_source_beam(verbose=verbose))
-
-    # Focusing Optics System -------------------------
-
-    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=implementor)
-
-    focusing_system.initialize(input_photon_beam=primary_system.get_photon_beam(verbose=verbose),
-                               rewrite_height_error_profile_files=False)
-
-    focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
-
-    output_beam = focusing_system.get_photon_beam(verbose=verbose, debug_mode=False)
-
-    plot_srw_wavefront_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], title="Initial Beam")
-
-    #save_srw_wavefront(output_beam, "focusing_optics_system_srw.dat")

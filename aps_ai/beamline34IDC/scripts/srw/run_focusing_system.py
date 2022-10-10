@@ -60,7 +60,7 @@ if __name__ == "__main__":
     aspect_ratio = AspectRatio.AUTO
     color_map = ColorMap.GRAY
 
-    os.chdir("../../work_directory")
+    os.chdir("../../../../work_directory/34-ID")
 
     input_beam = load_beam(Implementors.SRW, "primary_optics_system_srw_wavefront.dat")
 

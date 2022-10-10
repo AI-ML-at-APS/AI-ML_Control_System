@@ -46,34 +46,26 @@
 # ----------------------------------------------------------------------- #
 import os
 
-from aps_ai.common.simulation.facade.source_interface import Sources, StorageRing
-from aps_ai.beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
+from aps_ai.common.simulation.facade.source_factory import Implementors
+from aps_ai.common.util.srw.common import load_srw_wavefront, save_srw_wavefront, plot_srw_wavefront_spatial_distribution
+
 from aps_ai.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
-from aps_ai.common.util.shadow.common import save_shadow_beam, PreProcessorFiles
-from aps_ai.common.util import clean_up
 
 if __name__ == "__main__":
     verbose = False
 
-    os.chdir("../../work_directory")
-
-    clean_up()
-
-    implementor    = Implementors.SHADOW
-    kind_of_source = Sources.GAUSSIAN
+    os.chdir("../../../../work_directory/34-ID")
 
     # Source -------------------------
-    source = source_factory_method(implementor=implementor, kind_of_source=kind_of_source)
-    source.initialize(storage_ring=StorageRing.APS, n_rays=500000, random_seed=3245345)
-    source.set_angular_acceptance_from_aperture(aperture=[0.2, 0.2], distance=50500)
-    source.set_energy(energy=[9998.0, 10002.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
+    source_beam = load_srw_wavefront("srw_undulator_source.dat")
 
     # Primary Optics System -------------------------
-    primary_system = primary_optics_factory_method(implementor=implementor)
-    primary_system.initialize(source_photon_beam=source.get_source_beam(verbose=verbose), rewrite_preprocessor_files=PreProcessorFiles.NO)
+    primary_system = primary_optics_factory_method(implementor=Implementors.SRW)
+    primary_system.initialize(source_photon_beam=source_beam)
 
     input_beam = primary_system.get_photon_beam(verbose=verbose)
 
-    save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
+    save_srw_wavefront(input_beam, "primary_optics_system_srw_wavefront.dat")
 
-    clean_up()
+    plot_srw_wavefront_spatial_distribution(input_beam, xrange=None, yrange=None, title="Wavefront incident on Coh-Slits")
+

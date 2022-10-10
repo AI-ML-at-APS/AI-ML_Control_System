@@ -44,8 +44,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-from aps_ai.beamline34IDC.simulation.shadow.source import shadow_source_factory_method
-from aps_ai.beamline34IDC.simulation.srw.source import srw_source_factory_method
+from aps_ai.common.simulation.shadow.source import shadow_source_factory_method
+from aps_ai.common.simulation.srw.source import srw_source_factory_method
 from aps_ai.common.simulation.facade.source_interface import Sources
 from aps_ai.common.simulation.facade.parameters import Implementors
 

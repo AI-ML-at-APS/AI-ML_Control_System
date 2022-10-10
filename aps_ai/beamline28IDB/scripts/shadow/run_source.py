@@ -47,7 +47,7 @@
 import os
 
 from aps_ai.common.simulation.facade.source_interface import Sources, StorageRing
-from aps_ai.beamline34IDC.simulation.facade.source_factory import source_factory_method, Implementors
+from aps_ai.common.simulation.facade.source_factory import source_factory_method, Implementors
 from aps_ai.common.util.shadow.common import plot_shadow_beam_spatial_distribution, plot_shadow_beam_divergence_distribution, get_shadow_beam_spatial_distribution, save_source_beam
 from aps_ai.common.util import clean_up
 
@@ -55,35 +55,25 @@ if __name__ == "__main__":
 
     verbose = False
 
-    os.chdir("../../work_directory")
+    os.chdir("../../../../work_directory/28-ID")
 
     clean_up()
 
-    source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.GAUSSIAN)
-    source.initialize(n_rays=1000000, random_seed=3245345, storage_ring=StorageRing.APS)
-
-    source.set_angular_acceptance_from_aperture(aperture=[0.16, 0.16], distance=50500)
-    source.set_energy(energy=[9998.0, 10002.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
-
-    source_beam = source.get_source_beam(verbose=verbose)
-
-    save_source_beam(source_beam, "gaussian_undulator_source.dat")
-
-    plot_shadow_beam_spatial_distribution(source_beam)
-    plot_shadow_beam_divergence_distribution(source_beam, plot_mode=1)
-
-    '''
     source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.UNDULATOR)
-    source.initialize(n_rays=50000, random_seed=3245345, verbose=True, storage_ring=StorageRing.APS)
+    source.initialize(n_rays=1000000, random_seed=56565, verbose=True, storage_ring=StorageRing.APS)
 
-    source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
-    source.set_K_on_specific_harmonic(harmonic_energy=6000, harmonic_number=1, which=source.KDirection.VERTICAL)
-    source.set_energy(photon_energy_distribution=source.PhotonEnergyDistributions.ON_HARMONIC, harmonic_number=1)
+    #source.set_angular_acceptance_from_aperture(aperture=[2, 2], distance=25000)
+    source.set_K_on_specific_harmonic(harmonic_energy=4000, harmonic_number=1, which=source.KDirection.VERTICAL)
+    source.set_energy(photon_energy_distribution=source.PhotonEnergyDistributions.RANGE, energy=[17500.0, 20500.0], energy_points=300)
+    source.set_undulator_parameters(longitudinal_central_position=-1.3, waist_position_user_defined=0.6814)
+    source.set_wavefront_parameters(source_dimension_wf_h_slit_gap=2e-3,
+                                    source_dimension_wf_v_slit_gap=1e-3,
+                                    source_dimension_wf_h_slit_points=200,
+                                    source_dimension_wf_v_slit_points=100,
+                                    source_dimension_wf_distance=25.5)
+    source_beam = source.get_source_beam(verbose=verbose)
+    save_source_beam(source_beam, "undulator_source.dat")
 
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(ignore_aperture=True), xrange=[-1, 1], yrange=[-0.05, 0.05])
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-1, 1], yrange=[-0.05, 0.05])
-    '''
-
-    shadow_histogram = get_shadow_beam_spatial_distribution(source_beam, xrange=[-1, 1], yrange=[-0.05, 0.05])
+    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-0.2, 0.2], yrange=[-0.05, 0.05])
 
     clean_up()
