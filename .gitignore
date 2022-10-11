@@ -206,3 +206,11 @@ cython_debug/
 
 !/work_directory/34-ID/Upstream_VKB_bender_profile.dat
 !/work_directory/34-ID/Upstream_HKB_bender_profile.dat
+/work_directory/34-ID/Upstream_HKB_bender_profile.dat
+/work_directory/34-ID/Upstream_VKB_bender_profile.dat
+/work_directory/34-ID/Raytracing_HKB_bender_profile.dat
+/work_directory/34-ID/Raytracing_VKB_bender_profile.dat
+/work_directory/34-ID/primary_optics_system_beam.dat
+/work_directory/34-ID/parameters_start_primary_optics_system_beam.dat
+/work_directory/34-ID/parameters_end_primary_optics_system_beam.dat
+/work_directory/34-ID/Downstream_VKB_bender_profile.dat
