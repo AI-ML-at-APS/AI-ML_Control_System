@@ -45,45 +45,12 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps_ai.common.facade.parameters import AngularUnits, DistanceUnits, Movement
-from aps_ai.common.hardware.facade.parameters import Directions
-from aps_ai.common.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
+from aps_ai.beamline28IDB.simulation.shadow.focusing_optics.ideal_focusing_optics import IdealFocusingOptics
+from aps_ai.beamline28IDB.simulation.shadow.focusing_optics.bender_focusing_optics import BendableFocusingOptics
 
-def bluesky_focusing_optics_factory_method(**kwargs):
-    return __BlueskyFocusingOptics(**kwargs)
+def shadow_focusing_optics_factory_method(**kwargs):
+    try:
+        if kwargs["bender"] == True: return BendableFocusingOptics()
+        else:                        return IdealFocusingOptics()
+    except: return IdealFocusingOptics()
 
-class __BlueskyFocusingOptics(AbstractHardwareFocusingOptics):
-    def __init__(self, **kwargs):
-        pass
-
-    def initialize(self, **kwargs):
-        pass
-
-    #####################################################################################
-    # This methods represent the run-time interface, to interact with the optical system
-    # in real time, like in the real beamline
-
-    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): pass
-    def get_coherence_slits_parameters(self): pass # center x, center z, aperture x, aperture z
-
-    # V-KB -----------------------
-
-    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
-    def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
-    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
-    def get_vkb_motor_4_translation(self): pass
-    def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
-    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
-
-    # H-KB -----------------------
-
-    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
-    def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
-    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
-    def get_hkb_motor_4_translation(self): pass
-    def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
-    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
-
-    # PROTECTED GENERIC MOTOR METHODS
-    
-    def get_beam_scan(self, direction=Directions.HORIZONTAL): pass

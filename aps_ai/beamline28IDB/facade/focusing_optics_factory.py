@@ -49,9 +49,9 @@
 # DESIGN PATTERN: FACTORY METHOD
 #
 
-from aps_ai.beamline28IDB.facade import ExecutionMode
-from aps_ai.beamline28IDB.simulation import simulated_focusing_optics_factory_method
-from aps_ai.beamline28IDB.hardware import hardware_focusing_optics_factory_method
+from aps_ai.common.facade.parameters import ExecutionMode
+from aps_ai.beamline28IDB.simulation.facade import simulated_focusing_optics_factory_method
+from aps_ai.beamline28IDB.hardware.facade.focusing_optics_factory import hardware_focusing_optics_factory_method
 
 def focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=None, **kwargs):
     if execution_mode == ExecutionMode.SIMULATION: return simulated_focusing_optics_factory_method(implementor=implementor, **kwargs)

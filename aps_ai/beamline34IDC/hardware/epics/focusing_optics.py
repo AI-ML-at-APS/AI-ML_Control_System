@@ -54,7 +54,7 @@ from aps_ai.common.facade.parameters import AngularUnits, DistanceUnits, Movemen
 from aps_ai.common.hardware.facade.parameters import Beamline, Directions
 
 from aps_ai.common.hardware.epics.optics import AbstractEpicsOptics
-from aps_ai.beamline34IDC.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
+from aps_ai.common.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
 
 def epics_focusing_optics_factory_method(**kwargs):
     try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")

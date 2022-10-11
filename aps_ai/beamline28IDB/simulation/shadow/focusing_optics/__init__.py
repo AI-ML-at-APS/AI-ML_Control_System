@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------- #
-# Copyright (c) 2021, UChicago Argonne, LLC. All rights reserved.         #
+# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2021. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -44,12 +44,3 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
-
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics, Movement, DistanceUnits
-
-class AbstractHardwareFocusingOptics(AbstractFocusingOptics):
-    def initialize(self, **kwargs): raise NotImplementedError()
-
-    def get_photon_beam(self, **kwargs): raise NotImplementedError()

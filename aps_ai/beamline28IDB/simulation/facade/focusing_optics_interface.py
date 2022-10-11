@@ -45,45 +45,41 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps_ai.common.facade.parameters import AngularUnits, DistanceUnits, Movement
-from aps_ai.common.hardware.facade.parameters import Directions
-from aps_ai.common.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
+from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from aps_ai.common.facade.parameters import Movement, DistanceUnits
+from aps_ai.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 
-def bluesky_focusing_optics_factory_method(**kwargs):
-    return __BlueskyFocusingOptics(**kwargs)
+def get_default_input_features(): # units: mm, mrad and micron for the bender
+    return DictionaryWrapper(vkb_q_distance=150,
+                             vkb_motor_translation=0.0,
+                             vkb_motor_pitch_angle=0.003,
+                             vkb_motor_pitch_delta_angle=0.0,
+                             vkb_motor_bender_voltage=500,
+                             hkb_q_distance=200,
+                             hkb_motor_translation=0.0,
+                             hkb_motor_pitch_angle=0.003,
+                             hkb_motor_pitch_delta_angle=0.0,
+                             hkb_motor_1_bender_position=215.5,
+                             hkb_motor_2_bender_position=112.5
+                             )
 
-class __BlueskyFocusingOptics(AbstractHardwareFocusingOptics):
-    def __init__(self, **kwargs):
-        pass
+class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
+    def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs): raise NotImplementedError()
 
-    def initialize(self, **kwargs):
-        pass
+    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): raise NotImplementedError()
+    def restore_input_photon_beam(self): raise NotImplementedError()
 
     #####################################################################################
     # This methods represent the run-time interface, to interact with the optical system
-    # in real time, like in the real beamline
-
-    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): pass
-    def get_coherence_slits_parameters(self): pass # center x, center z, aperture x, aperture z
+    # in real time, like in the real beamline. FOR SIMULATION PURPOSES ONLY
 
     # V-KB -----------------------
 
-    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
-    def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
-    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
-    def get_vkb_motor_4_translation(self): pass
-    def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
-    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
+    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_vkb_q_distance(self): raise NotImplementedError()
 
     # H-KB -----------------------
 
-    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
-    def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
-    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
-    def get_hkb_motor_4_translation(self): pass
-    def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
-    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
+    def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_hkb_q_distance(self): raise NotImplementedError()
 
-    # PROTECTED GENERIC MOTOR METHODS
-    
-    def get_beam_scan(self, direction=Directions.HORIZONTAL): pass

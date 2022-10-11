@@ -45,45 +45,20 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps_ai.common.facade.parameters import AngularUnits, DistanceUnits, Movement
-from aps_ai.common.hardware.facade.parameters import Directions
-from aps_ai.common.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
+from aps_ai.common.simulation.facade.parameters import Implementors
+from aps_ai.beamline28IDB.simulation.shadow.focusing_optics_factory import shadow_focusing_optics_factory_method
 
-def bluesky_focusing_optics_factory_method(**kwargs):
-    return __BlueskyFocusingOptics(**kwargs)
+from aps_ai.common.util.initializer import register_ini_instance, AlreadyInitializedError, IniMode
+#############################################################################
+# DESIGN PATTERN: FACTORY METHOD
+#
 
-class __BlueskyFocusingOptics(AbstractHardwareFocusingOptics):
-    def __init__(self, **kwargs):
-        pass
+def simulated_focusing_optics_factory_method(implementor=Implementors.SHADOW, **kwargs):
+    #try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
+    #except AlreadyInitializedError: pass
+    #try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="benders calibration", ini_file_name="benders_calibration.ini")
+    #except AlreadyInitializedError: pass
 
-    def initialize(self, **kwargs):
-        pass
-
-    #####################################################################################
-    # This methods represent the run-time interface, to interact with the optical system
-    # in real time, like in the real beamline
-
-    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): pass
-    def get_coherence_slits_parameters(self): pass # center x, center z, aperture x, aperture z
-
-    # V-KB -----------------------
-
-    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
-    def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
-    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
-    def get_vkb_motor_4_translation(self): pass
-    def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
-    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
-
-    # H-KB -----------------------
-
-    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
-    def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
-    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
-    def get_hkb_motor_4_translation(self): pass
-    def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
-    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
-
-    # PROTECTED GENERIC MOTOR METHODS
-    
-    def get_beam_scan(self, direction=Directions.HORIZONTAL): pass
+    if implementor==Implementors.SHADOW: return shadow_focusing_optics_factory_method(**kwargs)
+    elif implementor==Implementors.SRW:  raise NotImplementedError("SRW simulation not implemented for this beamline")
+    else: raise ValueError("Implementor not recognized")
