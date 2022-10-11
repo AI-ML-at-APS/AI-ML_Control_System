@@ -69,10 +69,6 @@ def get_default_input_features(): # units: mm, mrad and micron for the bender
                              )
 
 class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
-    def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs): raise NotImplementedError()
-
-    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): raise NotImplementedError()
-    def restore_input_photon_beam(self): raise NotImplementedError()
 
     #####################################################################################
     # This methods represent the run-time interface, to interact with the optical system

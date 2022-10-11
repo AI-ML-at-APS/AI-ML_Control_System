@@ -50,24 +50,20 @@ from aps_ai.common.facade.parameters import Movement, DistanceUnits
 from aps_ai.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 
 def get_default_input_features(): # units: mm, mrad and micron for the bender
-    return DictionaryWrapper(vkb_q_distance=150,
-                             vkb_motor_translation=0.0,
-                             vkb_motor_pitch_angle=0.003,
-                             vkb_motor_pitch_delta_angle=0.0,
-                             vkb_motor_bender_voltage=500,
-                             hkb_q_distance=200,
-                             hkb_motor_translation=0.0,
-                             hkb_motor_pitch_angle=0.003,
-                             hkb_motor_pitch_delta_angle=0.0,
-                             hkb_motor_1_bender_position=215.5,
-                             hkb_motor_2_bender_position=112.5
+    return DictionaryWrapper(v_bimorph_mirror_q_distance=150,
+                             v_bimorph_mirror_motor_translation=0.0,
+                             v_bimorph_mirror_motor_pitch_angle=0.003,
+                             v_bimorph_mirror_motor_pitch_delta_angle=0.0,
+                             v_bimorph_mirror_motor_bender_voltage=500,
+                             h_bendable_mirror_q_distance=200,
+                             h_bendable_mirror_motor_translation=0.0,
+                             h_bendable_mirror_motor_pitch_angle=0.003,
+                             h_bendable_mirror_motor_pitch_delta_angle=0.0,
+                             h_bendable_mirror_motor_1_bender_position=215.5,
+                             h_bendable_mirror_motor_2_bender_position=112.5
                              )
 
 class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
-    def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs): raise NotImplementedError()
-
-    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): raise NotImplementedError()
-    def restore_input_photon_beam(self): raise NotImplementedError()
 
     #####################################################################################
     # This methods represent the run-time interface, to interact with the optical system
@@ -75,11 +71,11 @@ class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
 
     # V-KB -----------------------
 
-    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_vkb_q_distance(self): raise NotImplementedError()
+    def change_h_bendable_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_h_bendable_mirror_q_distance(self): raise NotImplementedError()
 
     # H-KB -----------------------
 
-    def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
-    def get_hkb_q_distance(self): raise NotImplementedError()
+    def change_v_bimorph_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_v_bimorph_mirror_q_distance(self): raise NotImplementedError()
 

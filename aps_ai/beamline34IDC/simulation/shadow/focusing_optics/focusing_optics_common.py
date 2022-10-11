@@ -45,41 +45,45 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-import os.path
-
 import numpy
 import Shadow
 
-from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement, ShadowBeam
-from orangecontrib.shadow.util.shadow_util import ShadowPhysics, ShadowMath, ShadowCongruence
+from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement
+from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 
-from aps_ai.common.util.shadow.common import TTYInibitor, HybridFailureException, EmptyBeamException, PreProcessorFiles, write_reflectivity_file, write_dabam_file, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, MotorResolution, AngularUnits, DistanceUnits
+from aps_ai.common.util.shadow.common import TTYInibitor, HybridFailureException, PreProcessorFiles, write_reflectivity_file, write_dabam_file, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
+from aps_ai.common.facade.parameters import DistanceUnits, MotorResolutionRegistry
+from aps_ai.common.simulation.shadow.focusing_optics import ShadowFocusingOptics
+
 from aps_ai.beamline34IDC.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features
 
-class FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
+class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics):
     def __init__(self):
-        self._input_beam = None
+        super(FocusingOpticsCommon, self).__init__()
+
         self._slits_beam = None
         self._vkb_beam = None
         self._hkb_beam = None
         self._coherence_slits = None
         self._vkb = None
         self._hkb = None
-        self._modified_elements = None
+
 
     def initialize(self,
                    input_photon_beam,
                    input_features=get_default_input_features(),
                    **kwargs):
+
+        super(FocusingOpticsCommon, self).initialize(input_photon_beam, input_features, **kwargs)
+
+        self._motor_resolution = MotorResolutionRegistry.getInstance().get_motor_resolution_set("34-ID-C")
+
         try:    rewrite_preprocessor_files = kwargs["rewrite_preprocessor_files"]
         except: rewrite_preprocessor_files = PreProcessorFiles.YES_SOURCE_RANGE
         try:    rewrite_height_error_profile_files = kwargs["rewrite_height_error_profile_files"]
         except: rewrite_height_error_profile_files = False
 
-        self._input_beam = input_photon_beam.duplicate()
-        self.__initial_input_beam = input_photon_beam.duplicate()
 
         energies     = ShadowPhysics.getEnergyFromShadowK(self._input_beam._beam.rays[:, 10])
         energy_range = [numpy.min(energies), numpy.max(energies)]
@@ -119,30 +123,6 @@ class FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
 
         self._modified_elements = [self._coherence_slits, self._vkb, self._hkb]
 
-    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None):
-        if self._input_beam is None: raise ValueError("Focusing Optical System is not initialized")
-
-        good_only = numpy.where(self._input_beam._beam.rays[:, 9] == 1)
-
-        if not shift_h is None: self._input_beam._beam.rays[good_only, 0] += shift_h
-        if not shift_v is None: self._input_beam._beam.rays[good_only, 2] += shift_v
-
-        v_out = [self._input_beam._beam.rays[good_only, 3],
-                 self._input_beam._beam.rays[good_only, 4],
-                 self._input_beam._beam.rays[good_only, 5]]
-
-        if not rotation_h is None: v_out = ShadowMath.vector_rotate([0, 0, 1], rotation_h, v_out)
-        if not rotation_v is None: v_out = ShadowMath.vector_rotate([1, 0, 0], rotation_v, v_out)
-
-        if not (rotation_h is None and rotation_v is None):
-            self._input_beam._beam.rays[good_only, 3] = v_out[0]
-            self._input_beam._beam.rays[good_only, 4] = v_out[1]
-            self._input_beam._beam.rays[good_only, 5] = v_out[2]
-
-    def restore_input_photon_beam(self):
-        if self._input_beam is None: raise ValueError("Focusing Optical System is not initialized")
-        self._input_beam = self.__initial_input_beam.duplicate()
-
         #####################################################################################
         # This methods represent the run-time interface, to interact with the optical system
         # in real time, like in the real beamline
@@ -154,7 +134,7 @@ class FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         elif units == DistanceUnits.MILLIMETERS: factor = 1.0
         else: raise ValueError("Distance units not recognized")
 
-        round_digit = MotorResolution.getInstance().get_coh_slits_motors_resolution(units=DistanceUnits.MILLIMETERS)
+        round_digit = self._motor_resolution.get_motor_resolution("coh_slits_motors", units=DistanceUnits.MILLIMETERS) # m
 
         if not coh_slits_h_center   is None: self._coherence_slits._oe.CX_SLIT = numpy.array([round(factor*coh_slits_h_center,   round_digit), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         if not coh_slits_v_center   is None: self._coherence_slits._oe.CZ_SLIT = numpy.array([round(factor*coh_slits_v_center,   round_digit), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -178,74 +158,6 @@ class FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
                factor*self._coherence_slits._oe.RZ_SLIT
 
         # V-KB -----------------------
-
-    # PROTECTED GENERIC MOTOR METHODS
-    @classmethod
-    def _move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS, round_digit=4, invert=False):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        if units == AngularUnits.MILLIRADIANS: angle = numpy.degrees(angle * 1e-3)
-        elif units == AngularUnits.DEGREES:    pass
-        elif units == AngularUnits.RADIANS:    angle = numpy.degrees(angle)
-        else: raise ValueError("Angular units not recognized")
-
-        sign = -1 if invert else 1
-
-        if movement == Movement.ABSOLUTE:   element._oe.X_ROT =  sign*round(angle - (90 - element._oe.T_INCIDENCE), round_digit)
-        elif movement == Movement.RELATIVE: element._oe.X_ROT += sign*round(angle, round_digit)
-        else:  raise ValueError("Movement not recognized")
-
-    @classmethod
-    def _move_motor_4_transation(cls, element, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON, round_digit=3, invert=False):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        if units == DistanceUnits.MICRON: translation *= 1e-3
-        elif units == DistanceUnits.MILLIMETERS: pass
-        else: raise ValueError("Distance units not recognized")
-
-        sign = -1 if invert else 1
-
-        total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + sign*element._oe.X_ROT)
-
-        if movement == Movement.ABSOLUTE:
-            element._oe.OFFY = round(translation, round_digit) * numpy.sin(total_pitch_angle)
-            element._oe.OFFZ = round(translation, round_digit) * numpy.cos(total_pitch_angle)
-        elif movement == Movement.RELATIVE:
-            element._oe.OFFY += round(translation, round_digit) * numpy.sin(total_pitch_angle)
-            element._oe.OFFZ += round(translation, round_digit) * numpy.cos(total_pitch_angle)
-        else:
-            raise ValueError("Movement not recognized")
-
-    @classmethod
-    def _get_motor_3_pitch(cls, element, units=AngularUnits.MILLIRADIANS, invert=False):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        sign = -1 if invert else 1
-
-        angle = (90 - element._oe.T_INCIDENCE) + sign*element._oe.X_ROT
-
-        if units == AngularUnits.MILLIRADIANS:  return 1000 * numpy.radians(angle)
-        elif units == AngularUnits.DEGREES:     return angle
-        elif units == AngularUnits.RADIANS:     return numpy.radians(angle)
-        else: raise ValueError("Angular units not recognized")
-
-    @classmethod
-    def _get_motor_4_translation(cls, element, units=DistanceUnits.MICRON, invert=False):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        pitch_angle = cls._get_motor_3_pitch(element, units=AngularUnits.RADIANS, invert=invert)
-
-        translation = numpy.average([element._oe.OFFY / numpy.sin(pitch_angle), element._oe.OFFZ / numpy.cos(pitch_angle)])
-
-        if units == DistanceUnits.MICRON:        return translation*1e3
-        elif units == DistanceUnits.MILLIMETERS: return translation
-        else: raise ValueError("Distance units not recognized")
-
-    @classmethod
-    def _get_q_distance(cls, element):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        return element._oe.SIMAG
 
     #####################################################################################
     # Run the simulation
@@ -324,19 +236,3 @@ class FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
 
     def _trace_vkb(self, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
     def _trace_hkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
-
-    def _trace_oe(self, input_beam, shadow_oe, widget_class_name, oe_name, remove_lost_rays, history=True):
-        return self._check_beam(ShadowBeam.traceFromOE(input_beam, #.duplicate(history=history),
-                                                       shadow_oe.duplicate(),
-                                                       widget_class_name=widget_class_name,
-                                                       history=history,
-                                                       recursive_history=False),
-                                oe_name, remove_lost_rays)
-
-    def _check_beam(self, output_beam, oe, remove_lost_rays):
-        if ShadowCongruence.checkEmptyBeam(output_beam):
-            if ShadowCongruence.checkGoodBeam(output_beam):
-                if remove_lost_rays: output_beam._beam.rays = output_beam._beam.rays[numpy.where(output_beam._beam.rays[:, 9] == 1)]
-                return output_beam
-            else: raise EmptyBeamException(oe)
-        else: raise EmptyBeamException(oe)

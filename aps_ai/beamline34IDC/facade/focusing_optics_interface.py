@@ -87,5 +87,3 @@ class AbstractFocusingOptics():
     def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
     def get_hkb_motor_4_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
-
-    def get_photon_beam(self, **kwargs): raise NotImplementedError()

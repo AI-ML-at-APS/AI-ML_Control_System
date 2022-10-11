@@ -46,9 +46,11 @@
 # ----------------------------------------------------------------------- #
 import numpy
 
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, DistanceUnits, AngularUnits, MotorResolution
-from aps_ai.beamline34IDC.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features
+from aps_ai.common.facade.parameters import Movement, DistanceUnits, AngularUnits, MotorResolutionRegistry
 from aps_ai.common.util.srw.common import write_dabam_file, plot_srw_wavefront_spatial_distribution
+from aps_ai.common.simulation.srw.focusing_optics import SRWFocusingOptics
+
+from aps_ai.beamline34IDC.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features
 
 from syned.beamline.element_coordinates import ElementCoordinates
 from syned.beamline.beamline_element import BeamlineElement
@@ -72,9 +74,11 @@ def srw_focusing_optics_factory_method(**kwargs):
         else:                        return __IdealFocusingOptics()
     except: return __IdealFocusingOptics()
 
-class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
+class _FocusingOpticsCommon(SRWFocusingOptics, AbstractSimulatedFocusingOptics):
     def __init__(self):
-        self._input_wavefront = None
+        super(_FocusingOpticsCommon, self).__init__()
+
+        self._motor_resolution = MotorResolutionRegistry.getInstance().get_motor_resolution_set("34-ID-C")
 
         self._slits_wavefront = None
         self._vkb_wavefront = None
@@ -87,14 +91,12 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         self._coherence_slits = None
         self._vkb = None
         self._hkb = None
-        self._modified_elements = None
 
     def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs):
+        super(_FocusingOpticsCommon, self).initialize(input_photon_beam, input_features, **kwargs)
+
         try:    rewrite_height_error_profile_files = kwargs["rewrite_height_error_profile_files"]
         except: rewrite_height_error_profile_files = False
-
-        self._input_wavefront          = input_photon_beam.duplicate()
-        self.__initial_input_wavefront = input_photon_beam.duplicate()
 
         if rewrite_height_error_profile_files == True:
             vkb_error_profile_file = write_dabam_file(dabam_entry_number=92, heigth_profile_file_name="VKB-LTP_srw.dat", seed=8787)
@@ -102,8 +104,6 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         else:
             vkb_error_profile_file = "VKB-LTP_srw.dat"
             hkb_error_profile_file = "HKB-LTP_srw.dat"
-
-        self._beamline = SRWBeamline()
 
         # Coherence Slits
         width    = input_features.get_parameter("coh_slits_h_aperture") * 1e-3 # m
@@ -145,9 +145,6 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
 
         self._modified_elements = [self._coherence_slits, self._vkb, self._hkb]
 
-    def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): pass
-    def restore_input_photon_beam(self): pass
-
     def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None, units=DistanceUnits.MICRON):
         boundaries = self._coherence_slits._boundary_shape.get_boundaries()
 
@@ -155,7 +152,7 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         elif units==DistanceUnits.MICRON:    factor = 1e-6
         else: ValueError("Units not recognized")
 
-        round_digit = MotorResolution.getInstance().get_coh_slits_motors_resolution(units=DistanceUnits.MILLIMETERS) + 3 # m
+        round_digit = self._motor_resolution.get_motor_resolution("coh_slits_motors", units=DistanceUnits.MILLIMETERS) + 3 # m
 
         coh_slits_h_center   = round(abs(boundaries[1]-boundaries[0]) if coh_slits_h_center is None else factor*coh_slits_h_center, round_digit)
         coh_slits_v_center   = round(abs(boundaries[3]-boundaries[2]) if coh_slits_v_center is None else factor*coh_slits_v_center, round_digit)
@@ -180,114 +177,6 @@ class _FocusingOpticsCommon(AbstractSimulatedFocusingOptics):
         coh_slits_v_aperture = factor * 0.5 * (boundaries[3] + boundaries[2])
 
         return coh_slits_h_center, coh_slits_v_center, coh_slits_h_aperture, coh_slits_v_aperture
-
-
-    # PROTECTED GENERIC MOTOR METHODS
-    @classmethod
-    def _move_motor_3_pitch(cls, element, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS, round_digit=4, invert=False):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        if units == AngularUnits.MILLIRADIANS: angle = angle * 1e-3
-        elif units == AngularUnits.DEGREES:    angle = numpy.radians(angle)
-        elif units == AngularUnits.RADIANS:    pass
-        else: raise ValueError("Angular units not recognized")
-
-        sign = -1 if invert else 1
-
-        if movement == Movement.ABSOLUTE:
-            if element.orientation_of_reflection_plane == Orientation.LEFT or \
-                    element.orientation_of_reflection_plane == Orientation.RIGHT:
-                element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x,
-                                                                     shift_y=element.displacement.shift_y,
-                                                                     rotation_x=sign*round(angle, round_digit),
-                                                                     rotation_y=element.displacement.rotation_y)
-            else:
-                element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x,
-                                                                     shift_y=element.displacement.shift_y,
-                                                                     rotation_x=element.displacement.rotation_x,
-                                                                     rotation_y=sign*round(angle, round_digit))
-        elif movement == Movement.RELATIVE:
-            if element.orientation_of_reflection_plane == Orientation.LEFT or \
-                    element.orientation_of_reflection_plane == Orientation.RIGHT:
-                element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x,
-                                                                     shift_y=element.displacement.shift_y,
-                                                                     rotation_x=element.displacement.rotation_x + sign*round(angle, round_digit),
-                                                                     rotation_y=element.displacement.rotation_y)
-            else:
-                element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x,
-                                                                     shift_y=element.displacement.shift_y,
-                                                                     rotation_x=element.displacement.rotation_x,
-                                                                     rotation_y=element.displacement.rotation_y + sign*round(angle, round_digit))
-        else:  raise ValueError("Movement not recognized")
-
-    @classmethod
-    def _move_motor_4_transation(cls, element, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON, round_digit=3):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        if units == DistanceUnits.MICRON:        translation *= 1e-6
-        elif units == DistanceUnits.MILLIMETERS: translation *= 1e-3
-        else: raise ValueError("Distance units not recognized")
-
-        if movement == Movement.ABSOLUTE:
-            if element.orientation_of_reflection_plane == Orientation.UP or \
-                    element.orientation_of_reflection_plane == Orientation.DOWN:
-                element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x,
-                                                                     shift_y=round(translation, round_digit),
-                                                                     rotation_x=element.displacement.rotation_x,
-                                                                     rotation_y=element.displacement.rotation_y)
-            else:
-                element.displacement = SRWOpticalElementDisplacement(shift_x=round(translation, round_digit),
-                                                                     shift_y=element.displacement.shift_y,
-                                                                     rotation_x=element.displacement.rotation_x,
-                                                                     rotation_y=element.displacement.rotation_y)
-        elif movement == Movement.RELATIVE:
-            if element.orientation_of_reflection_plane == Orientation.UP or \
-                    element.orientation_of_reflection_plane == Orientation.DOWN:
-                element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x,
-                                                                     shift_y=element.displacement.shift_y + round(translation, round_digit),
-                                                                     rotation_x=element.displacement.rotation_x,
-                                                                     rotation_y=element.displacement.rotation_y)
-            else:
-                element.displacement = SRWOpticalElementDisplacement(shift_x=element.displacement.shift_x + round(translation, round_digit),
-                                                                     shift_y=element.displacement.shift_y,
-                                                                     rotation_x=element.displacement.rotation_x,
-                                                                     rotation_y=element.displacement.rotation_y)
-        else:  raise ValueError("Movement not recognized")
-
-    @classmethod
-    def _get_motor_3_pitch(cls, element, units=AngularUnits.MILLIRADIANS, invert=False):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        sign = -1 if invert else 1
-
-        if element.orientation_of_reflection_plane == Orientation.LEFT or \
-                element.orientation_of_reflection_plane == Orientation.RIGHT: pitch_angle = element.grazing_angle + sign*element.displacement.rotation_x
-        else:                                                                 pitch_angle = element.grazing_angle + sign*element.displacement.rotation_y
-
-        if units == AngularUnits.MILLIRADIANS:  return 1000 * pitch_angle
-        elif units == AngularUnits.DEGREES:     return numpy.degrees(pitch_angle)
-        elif units == AngularUnits.RADIANS:     return pitch_angle
-        else: raise ValueError("Angular units not recognized")
-
-    @classmethod
-    def _get_motor_4_translation(cls, element, units=DistanceUnits.MICRON):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        if element.orientation_of_reflection_plane == Orientation.UP or \
-                element.orientation_of_reflection_plane == Orientation.DOWN: translation = element.displacement.shift_y
-        else:                                                                translation = element.displacement.shift_x
-
-        if units == DistanceUnits.MICRON:        return translation*1e6
-        elif units == DistanceUnits.MILLIMETERS: return translation*1e3
-        else: raise ValueError("Distance units not recognized")
-
-    @classmethod
-    def _get_q_distance(cls, element):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        _, q = element.get_surface_shape().get_p_q(element.grazing_angle)
-
-        return q
 
     #####################################################################################
     # Run the simulation
@@ -440,27 +329,27 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
     # V-KB -----------------------
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self._move_motor_3_pitch(self._vkb, angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.RADIANS)[1], invert=True)
+        self._move_pitch_motor(self._vkb, angle, movement, units,
+                                 round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_3_pitch", units=AngularUnits.RADIANS)[1], invert=True)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS):
-        return self._get_motor_3_pitch(self._vkb, units, invert=True)
+        return self._get_pitch_motor_value(self._vkb, units, invert=True)
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self._move_motor_4_transation(self._vkb, translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1] + 3)
+        self._move_translation_motor(self._vkb, translation, movement, units,
+                                      round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_4_translation", units=DistanceUnits.MILLIMETERS)[1] + 3)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_4_translation(self, units=DistanceUnits.MICRON):
-        return self._get_motor_4_translation(self._vkb, units)
+        return self._get_translation_motor_value(self._vkb, units)
 
     def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE):
-        self.__change_shape(self._vkb, q_distance, movement)
+        self._change_shape(self._vkb, q_distance, movement)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
@@ -471,42 +360,30 @@ class __IdealFocusingOptics(_FocusingOpticsCommon):
     # H-KB -----------------------
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self._move_motor_3_pitch(self._hkb, angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution(units=AngularUnits.RADIANS)[1])
+        self._move_pitch_motor(self._hkb, angle, movement, units,
+                                 round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_3_pitch", units=AngularUnits.RADIANS)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS):
-        return self._get_motor_3_pitch(self._hkb, units)
+        return self._get_pitch_motor_value(self._hkb, units)
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self._move_motor_4_transation(self._hkb, translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_hkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1] + 3)
+        self._move_translation_motor(self._hkb, translation, movement, units,
+                                      round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_4_translation", units=DistanceUnits.MILLIMETERS)[1] + 3)
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_hkb_motor_4_translation(self, units=DistanceUnits.MICRON):
-        return self._get_motor_4_translation(self._hkb, units)
+        return self._get_translation_motor_value(self._hkb, units)
 
     def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE):
-        self.__change_shape(self._hkb, q_distance, movement)
+        self._change_shape(self._hkb, q_distance, movement)
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_hkb_q_distance(self):
         return self._get_q_distance(self._hkb)
-
-    @classmethod
-    def __change_shape(cls, element, q_distance, movement=Movement.ABSOLUTE):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        p, q = element.get_surface_shape().get_p_q(element.grazing_angle)
-
-        if movement == Movement.ABSOLUTE:   q = q_distance * 1e-3
-        elif movement == Movement.RELATIVE: q += q_distance * 1e-3
-        else: raise ValueError("Movement not recognized")
-
-        element.get_surface_shape().initialize_from_p_q(p, q, element.grazing_angle)
 
     # IMPLEMENTATION OF PROTECTED METHODS FROM SUPERCLASS
 

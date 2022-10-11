@@ -54,9 +54,9 @@ from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 
 from aps_ai.common.util.shadow.common import HybridFailureException, rotate_axis_system, get_hybrid_input_parameters
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, MotorResolution, AngularUnits, DistanceUnits
+from aps_ai.common.facade.parameters import Movement, MotorResolution, AngularUnits, DistanceUnits
 
-from aps_ai.beamline34IDC.simulation.shadow.focusing_optics.abstract_focusing_optics import FocusingOpticsCommon
+from aps_ai.beamline34IDC.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon
 
 class IdealFocusingOptics(FocusingOpticsCommon):
     def __init__(self):
@@ -144,45 +144,45 @@ class IdealFocusingOptics(FocusingOpticsCommon):
         self._hkb = ShadowOpticalElement(hkb)
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self._move_motor_3_pitch(self._vkb, angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_vkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1], invert=True)
+        self._move_pitch_motor(self._vkb, angle, movement, units,
+                                 round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_3_pitch", units=AngularUnits.DEGREES)[1], invert=True)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS):
-        return self._get_motor_3_pitch(self._vkb, units, invert=True)
+        return self._get_pitch_motor_value(self._vkb, units, invert=True)
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self._move_motor_4_transation(self._vkb, translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_vkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1], invert=True)
+        self._move_translation_motor(self._vkb, translation, movement, units,
+                                      round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_4_translation", units=DistanceUnits.MILLIMETERS)[1], invert=True)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_4_translation(self, units=DistanceUnits.MICRON):
-        return self._get_motor_4_translation(self._vkb, units, invert=True)
+        return self._get_translation_motor_value(self._vkb, units, invert=True)
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self._move_motor_3_pitch(self._hkb, angle, movement, units,
+        self._move_pitch_motor(self._hkb, angle, movement, units,
                                  round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS):
-        return self._get_motor_3_pitch(self._hkb, units)
+        return self._get_pitch_motor_value(self._hkb, units)
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self._move_motor_4_transation(self._hkb, translation, movement, units,
-                                      round_digit=MotorResolution.getInstance().get_hkb_motor_4_translation_resolution(units=DistanceUnits.MILLIMETERS)[1])
+        self._move_translation_motor(self._hkb, translation, movement, units,
+                                      round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_3_pitch", units=DistanceUnits.MILLIMETERS)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_hkb_motor_4_translation(self, units=DistanceUnits.MICRON):
-        return self._get_motor_4_translation(self._hkb, units)
+        return self._get_translation_motor_value(self._hkb, units)
 
     def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE):
-        self.__change_shape(self._vkb, q_distance, movement)
+        self._change_shape(self._vkb, q_distance, movement)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
@@ -193,7 +193,7 @@ class IdealFocusingOptics(FocusingOpticsCommon):
         # H-KB -----------------------
 
     def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE):
-        self.__change_shape(self._hkb, q_distance, movement)
+        self._change_shape(self._hkb, q_distance, movement)
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
@@ -246,12 +246,4 @@ class IdealFocusingOptics(FocusingOpticsCommon):
 
         return output_beam
 
-    # PRIVATE -----------------------
 
-    @classmethod
-    def __change_shape(cls, element, q_distance, movement=Movement.ABSOLUTE):
-        if element is None: raise ValueError("Initialize Focusing Optics System first")
-
-        if movement == Movement.ABSOLUTE:   element._oe.SIMAG = q_distance
-        elif movement == Movement.RELATIVE: element._oe.SIMAG += q_distance
-        else: raise ValueError("Movement not recognized")
