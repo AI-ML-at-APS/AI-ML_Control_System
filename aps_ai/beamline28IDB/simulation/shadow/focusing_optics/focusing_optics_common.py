@@ -82,7 +82,7 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
 
         h_bendable_mirror_error_profile_file = "H-Bendable-Mirror-LTP_shadow.dat"
 
-        self._initialize_kb(input_features, reflectivity_file, h_bendable_mirror_error_profile_file)
+        self._initialize_mirrors(input_features, reflectivity_file, h_bendable_mirror_error_profile_file)
 
         self._modified_elements = [self._h_bendable_mirror, self._v_bimoprh_mirror]
 
@@ -144,3 +144,4 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
 
     def _trace_h_bendable_mirror(self, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
     def _trace_v_bimoprh_mirror(self,  near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
+    def _initialize_mirrors(self, input_features, reflectivity_file, h_bendable_mirror_error_profile_file): raise NotImplementedError()

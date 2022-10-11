@@ -236,3 +236,4 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
 
     def _trace_vkb(self, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
     def _trace_hkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
+    def _initialize_kb(self, input_features, reflectivity_file, vkb_error_profile_file, hkb_error_profile_file): raise NotImplementedError()
