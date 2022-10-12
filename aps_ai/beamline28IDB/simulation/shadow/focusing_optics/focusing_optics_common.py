@@ -44,9 +44,10 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-
+import Shadow
 import numpy
 
+from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 
 from aps_ai.common.util.shadow.common import TTYInibitor, PreProcessorFiles, write_reflectivity_file, plot_shadow_beam_spatial_distribution
@@ -59,8 +60,10 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
 
         self._h_bendable_mirror_beam = None
         self._v_bimorph_mirror_beam = None
+        self._coded_mask_beam = None
         self._h_bendable_mirror = None
         self._v_bimoprh_mirror = None
+        self._coded_mask = None
 
     def initialize(self,
                    input_photon_beam,
@@ -80,11 +83,27 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
         elif rewrite_preprocessor_files == PreProcessorFiles.YES_SOURCE_RANGE: reflectivity_file = write_reflectivity_file(energy_range=energy_range)
         elif rewrite_preprocessor_files == PreProcessorFiles.NO:               reflectivity_file = "Pt.dat"
 
-        h_bendable_mirror_error_profile_file = "H-Bendable-Mirror-LTP_shadow.dat"
+        h_bendable_mirror_error_profile_file = "H-Bendable-Mirror_shadow.dat"
 
         self._initialize_mirrors(input_features, reflectivity_file, h_bendable_mirror_error_profile_file)
 
-        self._modified_elements = [self._h_bendable_mirror, self._v_bimoprh_mirror]
+        coded_mask = Shadow.OE()
+        coded_mask.DUMMY = 0.1
+        coded_mask.FWRITE = 3
+        coded_mask.F_REFRAC = 2
+        coded_mask.F_SCREEN = 1
+        coded_mask.I_SLIT = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        coded_mask.N_SCREEN = 1
+        coded_mask.RX_SLIT = numpy.array([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        coded_mask.RZ_SLIT = numpy.array([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        coded_mask.T_IMAGE      = 500.0
+        coded_mask.T_INCIDENCE  = 0.0
+        coded_mask.T_REFLECTION = 180.0
+        coded_mask.T_SOURCE     = 2500.0
+
+        self._coded_mask = ShadowOpticalElement(coded_mask)
+
+        self._modified_elements = [self._h_bendable_mirror, self._v_bimoprh_mirror, self._coded_mask]
 
         #####################################################################################
         # This methods represent the run-time interface, to interact with the optical system
@@ -123,6 +142,17 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
             if run_all or self._v_bimoprh_mirror in self._modified_elements:
                 self._v_bimorph_mirror_beam = self._trace_v_bimoprh_mirror(near_field_calculation, random_seed, remove_lost_rays, verbose)
                 output_beam    = self._v_bimorph_mirror_beam
+
+                if debug_mode: plot_shadow_beam_spatial_distribution(self._v_bimorph_mirror_beam, title="V-Bimorph-Mirror", xrange=None, yrange=None)
+
+            if run_all or self._coded_mask in self._modified_elements:
+                self._coded_mask_beam = self._trace_oe(self._v_bimorph_mirror_beam,
+                                                       self._coded_mask,
+                                                       "Screen-Slits",
+                                                       "Coded-Mask",
+                                                       remove_lost_rays,
+                                                       history=False)
+                output_beam    = self._coded_mask_beam
 
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._v_bimorph_mirror_beam, title="V-Bimorph-Mirror", xrange=None, yrange=None)
 

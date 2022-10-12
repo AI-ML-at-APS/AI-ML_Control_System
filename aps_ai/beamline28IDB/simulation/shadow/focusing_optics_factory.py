@@ -46,7 +46,7 @@
 # ----------------------------------------------------------------------- #
 
 from aps_ai.beamline28IDB.simulation.shadow.focusing_optics.ideal_focusing_optics import IdealFocusingOptics
-from aps_ai.beamline28IDB.simulation.shadow.focusing_optics.bender_focusing_optics import BendableFocusingOptics
+from aps_ai.beamline28IDB.simulation.shadow.focusing_optics.bendable_focusing_optics import BendableFocusingOptics
 
 def shadow_focusing_optics_factory_method(**kwargs):
     try:

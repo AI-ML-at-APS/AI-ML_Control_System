@@ -45,3 +45,8 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
+from aps_ai.beamline28IDB.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon
+
+class BendableFocusingOptics(FocusingOpticsCommon):
+    def __init__(self):
+        super(BendableFocusingOptics, self).__init__()

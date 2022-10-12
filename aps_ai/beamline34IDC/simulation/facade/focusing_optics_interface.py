@@ -47,6 +47,7 @@
 
 from orangecontrib.ml.util.data_structures import DictionaryWrapper
 from aps_ai.common.facade.parameters import Movement, DistanceUnits
+from aps_ai.common.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics
 from aps_ai.beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics
 
 def get_default_input_features(): # units: mm, mrad and micron for the bender
@@ -68,7 +69,7 @@ def get_default_input_features(): # units: mm, mrad and micron for the bender
                              hkb_motor_2_bender_position=112.5 #157.0341
                              )
 
-class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
+class AbstractSimulatedFocusingOptics34ID(AbstractSimulatedFocusingOptics, AbstractFocusingOptics):
 
     #####################################################################################
     # This methods represent the run-time interface, to interact with the optical system
