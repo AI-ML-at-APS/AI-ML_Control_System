@@ -140,7 +140,7 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._h_bendable_mirror_beam, title="H-Bendable-Mirror", xrange=None, yrange=None)
 
             if run_all or self._v_bimoprh_mirror in self._modified_elements:
-                self._v_bimorph_mirror_beam = self._trace_v_bimoprh_mirror(near_field_calculation, random_seed, remove_lost_rays, verbose)
+                self._v_bimorph_mirror_beam = self._trace_v_bimoprh_mirror(random_seed, remove_lost_rays, verbose)
                 output_beam    = self._v_bimorph_mirror_beam
 
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._v_bimorph_mirror_beam, title="V-Bimorph-Mirror", xrange=None, yrange=None)
@@ -173,5 +173,5 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
         return output_beam.duplicate(history=False)
 
     def _trace_h_bendable_mirror(self, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
-    def _trace_v_bimoprh_mirror(self,  near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
+    def _trace_v_bimoprh_mirror(self,  random_seed, remove_lost_rays, verbose): raise NotImplementedError()
     def _initialize_mirrors(self, input_features, reflectivity_file, h_bendable_mirror_error_profile_file): raise NotImplementedError()

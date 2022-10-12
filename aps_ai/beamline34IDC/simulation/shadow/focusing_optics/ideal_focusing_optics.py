@@ -164,7 +164,7 @@ class IdealFocusingOptics(FocusingOpticsCommon):
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_pitch_motor(self._hkb, angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
+                                 round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_3_pitch", units=AngularUnits.DEGREES)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
@@ -173,7 +173,7 @@ class IdealFocusingOptics(FocusingOpticsCommon):
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_translation_motor(self._hkb, translation, movement, units,
-                                      round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_3_pitch", units=DistanceUnits.MILLIMETERS)[1])
+                                      round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_4_translation", units=DistanceUnits.MILLIMETERS)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 

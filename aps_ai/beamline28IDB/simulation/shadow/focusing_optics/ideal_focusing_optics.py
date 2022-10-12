@@ -49,14 +49,12 @@ import numpy
 import Shadow
 
 from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement
-from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 
-from aps_ai.common.util.shadow.common import HybridFailureException, rotate_axis_system, get_hybrid_input_parameters
-from aps_ai.common.facade.parameters import Movement, MotorResolution, AngularUnits, DistanceUnits
-
+from aps_ai.common.facade.parameters import Movement, AngularUnits, DistanceUnits
 from aps_ai.beamline28IDB.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon
 
 class IdealFocusingOptics(FocusingOpticsCommon):
+
     def __init__(self):
         super(IdealFocusingOptics, self).__init__()
 
@@ -136,25 +134,78 @@ class IdealFocusingOptics(FocusingOpticsCommon):
         self._h_bendable_mirror = ShadowOpticalElement(h_bendable_mirror)
         self._v_bimorph_mirror = ShadowOpticalElement(v_bimorph_mirror)
 
-    def _trace_h_bendable_mirror(self, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
-    def _trace_v_bimoprh_mirror(self,  near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
+    def _trace_h_bendable_mirror(self, random_seed, remove_lost_rays, verbose):
+        return self._trace_oe(input_beam=self._input_beam,
+                              shadow_oe=self._h_bendable_mirror,
+                              widget_class_name="EllypticalMirror",
+                              oe_name="H-Bendable-Mirror",
+                              remove_lost_rays=remove_lost_rays)
+
+    def _trace_v_bimoprh_mirror(self, random_seed, remove_lost_rays, verbose):
+        return self._trace_oe(input_beam=self._h_bendable_mirror_beam,
+                              shadow_oe=self._v_bimorph_mirror,
+                              widget_class_name="EllypticalMirror",
+                              oe_name="V-Bimorph-Mirror",
+                              remove_lost_rays=remove_lost_rays)
+
+    def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
+        self._move_pitch_motor(self._h_bendable_mirror, angle, movement, units,
+                                 round_digit=self._motor_resolution.get_motor_resolution("h_bendable_mirror_motor_pitch", units=AngularUnits.DEGREES)[1])
+
+        if not self._h_bendable_mirror in self._modified_elements: self._modified_elements.append(self._h_bendable_mirror)
+        if not self._v_bimorph_mirror in self._modified_elements:  self._modified_elements.append(self._v_bimorph_mirror)
+        if not self._coded_mask in self._modified_elements:        self._modified_elements.append(self._coded_mask)
+
+    def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS):
+        return self._get_pitch_motor_value(self._h_bendable_mirror, units)
+
+    def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self._move_translation_motor(self._h_bendable_mirror, translation, movement, units,
+                                     round_digit=self._motor_resolution.get_motor_resolution("h_bendable_mirror_motor_translation", units=DistanceUnits.MILLIMETERS)[1])
+
+        if not self._h_bendable_mirror in self._modified_elements: self._modified_elements.append(self._h_bendable_mirror)
+        if not self._v_bimorph_mirror in self._modified_elements: self._modified_elements.append(self._v_bimorph_mirror)
+        if not self._coded_mask in self._modified_elements:       self._modified_elements.append(self._coded_mask)
+
+    def get_h_bendable_mirror_motor_translation(self, units=DistanceUnits.MICRON):
+        return self._get_translation_motor_value(self._h_bendable_mirror, units)
+
+    def change_h_bendable_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self._change_shape(self._h_bendable_mirror, q_distance, movement)
+
+        if not self._h_bendable_mirror in self._modified_elements: self._modified_elements.append(self._h_bendable_mirror)
+        if not self._v_bimorph_mirror in self._modified_elements:  self._modified_elements.append(self._v_bimorph_mirror)
+        if not self._coded_mask in self._modified_elements:        self._modified_elements.append(self._coded_mask)
+
+    def get_h_bendable_mirror_q_distance(self):
+        return self._get_q_distance(self._h_bendable_mirror)
+
+    def move_v_bimorph_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
+        self._move_pitch_motor(self._v_bimorph_mirror, angle, movement, units,
+                                 round_digit=self._motor_resolution.get_motor_resolution("v_bimorph_mirror_motor_pitch", units=AngularUnits.DEGREES)[1])
+
+        if not self._v_bimorph_mirror in self._modified_elements: self._modified_elements.append(self._v_bimorph_mirror)
+        if not self._coded_mask in self._modified_elements:       self._modified_elements.append(self._coded_mask)
+
+    def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS):
+        return self._get_pitch_motor_value(self._v_bimorph_mirror, units)
+
+    def move_v_bimorph_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        self._move_translation_motor(self._v_bimorph_mirror, translation, movement, units,
+                                     round_digit=self._motor_resolution.get_motor_resolution("v_bimorph_mirror_motor_translation", units=DistanceUnits.MILLIMETERS)[1])
+
+        if not self._v_bimorph_mirror in self._modified_elements: self._modified_elements.append(self._v_bimorph_mirror)
+        if not self._coded_mask in self._modified_elements:       self._modified_elements.append(self._coded_mask)
+
+    def get_v_bimorph_mirror_motor_translation(self, units=DistanceUnits.MICRON):
+        return self._get_translation_motor_value(self._v_bimorph_mirror, units)
 
 
-    def move_v_bimorph_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def move_v_bimorph_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_v_bimorph_mirror_motor_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def change_v_bimorph_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE):
+        self._change_shape(self._v_bimorph_mirror, q_distance, movement)
 
-    # H-KB -----------------------
+        if not self._v_bimorph_mirror in self._modified_elements: self._modified_elements.append(self._v_bimorph_mirror)
+        if not self._coded_mask in self._modified_elements:       self._modified_elements.append(self._coded_mask)
 
-    def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_h_bendable_mirror_motor_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
-
-
-    def change_h_bendable_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_h_bendable_mirror_q_distance(self): raise NotImplementedError()
-
-    def change_v_bimorph_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
-    def get_v_bimorph_mirror_q_distance(self): raise NotImplementedError()
+    def get_v_bimorph_mirror_q_distance(self):
+        return self._get_q_distance(self._v_bimorph_mirror)
