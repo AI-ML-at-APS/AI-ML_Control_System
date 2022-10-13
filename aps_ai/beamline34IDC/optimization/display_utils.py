@@ -45,14 +45,16 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-import matplotlib.pyplot as plt
-import numpy as np
-from aps_ai.beamline34IDC.optimization.common import OptimizationCommon
-from aps_ai.beamline34IDC.optimization import configs
 from typing import List, NoReturn
 
 # This is just for a live plotting utility --------------------------------
 import IPython
+import matplotlib.pyplot as plt
+import numpy as np
+
+from aps_ai.beamline34IDC.optimization import configs
+from aps_ai.beamline34IDC.optimization.common import OptimizationCommon
+
 # Check if we are in a ipython/colab environment
 try:
     class_name = IPython.get_ipython().__class__.__name__
@@ -65,11 +67,14 @@ except NameError:
 
 if IS_NOTEBOOK:
     from IPython import display
+
+
 # ---------------------------------------------------------------------------
 
 class EarlyStoppingCallback:
     """I was originally writing this to use with the scipy optimizer, but I am not using it right now."""
-    def __init__(self, optimizer: OptimizationCommon, xtols: List[float]=None, ftol: float=None) -> NoReturn:
+
+    def __init__(self, optimizer: OptimizationCommon, xtols: List[float] = None, ftol: float = None) -> NoReturn:
         self.optimizer = optimizer
         if xtols is None:
             self.xtols = np.array([configs.DEFAULT_MOTOR_TOLERANCES[mt] for mt in optimizer.motor_types])
@@ -81,7 +86,7 @@ class EarlyStoppingCallback:
         if ftol is None:
             self.ftol = configs.DEFAULT_LOSS_TOLERANCES[optimizer.loss_parameter]
 
-    def call(self,  *args, **kwargs) -> NoReturn:
+    def call(self, *args, **kwargs) -> NoReturn:
         x_prev, x_this = self.optimizer._opt_trials_motor_positions[-2:]
         loss_prev, loss_this = self.optimizer._opt_trials_losses[-2:]
         if np.all(np.abs(x_prev - x_this) < self.xtols) or np.abs(): pass

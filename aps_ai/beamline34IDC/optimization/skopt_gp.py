@@ -44,10 +44,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+from typing import Callable, List, NoReturn, Tuple
+
 import numpy as np
 import skopt
-from aps_ai.beamline34IDC.optimization import common,  configs
-from typing import List, Tuple, Callable, NoReturn
+
+from aps_ai.beamline34IDC.optimization import common, configs
 from aps_ai.common.facade.parameters import DistanceUnits
 
 

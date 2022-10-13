@@ -45,11 +45,13 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps_ai.beamline34IDC.optimization import configs
-from aps_ai.beamline34IDC.optimization import common as opt_common
-from typing import NoReturn, List, Tuple
+from typing import List, NoReturn, Tuple
+
 import gym
 import numpy as np
+
+from aps_ai.beamline34IDC.optimization import common as opt_common
+from aps_ai.beamline34IDC.optimization import configs
 
 
 class BareOptimization(opt_common.OptimizationCommon):
@@ -62,32 +64,39 @@ class BareOptimization(opt_common.OptimizationCommon):
     def trials(self, *args, **kwargs) -> NoReturn:
         pass
 
+
 class AdaptiveCameraEnv(gym.Env):
     """Where the camera center and resolution is adaptive.
 
     Observation space contains current camera 'hh' and 'vv' positions and the 2d histogram of counts."""
-    def __init__(self, focusing_system: object,
-                 motor_types: List[str],
-                 loss_parameters: List[str] = ['centroid'],
-                 camera_nbins: int = 256,
-                 camera_xrange: List[float] = None,
-                 camera_yrange: List[float] = None,
-                 random_seed: int = None,
-                 loss_min_value: float = 1e-6,
-                 use_gaussian_fit: bool = False,
-                 camera_count_scaling_factor: float = 1.0,
-                 verbose: bool = False):
+
+    def __init__(
+        self,
+        focusing_system: object,
+        motor_types: List[str],
+        loss_parameters: List[str] = ["centroid"],
+        camera_nbins: int = 256,
+        camera_xrange: List[float] = None,
+        camera_yrange: List[float] = None,
+        random_seed: int = None,
+        loss_min_value: float = 1e-6,
+        use_gaussian_fit: bool = False,
+        camera_count_scaling_factor: float = 1.0,
+        verbose: bool = False,
+    ):
         super().__init__()
         self._verbose = verbose
-        self.optimizer = BareOptimization(focusing_system,
-                                          motor_types,
-                                          random_seed=random_seed,
-                                          loss_parameters=loss_parameters,
-                                          camera_xrange=camera_xrange,
-                                          camera_yrange=camera_yrange,
-                                          camera_nbins=camera_nbins,
-                                          loss_min_value=loss_min_value,
-                                          use_gaussian_fit=use_gaussian_fit)
+        self.optimizer = BareOptimization(
+            focusing_system,
+            motor_types,
+            random_seed=random_seed,
+            loss_parameters=loss_parameters,
+            camera_xrange=camera_xrange,
+            camera_yrange=camera_yrange,
+            camera_nbins=camera_nbins,
+            loss_min_value=loss_min_value,
+            use_gaussian_fit=use_gaussian_fit,
+        )
 
         resolutions = []
         for mt in self.optimizer.motor_types:
@@ -99,11 +108,13 @@ class AdaptiveCameraEnv(gym.Env):
         camera_yrange_lims = [-np.inf, np.inf] if camera_yrange is None else camera_yrange
 
         self.camera_count_scaling_factor = camera_count_scaling_factor
-        self.observation_space = gym.spaces.Dict({
-            'hh': gym.spaces.Box(*camera_xrange_lims, shape=[camera_nbins], dtype='float32'),
-            'vv': gym.spaces.Box(*camera_yrange_lims, shape=[camera_nbins], dtype='float32'),
-            'data_2D': gym.spaces.Box(0., 255, shape=[camera_nbins, camera_nbins], dtype='int32')
-        })
+        self.observation_space = gym.spaces.Dict(
+            {
+                "hh": gym.spaces.Box(*camera_xrange_lims, shape=[camera_nbins], dtype="float32"),
+                "vv": gym.spaces.Box(*camera_yrange_lims, shape=[camera_nbins], dtype="float32"),
+                "data_2D": gym.spaces.Box(0.0, 255, shape=[camera_nbins, camera_nbins], dtype="int32"),
+            }
+        )
 
         # Setting an action space of 20 steps (10 positive, 10 negative) for each motor.
         self.action_space = gym.spaces.MultiDiscrete([20] * len(self.optimizer.motor_types))
@@ -122,10 +133,12 @@ class AdaptiveCameraEnv(gym.Env):
         self.counter += 1
 
         data_2D = self.optimizer.beam_state.hist.data_2D / self.camera_count_scaling_factor
-        current_obs = {'hh': self.optimizer.beam_state.hist.hh.astype('float32'),
-                       'vv': self.optimizer.beam_state.hist.vv.astype('float32'),
-                       'data_2D': data_2D.astype('int32')}
-        if current_obs['data_2D'].max() > 255:
+        current_obs = {
+            "hh": self.optimizer.beam_state.hist.hh.astype("float32"),
+            "vv": self.optimizer.beam_state.hist.vv.astype("float32"),
+            "data_2D": data_2D.astype("int32"),
+        }
+        if current_obs["data_2D"].max() > 255:
             raise ValueError("Camera counts must be scaled to be between 0 and 255. Supply a scaling factor > 1.")
 
         # done = True if self.current_loss <= self.optimizer._loss_min_value else False
@@ -145,16 +158,19 @@ class AdaptiveCameraEnv(gym.Env):
     def reset(self) -> object:
         self.optimizer.reset()
 
-        initial_motor_vals = self.optimizer.get_random_init(guess_range=self.initialization_range_per_motor,
-                                                            verbose=self._verbose)
-        #self.optimizer.initial_motor_positions = initial_motor_vals
+        initial_motor_vals = self.optimizer.get_random_init(
+            guess_range=self.initialization_range_per_motor, verbose=self._verbose
+        )
+        # self.optimizer.initial_motor_positions = initial_motor_vals
 
         self.current_loss = self.optimizer.loss_function(initial_motor_vals, verbose=False)
         data_2D = self.optimizer.beam_state.hist.data_2D / self.camera_count_scaling_factor
-        current_obs = {'hh': self.optimizer.beam_state.hist.hh.astype('float32'),
-                       'vv': self.optimizer.beam_state.hist.vv.astype('float32'),
-                       'data_2D': data_2D.astype('int32')}
-        if current_obs['data_2D'].max() > 255:
+        current_obs = {
+            "hh": self.optimizer.beam_state.hist.hh.astype("float32"),
+            "vv": self.optimizer.beam_state.hist.vv.astype("float32"),
+            "data_2D": data_2D.astype("int32"),
+        }
+        if current_obs["data_2D"].max() > 255:
             raise ValueError("Camera counts must be scaled to be between 0 and 255. Supply a scaling factor > 1.")
         if self._verbose:
             print("Current loss is", self.current_loss, "at counter", self.counter)
@@ -165,28 +181,34 @@ class FixedCameraEnv(gym.Env):
     """Where the camera center and resolution is fixed.
 
     Observation space only contains the 2d histogram of counts."""
-    def __init__(self, focusing_system: object,
-                 motor_types: List[str],
-                 loss_parameters: List[str] = ['centroid'],
-                 camera_nbins: int = 256,
-                 camera_xrange: List[float] = [-0.5, 0.5],
-                 camera_yrange: List[float] = [-0.5, 0.5],
-                 random_seed: int = None,
-                 loss_min_value: float = 1e-6,
-                 use_gaussian_fit: bool = False,
-                 camera_count_scaling_factor: float = 1.0,
-                 verbose: bool = False):
+
+    def __init__(
+        self,
+        focusing_system: object,
+        motor_types: List[str],
+        loss_parameters: List[str] = ["centroid"],
+        camera_nbins: int = 256,
+        camera_xrange: List[float] = [-0.5, 0.5],
+        camera_yrange: List[float] = [-0.5, 0.5],
+        random_seed: int = None,
+        loss_min_value: float = 1e-6,
+        use_gaussian_fit: bool = False,
+        camera_count_scaling_factor: float = 1.0,
+        verbose: bool = False,
+    ):
         super().__init__()
         self._verbose = verbose
-        self.optimizer = BareOptimization(focusing_system,
-                                          motor_types,
-                                          random_seed=random_seed,
-                                          loss_parameters=loss_parameters,
-                                          camera_xrange=camera_xrange,
-                                          camera_yrange=camera_yrange,
-                                          camera_nbins=camera_nbins,
-                                          loss_min_value=loss_min_value,
-                                          use_gaussian_fit=use_gaussian_fit)
+        self.optimizer = BareOptimization(
+            focusing_system,
+            motor_types,
+            random_seed=random_seed,
+            loss_parameters=loss_parameters,
+            camera_xrange=camera_xrange,
+            camera_yrange=camera_yrange,
+            camera_nbins=camera_nbins,
+            loss_min_value=loss_min_value,
+            use_gaussian_fit=use_gaussian_fit,
+        )
 
         resolutions = []
         for mt in self.optimizer.motor_types:
@@ -194,9 +216,9 @@ class FixedCameraEnv(gym.Env):
             resolutions.append(res)
 
         self.camera_count_scaling_factor = camera_count_scaling_factor
-        self.observation_space = gym.spaces.Dict({
-            'data_2D': gym.spaces.Box(0., 255, shape=[camera_nbins, camera_nbins], dtype='int32')
-        })
+        self.observation_space = gym.spaces.Dict(
+            {"data_2D": gym.spaces.Box(0.0, 255, shape=[camera_nbins, camera_nbins], dtype="int32")}
+        )
 
         # Setting an action space of 20 steps (10 positive, 10 negative) for each motor.
         self.action_space = gym.spaces.MultiDiscrete([20] * len(self.optimizer.motor_types))
@@ -218,8 +240,8 @@ class FixedCameraEnv(gym.Env):
         self.counter += 1
 
         data_2D = self.optimizer.beam_state.hist.data_2D / self.camera_count_scaling_factor
-        current_obs = {'data_2D': data_2D.astype('int32')}
-        if current_obs['data_2D'].max() > 255:
+        current_obs = {"data_2D": data_2D.astype("int32")}
+        if current_obs["data_2D"].max() > 255:
             raise ValueError("Camera counts must be scaled to be between 0 and 255. Supply a scaling factor > 1.")
 
         # done = True if self.current_loss <= self.optimizer._loss_min_value else False
@@ -239,18 +261,17 @@ class FixedCameraEnv(gym.Env):
     def reset(self) -> object:
         self.optimizer.reset()
 
-        initial_motor_vals = self.optimizer.get_random_init(guess_range=self.initialization_range_per_motor,
-                                                            verbose=self._verbose)
-        #self.optimizer.initial_motor_positions = initial_motor_vals
+        initial_motor_vals = self.optimizer.get_random_init(
+            guess_range=self.initialization_range_per_motor, verbose=self._verbose
+        )
+        # self.optimizer.initial_motor_positions = initial_motor_vals
 
         self.current_loss = self.optimizer.loss_function(initial_motor_vals, verbose=False)
         data_2D = self.optimizer.beam_state.hist.data_2D / self.camera_count_scaling_factor
-        current_obs = {'data_2D': data_2D.astype('int32')}
-        if current_obs['data_2D'].max() > 255:
+        current_obs = {"data_2D": data_2D.astype("int32")}
+        if current_obs["data_2D"].max() > 255:
             raise ValueError("Camera counts must be scaled to be between 0 and 255. Supply a scaling factor > 1.")
 
         if self._verbose:
             print("Current loss is", self.current_loss, "at counter", self.counter)
         return current_obs
-
-

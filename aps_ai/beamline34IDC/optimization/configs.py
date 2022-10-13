@@ -47,42 +47,42 @@
 
 import numpy as np
 
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import MotorResolutionRegistry
+from aps_ai.beamline34IDC.facade.focusing_optics_interface import (
+    AngularUnits, DistanceUnits, MotorResolutionRegistry)
 
 motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("34-ID-C")
 
+DEFAULT_DISTANCE_UNIT = DistanceUnits.MICRON
+DEFAULT_ANGLE_UNIT = AngularUnits.MILLIRADIANS
+
 # not sure about the movement ranges for hkb4 and vkb4
-DEFAULT_MOVEMENT_RANGES = {#'hkb_4': [-0.200, 0.200], 
-                           #'vkb_4': [-0.200, 0.200], 
-                           'hkb_4': [-20, 20],
-                           'vkb_4': [-20, 20],
-                           'hkb_3': [-0.02, 0.02], # in mrad
-                           'vkb_3': [-0.02, 0.02], # in mrad
-                           'hkb_1': [-30, 30], 
-                           'hkb_2': [-30, 30],  
-                           'vkb_1': [-30, 30],  
-                           'vkb_2': [-30, 30]  
-                           }
+DEFAULT_MOVEMENT_RANGES = {
+    "hkb_4": [-20, 20],
+    "vkb_4": [-20, 20],
+    "hkb_3": [-0.02, 0.02],  # in mrad
+    "vkb_3": [-0.02, 0.02],  # in mrad
+    "hkb_1": [-30, 30],
+    "hkb_2": [-30, 30],
+    "vkb_1": [-30, 30],
+    "vkb_2": [-30, 30],
+}
 
 # I am adding this because the focusing system interface does not currently contain resolution
 # values for hkb_q, vkb_q, hkb_1_2, and vkb_1_2 motors.
-DEFAULT_MOTOR_RESOLUTIONS = {'hkb_4': motor_resolutions.get_motor_resolution("hkb_motor_4_translation")[0],
-                             'vkb_4': motor_resolutions.get_motor_resolution("vkb_motor_4_translation")[0],
-                             'hkb_3': motor_resolutions.get_motor_resolution("hkb_motor_3_pitch")[0],
-                             'vkb_3': motor_resolutions.get_motor_resolution("vkb_motor_3_pitch")[0],
-                             'hkb_q': 0.1, # in mm
-                             'vkb_q': 0.1, # in mm
-                             'hkb_1': motor_resolutions.get_motor_resolution("hkb_motor_1_2_bender")[0],
-                             'vkb_1': motor_resolutions.get_motor_resolution("vkb_motor_1_2_bender")[0],
-                             'hkb_2': motor_resolutions.get_motor_resolution("hkb_motor_1_2_bender")[0],
-                             'vkb_2': motor_resolutions.get_motor_resolution("vkb_motor_1_2_bender")[0],
-                             }
+DEFAULT_MOTOR_RESOLUTIONS = {
+    "hkb_4": motor_resolutions.get_motor_resolution("hkb_motor_4_translation", DEFAULT_DISTANCE_UNIT)[0],
+    "vkb_4": motor_resolutions.get_motor_resolution("vkb_motor_4_translation", DEFAULT_DISTANCE_UNIT)[0],
+    "hkb_3": motor_resolutions.get_motor_resolution("hkb_motor_3_pitch", DEFAULT_ANGLE_UNIT)[0],
+    "vkb_3": motor_resolutions.get_motor_resolution("vkb_motor_3_pitch", DEFAULT_ANGLE_UNIT)[0],
+    "hkb_q": 0.1,  # in mm
+    "vkb_q": 0.1,  # in mm
+    "hkb_1": motor_resolutions.get_motor_resolution("hkb_motor_1_2_bender", DEFAULT_DISTANCE_UNIT)[0],
+    "vkb_1": motor_resolutions.get_motor_resolution("vkb_motor_1_2_bender", DEFAULT_DISTANCE_UNIT)[0],
+    "hkb_2": motor_resolutions.get_motor_resolution("hkb_motor_1_2_bender", DEFAULT_DISTANCE_UNIT)[0],
+    "vkb_2": motor_resolutions.get_motor_resolution("vkb_motor_1_2_bender", DEFAULT_DISTANCE_UNIT)[0],
+}
 
 DEFAULT_MOTOR_TOLERANCES = DEFAULT_MOTOR_RESOLUTIONS
 
-
 # These values only apply for the simulation with 50k simulated beams
-DEFAULT_LOSS_TOLERANCES = {'centroid': 2e-4,
-                           'fwhm': 2e-4,
-                           'peak_intensity': -np.inf,
-                           'sigma': 2e-4}
+DEFAULT_LOSS_TOLERANCES = {"centroid": 2e-4, "fwhm": 2e-4, "peak_intensity": -np.inf, "sigma": 2e-4}
