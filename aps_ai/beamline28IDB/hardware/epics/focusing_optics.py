@@ -45,5 +45,19 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
+import os, numpy, time
+
+from epics import caget, caput
+
+from aps_ai.common.util.initializer import AlreadyInitializedError, register_ini_instance, IniMode
+from aps_ai.common.facade.parameters import AngularUnits, DistanceUnits, Movement
+from aps_ai.common.hardware.facade.parameters import Beamline, Directions
+
+from aps_ai.common.hardware.epics.optics import AbstractEpicsOptics
+from aps_ai.common.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
+
 def epics_focusing_optics_factory_method(**kwargs):
-    pass
+    #try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
+    #except AlreadyInitializedError: pass
+
+    return None

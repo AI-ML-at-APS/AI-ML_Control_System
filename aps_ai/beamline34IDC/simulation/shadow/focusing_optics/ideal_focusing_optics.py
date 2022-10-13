@@ -45,7 +45,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os.path
 
 import numpy
 import Shadow
@@ -60,7 +59,7 @@ from aps_ai.beamline34IDC.simulation.shadow.focusing_optics.focusing_optics_comm
 
 class IdealFocusingOptics(FocusingOpticsCommon):
     def __init__(self):
-        super(FocusingOpticsCommon, self).__init__()
+        super(IdealFocusingOptics, self).__init__()
 
     def _initialize_kb(self, input_features, reflectivity_file, vkb_error_profile_file, hkb_error_profile_file):
         # V-KB
@@ -165,7 +164,7 @@ class IdealFocusingOptics(FocusingOpticsCommon):
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_pitch_motor(self._hkb, angle, movement, units,
-                                 round_digit=MotorResolution.getInstance().get_hkb_motor_3_pitch_resolution(units=AngularUnits.DEGREES)[1])
+                                 round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_3_pitch", units=AngularUnits.DEGREES)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
@@ -174,7 +173,7 @@ class IdealFocusingOptics(FocusingOpticsCommon):
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_translation_motor(self._hkb, translation, movement, units,
-                                      round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_3_pitch", units=DistanceUnits.MILLIMETERS)[1])
+                                      round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_4_translation", units=DistanceUnits.MILLIMETERS)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 

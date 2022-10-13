@@ -46,21 +46,22 @@
 # ----------------------------------------------------------------------- #
 
 from orangecontrib.ml.util.data_structures import DictionaryWrapper
+
 from aps_ai.common.facade.parameters import Movement, DistanceUnits
 from aps_ai.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 
 def get_default_input_features(): # units: mm, mrad and micron for the bender
-    return DictionaryWrapper(v_bimorph_mirror_q_distance=150,
+    return DictionaryWrapper(v_bimorph_mirror_q_distance=1500.0,
                              v_bimorph_mirror_motor_translation=0.0,
                              v_bimorph_mirror_motor_pitch_angle=0.003,
                              v_bimorph_mirror_motor_pitch_delta_angle=0.0,
                              v_bimorph_mirror_motor_bender_voltage=500,
-                             h_bendable_mirror_q_distance=200,
+                             h_bendable_mirror_q_distance=2630.0,
                              h_bendable_mirror_motor_translation=0.0,
                              h_bendable_mirror_motor_pitch_angle=0.003,
                              h_bendable_mirror_motor_pitch_delta_angle=0.0,
-                             h_bendable_mirror_motor_1_bender_position=215.5,
-                             h_bendable_mirror_motor_2_bender_position=112.5
+                             h_bendable_mirror_motor_1_bender_position=100,
+                             h_bendable_mirror_motor_2_bender_position=100
                              )
 
 class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):

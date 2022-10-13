@@ -88,8 +88,8 @@ class __PrimaryOptics(AbstractPrimaryOptics):
         white_beam_slits.F_SCREEN = 1
         white_beam_slits.I_SLIT = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         white_beam_slits.N_SCREEN = 1
-        white_beam_slits.RX_SLIT = numpy.array([0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        white_beam_slits.RZ_SLIT = numpy.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        white_beam_slits.RX_SLIT = numpy.array([0.06, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        white_beam_slits.RZ_SLIT = numpy.array([0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         white_beam_slits.T_IMAGE = 0.0
         white_beam_slits.T_INCIDENCE = 0.0
         white_beam_slits.T_REFLECTION = 180.0
