@@ -49,7 +49,7 @@ import os
 from aps_ai.beamline28IDB.simulation.facade.primary_optics_factory import primary_optics_factory_method
 
 from aps_ai.common.simulation.facade.source_factory import Implementors
-from aps_ai.common.util.shadow.common import load_source_beam, save_shadow_beam, plot_shadow_beam_spatial_distribution
+from aps_ai.common.util.shadow.common import load_source_beam, save_shadow_beam, plot_shadow_beam_spatial_distribution, PlotMode
 from aps_ai.common.util import clean_up
 
 import Shadow
@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     save_shadow_beam(output_beam, "primary_optics_system_beam.dat")
 
-    plot_shadow_beam_spatial_distribution(output_beam)#, xrange=[-0.2, 0.2], yrange=[-0.2, 0.2])
+    plot_shadow_beam_spatial_distribution(output_beam, plot_mode=PlotMode.BOTH)#, xrange=[-0.2, 0.2], yrange=[-0.2, 0.2])
 
     Shadow.ShadowTools.histo1(output_beam._beam, 11, nolost=1, ref=23, xrange=[19650, 20150])
 

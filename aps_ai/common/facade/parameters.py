@@ -77,6 +77,9 @@ class MotorResolution:
 
 import decimal
 
+def get_significant_digits(number : float):
+    return abs(decimal.Decimal(str(number)).as_tuple().exponent)
+
 class MotorResolutionSet:
     def __init__(self, motors : dict = {}):
         self.__motors = motors
@@ -92,7 +95,7 @@ class MotorResolutionSet:
 
     @classmethod
     def __get_translational_resolution(cls, resolution : float, units=DistanceUnits.MICRON) -> tuple:
-        significant_digits = decimal.Decimal(resolution).as_tuple().exponent
+        significant_digits = get_significant_digits(resolution)
 
         if units==DistanceUnits.MILLIMETERS: return [resolution,     significant_digits]
         elif units==DistanceUnits.MICRON:    return [1e3*resolution, significant_digits - 3]
@@ -100,7 +103,7 @@ class MotorResolutionSet:
 
     @classmethod
     def __get_rotational_resolution(cls, resolution, units=AngularUnits.MILLIRADIANS) -> tuple:
-        significant_digits = decimal.Decimal(resolution).as_tuple().exponent
+        significant_digits = get_significant_digits(resolution)
 
         if units==AngularUnits.DEGREES:        return [resolution,                    significant_digits]
         elif units==AngularUnits.MILLIRADIANS: return [1e3*numpy.radians(resolution), significant_digits - 1]
@@ -109,28 +112,7 @@ class MotorResolutionSet:
 
     @classmethod
     def __get_other_resolution(cls, resolution : float) -> tuple:
-        return [resolution, decimal.Decimal(resolution).as_tuple().exponent]
-
-'''
-                                           #value #digits to round
-    __coh_slits_motors_resolution        = [1e-7, 7]  # mm
-    __vkb_motor_1_2_bender_resolution    = [1e-7, 7]  # mm
-    __vkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
-    __vkb_motor_4_translation_resolution = [1e-4, 4]  # mm
-    __hkb_motor_1_2_bender_resolution    = [1e-7, 7]  # mm
-    __hkb_motor_3_pitch_resolution       = [1e-4, 4]  # deg
-    __hkb_motor_4_translation_resolution = [1e-4, 4]  # mm
-
-    def get_coh_slits_motors_resolution(self, units=DistanceUnits.MICRON):        return self.__get_translational_resolution(self.__coh_slits_motors_resolution, units)
-    def get_vkb_motor_1_2_bender_resolution(self, units=DistanceUnits.MICRON):    return self.__get_translational_resolution(self.__vkb_motor_1_2_bender_resolution, units)
-    def get_vkb_motor_3_pitch_resolution(self, units=AngularUnits.MILLIRADIANS):  return self.__get_rotational_resolution(self.__vkb_motor_3_pitch_resolution, units)
-    def get_vkb_motor_4_translation_resolution(self, units=DistanceUnits.MICRON): return self.__get_translational_resolution(self.__vkb_motor_4_translation_resolution, units)
-    def get_hkb_motor_1_2_bender_resolution(self, units=DistanceUnits.MICRON):    return self.__get_translational_resolution(self.__hkb_motor_1_2_bender_resolution, units)
-    def get_hkb_motor_3_pitch_resolution(self, units=AngularUnits.MILLIRADIANS):  return self.__get_rotational_resolution(self.__hkb_motor_3_pitch_resolution, units)
-    def get_hkb_motor_4_translation_resolution(self, units=DistanceUnits.MICRON): return self.__get_translational_resolution(self.__hkb_motor_4_translation_resolution, units)
-
-
-'''
+        return [resolution, get_significant_digits(resolution)]
 
 
 class MotorResolutionRegistry:

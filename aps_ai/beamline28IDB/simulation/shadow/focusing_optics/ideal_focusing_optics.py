@@ -120,7 +120,7 @@ class IdealFocusingOptics(FocusingOpticsCommon):
         v_bimorph_mirror.SIMAG = input_features.get_parameter("v_bimorph_mirror_q_distance")
         v_bimorph_mirror.SSOUR = 65000.0
         v_bimorph_mirror.THETA = v_bimorph_mirror_motor_pitch_angle_shadow
-        v_bimorph_mirror.T_IMAGE = 0.0
+        v_bimorph_mirror.T_IMAGE = 3000.0
         v_bimorph_mirror.T_INCIDENCE = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_REFLECTION = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_SOURCE = 1130.0
@@ -141,7 +141,7 @@ class IdealFocusingOptics(FocusingOpticsCommon):
                               oe_name="H-Bendable-Mirror",
                               remove_lost_rays=remove_lost_rays)
 
-    def _trace_v_bimoprh_mirror(self, random_seed, remove_lost_rays, verbose):
+    def _trace_v_bimorph_mirror(self, random_seed, remove_lost_rays, verbose):
         return self._trace_oe(input_beam=self._h_bendable_mirror_beam,
                               shadow_oe=self._v_bimorph_mirror,
                               widget_class_name="EllypticalMirror",
@@ -150,11 +150,10 @@ class IdealFocusingOptics(FocusingOpticsCommon):
 
     def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_pitch_motor(self._h_bendable_mirror, angle, movement, units,
-                                 round_digit=self._motor_resolution.get_motor_resolution("h_bendable_mirror_motor_pitch", units=AngularUnits.DEGREES)[1])
+                               round_digit=self._motor_resolution.get_motor_resolution("h_bendable_mirror_motor_pitch", units=AngularUnits.DEGREES)[1])
 
         if not self._h_bendable_mirror in self._modified_elements: self._modified_elements.append(self._h_bendable_mirror)
         if not self._v_bimorph_mirror in self._modified_elements:  self._modified_elements.append(self._v_bimorph_mirror)
-        if not self._coded_mask in self._modified_elements:        self._modified_elements.append(self._coded_mask)
 
     def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS):
         return self._get_pitch_motor_value(self._h_bendable_mirror, units)
@@ -165,7 +164,6 @@ class IdealFocusingOptics(FocusingOpticsCommon):
 
         if not self._h_bendable_mirror in self._modified_elements: self._modified_elements.append(self._h_bendable_mirror)
         if not self._v_bimorph_mirror in self._modified_elements: self._modified_elements.append(self._v_bimorph_mirror)
-        if not self._coded_mask in self._modified_elements:       self._modified_elements.append(self._coded_mask)
 
     def get_h_bendable_mirror_motor_translation(self, units=DistanceUnits.MICRON):
         return self._get_translation_motor_value(self._h_bendable_mirror, units)
@@ -175,7 +173,6 @@ class IdealFocusingOptics(FocusingOpticsCommon):
 
         if not self._h_bendable_mirror in self._modified_elements: self._modified_elements.append(self._h_bendable_mirror)
         if not self._v_bimorph_mirror in self._modified_elements:  self._modified_elements.append(self._v_bimorph_mirror)
-        if not self._coded_mask in self._modified_elements:        self._modified_elements.append(self._coded_mask)
 
     def get_h_bendable_mirror_q_distance(self):
         return self._get_q_distance(self._h_bendable_mirror)
@@ -185,7 +182,6 @@ class IdealFocusingOptics(FocusingOpticsCommon):
                                  round_digit=self._motor_resolution.get_motor_resolution("v_bimorph_mirror_motor_pitch", units=AngularUnits.DEGREES)[1])
 
         if not self._v_bimorph_mirror in self._modified_elements: self._modified_elements.append(self._v_bimorph_mirror)
-        if not self._coded_mask in self._modified_elements:       self._modified_elements.append(self._coded_mask)
 
     def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS):
         return self._get_pitch_motor_value(self._v_bimorph_mirror, units)
@@ -195,7 +191,6 @@ class IdealFocusingOptics(FocusingOpticsCommon):
                                      round_digit=self._motor_resolution.get_motor_resolution("v_bimorph_mirror_motor_translation", units=DistanceUnits.MILLIMETERS)[1])
 
         if not self._v_bimorph_mirror in self._modified_elements: self._modified_elements.append(self._v_bimorph_mirror)
-        if not self._coded_mask in self._modified_elements:       self._modified_elements.append(self._coded_mask)
 
     def get_v_bimorph_mirror_motor_translation(self, units=DistanceUnits.MICRON):
         return self._get_translation_motor_value(self._v_bimorph_mirror, units)
@@ -205,7 +200,6 @@ class IdealFocusingOptics(FocusingOpticsCommon):
         self._change_shape(self._v_bimorph_mirror, q_distance, movement)
 
         if not self._v_bimorph_mirror in self._modified_elements: self._modified_elements.append(self._v_bimorph_mirror)
-        if not self._coded_mask in self._modified_elements:       self._modified_elements.append(self._coded_mask)
 
     def get_v_bimorph_mirror_q_distance(self):
         return self._get_q_distance(self._v_bimorph_mirror)
