@@ -56,7 +56,7 @@ def get_default_input_features(): # units: mm, mrad and micron for the bender
                              v_bimorph_mirror_motor_pitch_angle=0.003,
                              v_bimorph_mirror_motor_pitch_delta_angle=0.0,
                              v_bimorph_mirror_motor_bender_voltage=500,
-                             h_bendable_mirror_q_distance=2630.0,
+                             h_bendable_mirror_q_distance=2250.0, #2630.0,
                              h_bendable_mirror_motor_translation=0.0,
                              h_bendable_mirror_motor_pitch_angle=0.003,
                              h_bendable_mirror_motor_pitch_delta_angle=0.0,

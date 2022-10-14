@@ -163,6 +163,11 @@ class __PrimaryOptics(AbstractPrimaryOptics):
         slits_screen.DUMMY = 0.1
         slits_screen.FWRITE = 3
         slits_screen.F_REFRAC = 2
+        slits_screen.F_SCREEN = 1
+        slits_screen.I_SLIT = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        slits_screen.N_SCREEN = 1
+        slits_screen.RX_SLIT = numpy.array([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        slits_screen.RZ_SLIT = numpy.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         slits_screen.T_IMAGE = 0.0
         slits_screen.T_INCIDENCE = 0.0
         slits_screen.T_REFLECTION = 180.0
@@ -241,8 +246,21 @@ class __PrimaryOptics(AbstractPrimaryOptics):
             output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), self.__ml_mono_2, widget_class_name="PlaneMirror", recursive_history=False)
             output_beam = ShadowPreProcessor.apply_user_reflectivity(2, 1, 0, "xoppy_HR_multilayer_mono_reflectivity.dat", output_beam)
 
-            if verbose: print("Final Screen:")
-            output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), self.__slits_screen, widget_class_name="EmptyElement", recursive_history=False)
+            if verbose: print("Experimental-Hutch Slits:")
+            output_beam = ShadowBeam.traceFromOE(output_beam.duplicate(), self.__slits_screen, widget_class_name="ScreenSlits", recursive_history=False)
+
+            # HYBRID CORRECTION TO CONSIDER DIFFRACTION FROM SLITS
+            try:
+                if verbose: print("Hybrid calculation")
+
+                output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                                diffraction_plane=3,  # Both
+                                                                                calcType=1,  # Diffraction by Simple Aperture
+                                                                                verbose=verbose,
+                                                                                random_seed=None if random_seed is None else (random_seed + 400))).ff_beam
+            except Exception as e:
+                print(e)
+                raise HybridFailureException(oe="Experimental-Hutch Slits")
 
         except Exception as e:
             if not verbose:
