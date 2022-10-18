@@ -45,25 +45,44 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors, Beamline
+import numpy as np
 
-focusing_optics = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
-focusing_optics.initialize()
+from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import MotorResolutionRegistry
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("34-ID-C")
 
-print("COH-SLITS", focusing_optics.get_coherence_slits_parameters())
+# not sure about the movement ranges for hkb4 and vkb4
+DEFAULT_MOVEMENT_RANGES = {#'hkb_4': [-0.200, 0.200], 
+                           #'vkb_4': [-0.200, 0.200], 
+                           'hkb_4': [-20, 20],
+                           'vkb_4': [-20, 20],
+                           'hkb_3': [-0.02, 0.02], # in mrad
+                           'vkb_3': [-0.02, 0.02], # in mrad
+                           'hkb_1': [-30, 30], 
+                           'hkb_2': [-30, 30],  
+                           'vkb_1': [-30, 30],  
+                           'vkb_2': [-30, 30]  
+                           }
 
-print("VKB, bender", focusing_optics.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("VKB, pitch", focusing_optics.get_vkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=DistanceUnits.MICRON))
+# I am adding this because the focusing system interface does not currently contain resolution
+# values for hkb_q, vkb_q, hkb_1_2, and vkb_1_2 motors.
+DEFAULT_MOTOR_RESOLUTIONS = {'hkb_4': motor_resolutions.get_motor_resolution("hkb_motor_4_translation")[0],
+                             'vkb_4': motor_resolutions.get_motor_resolution("vkb_motor_4_translation")[0],
+                             'hkb_3': motor_resolutions.get_motor_resolution("hkb_motor_3_pitch")[0],
+                             'vkb_3': motor_resolutions.get_motor_resolution("vkb_motor_3_pitch")[0],
+                             'hkb_q': 0.1, # in mm
+                             'vkb_q': 0.1, # in mm
+                             'hkb_1': motor_resolutions.get_motor_resolution("hkb_motor_1_2_bender")[0],
+                             'vkb_1': motor_resolutions.get_motor_resolution("vkb_motor_1_2_bender")[0],
+                             'hkb_2': motor_resolutions.get_motor_resolution("hkb_motor_1_2_bender")[0],
+                             'vkb_2': motor_resolutions.get_motor_resolution("vkb_motor_1_2_bender")[0],
+                             }
 
-print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+DEFAULT_MOTOR_TOLERANCES = DEFAULT_MOTOR_RESOLUTIONS
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+# These values only apply for the simulation with 50k simulated beams
+DEFAULT_LOSS_TOLERANCES = {'centroid': 2e-4,
+                           'fwhm': 2e-4,
+                           'peak_intensity': -np.inf,
+                           'sigma': 2e-4}

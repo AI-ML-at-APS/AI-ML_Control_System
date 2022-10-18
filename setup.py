@@ -95,7 +95,7 @@ INSTALL_REQUIRES = (
 PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
 
 PACKAGE_DATA = {}
-NAMESPACE_PACAKGES = ["aps", "aps.ai"]
+NAMESPACE_PACAKGES = ["aps", "aps.ai", "aps.ai.autoalignment"]
 ENTRY_POINTS = {}
 
 if __name__ == '__main__':

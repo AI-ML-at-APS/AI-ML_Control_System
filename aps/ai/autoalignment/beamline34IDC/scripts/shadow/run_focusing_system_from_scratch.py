@@ -44,26 +44,62 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os
 
+from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
+from aps.ai.autoalignment.common.simulation.facade.source_interface import Sources, StorageRing
+from aps.ai.autoalignment.common.simulation.facade.source_factory import source_factory_method
+from aps.ai.autoalignment.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
 from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors, Beamline
 
-focusing_optics = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
-focusing_optics.initialize()
+from aps.ai.autoalignment.common.util.shadow.common import plot_shadow_beam_spatial_distribution, save_shadow_beam, PreProcessorFiles
+from aps.ai.autoalignment.common.util import clean_up
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
-print("COH-SLITS", focusing_optics.get_coherence_slits_parameters())
+if __name__ == "__main__":
 
-print("VKB, bender", focusing_optics.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("VKB, pitch", focusing_optics.get_vkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=DistanceUnits.MICRON))
+    os.chdir("../../../../../../work_directory/34-ID")
 
-print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    clean_up()
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    verbose = False
 
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    implementor    = Implementors.SHADOW
+    kind_of_source = Sources.GAUSSIAN
+
+    # Source -------------------------
+    source = source_factory_method(implementor=implementor, kind_of_source=kind_of_source)
+    source.initialize(storage_ring=StorageRing.APS, n_rays=5000000, random_seed=3245345)
+    source.set_angular_acceptance_from_aperture(aperture=[0.2, 0.2], distance=50500)
+    source.set_energy(energy=[9998.0, 10002.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
+
+    # Primary Optics System -------------------------
+    primary_system = primary_optics_factory_method(implementor=implementor)
+    primary_system.initialize(source_photon_beam=source.get_source_beam(verbose=verbose), rewrite_preprocessor_files=PreProcessorFiles.YES_FULL_RANGE)
+
+    # Focusing Optics System -------------------------
+
+    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=implementor)
+
+    focusing_system.initialize(input_photon_beam=primary_system.get_photon_beam(verbose=verbose),
+                               rewrite_preprocessor_files=PreProcessorFiles.NO,
+                               rewrite_height_error_profile_files=False)
+
+    focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
+
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=34534565)
+
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+
+    save_shadow_beam(output_beam, "focusing_optics_system.dat")
+
+    '''
+    focusing_system.modify_coherence_slits(coh_slits_h_center=0.05)
+    focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, AngularUnits.MILLIRADIANS)
+    focusing_system.move_hkb_motor_4_translation(-0.1, movement=Movement.RELATIVE)
+
+    output_beam = focusing_system.get_photon_beam(verbose=verbose)
+
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=None, yrange=None)
+    '''
+    clean_up()
