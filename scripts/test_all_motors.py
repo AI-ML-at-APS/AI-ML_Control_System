@@ -1,12 +1,12 @@
 import os
-from aps_ai.common.simulation.facade.parameters import Implementors
-from aps_ai.beamline34IDC.simulation.facade.focusing_optics_factory import simulated_focusing_optics_factory_method
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits
+from ai.common.simulation.facade.parameters import Implementors
+from aps.ai.beamline34IDC.simulation import simulated_focusing_optics_factory_method
+from ai.beamline34IDC.facade.focusing_optics_interface import Movement, AngularUnits
 
-from aps_ai.common.util.shadow.common import \
-    plot_shadow_beam_spatial_distribution, get_shadow_beam_spatial_distribution,\
-    load_shadow_beam, PreProcessorFiles, EmptyBeamException
-from aps_ai.common.util import clean_up
+from ai.common.util.shadow.common import \
+    get_shadow_beam_spatial_distribution,\
+    load_shadow_beam, PreProcessorFiles
+from ai.common.util import clean_up
 import matplotlib.pyplot as plt
 import numpy as np
 

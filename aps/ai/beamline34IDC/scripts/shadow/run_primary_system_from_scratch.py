@@ -44,55 +44,36 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os, numpy
+import os
 
-import matplotlib.pyplot as plt
-from matplotlib import cm
-
-try:
-    from mpl_toolkits.mplot3d import Axes3D  # necessario per caricare i plot 3D
-except:
-    pass
-
-from ai.common.util.shadow.common import get_shadow_beam_spatial_distribution, plot_shadow_beam_spatial_distribution, load_shadow_beam
-
-def plot_3D(xx, yy, zz):
-    figure = plt.figure(figsize=(10, 7))
-    figure.patch.set_facecolor('white')
-
-    axis = figure.add_subplot(111, projection='3d')
-
-    axis.set_zlabel("Intensity")
-
-    axis.clear()
-
-    x_to_plot, y_to_plot = numpy.meshgrid(xx, yy)
-    z_to_plot = zz
-
-    axis.plot_surface(x_to_plot, y_to_plot, z_to_plot,
-                           rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
-
-    axis.set_xlabel("X [mm]")
-    axis.set_ylabel("Y [mm]")
-    axis.set_zlabel("Intensity [A.U.]")
-    axis.set_title("Spatial Distribution Plot")
-    axis.mouse_init()
-
-    plt.show()
+from aps.ai.common.simulation.facade.source_interface import Sources, StorageRing
+from aps.ai.common.simulation.facade.source_factory import source_factory_method, Implementors
+from aps.ai.beamline34IDC.simulation.facade.primary_optics_factory import primary_optics_factory_method
+from aps.ai.common.util.shadow.common import save_shadow_beam, PreProcessorFiles
+from aps.ai.common.util import clean_up
 
 if __name__ == "__main__":
+    verbose = False
 
-    os.chdir("../work_directory")
+    os.chdir("../../../../../work_directory/34-ID")
 
-    shadow_beam = load_shadow_beam("primary_optics_system_beam.dat")
+    clean_up()
 
-    # default plot
-    plot_shadow_beam_spatial_distribution(shadow_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
+    implementor    = Implementors.SHADOW
+    kind_of_source = Sources.GAUSSIAN
 
-    # extracting data 2D and statistical information
-    shadow_histogram, statistical_data = get_shadow_beam_spatial_distribution(shadow_beam, do_gaussian_fit=True)
+    # Source -------------------------
+    source = source_factory_method(implementor=implementor, kind_of_source=kind_of_source)
+    source.initialize(storage_ring=StorageRing.APS, n_rays=500000, random_seed=3245345)
+    source.set_angular_acceptance_from_aperture(aperture=[0.2, 0.2], distance=50500)
+    source.set_energy(energy=[9998.0, 10002.0], photon_energy_distribution=source.PhotonEnergyDistributions.UNIFORM)
 
-    plot_3D(shadow_histogram.hh, shadow_histogram.vv, shadow_histogram.data_2D)
+    # Primary Optics System -------------------------
+    primary_system = primary_optics_factory_method(implementor=implementor)
+    primary_system.initialize(source_photon_beam=source.get_source_beam(verbose=verbose), rewrite_preprocessor_files=PreProcessorFiles.NO)
 
-    print(statistical_data.get_parameter("gaussian_fit"))
+    input_beam = primary_system.get_photon_beam(verbose=verbose)
 
+    save_shadow_beam(input_beam, "primary_optics_system_beam.dat")
+
+    clean_up()

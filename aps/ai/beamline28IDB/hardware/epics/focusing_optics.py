@@ -44,55 +44,21 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os, numpy
 
-import matplotlib.pyplot as plt
-from matplotlib import cm
+import os, numpy, time
 
-try:
-    from mpl_toolkits.mplot3d import Axes3D  # necessario per caricare i plot 3D
-except:
-    pass
+from epics import caget, caput
 
-from ai.common.util.shadow.common import get_shadow_beam_spatial_distribution, plot_shadow_beam_spatial_distribution, load_shadow_beam
+from aps.util.registry import AlreadyInitializedError
+from aps.util.initializer import register_ini_instance, IniMode
+from aps.ai.common.facade.parameters import AngularUnits, DistanceUnits, Movement
+from aps.ai.common.hardware.facade.parameters import Beamline, Directions
 
-def plot_3D(xx, yy, zz):
-    figure = plt.figure(figsize=(10, 7))
-    figure.patch.set_facecolor('white')
+from aps.ai.common.hardware.epics.optics import AbstractEpicsOptics
+from aps.ai.common.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
 
-    axis = figure.add_subplot(111, projection='3d')
+def epics_focusing_optics_factory_method(**kwargs):
+    #try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
+    #except AlreadyInitializedError: pass
 
-    axis.set_zlabel("Intensity")
-
-    axis.clear()
-
-    x_to_plot, y_to_plot = numpy.meshgrid(xx, yy)
-    z_to_plot = zz
-
-    axis.plot_surface(x_to_plot, y_to_plot, z_to_plot,
-                           rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
-
-    axis.set_xlabel("X [mm]")
-    axis.set_ylabel("Y [mm]")
-    axis.set_zlabel("Intensity [A.U.]")
-    axis.set_title("Spatial Distribution Plot")
-    axis.mouse_init()
-
-    plt.show()
-
-if __name__ == "__main__":
-
-    os.chdir("../work_directory")
-
-    shadow_beam = load_shadow_beam("primary_optics_system_beam.dat")
-
-    # default plot
-    plot_shadow_beam_spatial_distribution(shadow_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
-
-    # extracting data 2D and statistical information
-    shadow_histogram, statistical_data = get_shadow_beam_spatial_distribution(shadow_beam, do_gaussian_fit=True)
-
-    plot_3D(shadow_histogram.hh, shadow_histogram.vv, shadow_histogram.data_2D)
-
-    print(statistical_data.get_parameter("gaussian_fit"))
-
+    return None

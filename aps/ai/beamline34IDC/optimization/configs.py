@@ -44,55 +44,45 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os, numpy
 
-import matplotlib.pyplot as plt
-from matplotlib import cm
+import numpy as np
 
-try:
-    from mpl_toolkits.mplot3d import Axes3D  # necessario per caricare i plot 3D
-except:
-    pass
+from aps.ai.beamline34IDC.facade.focusing_optics_interface import MotorResolutionRegistry
 
-from ai.common.util.shadow.common import get_shadow_beam_spatial_distribution, plot_shadow_beam_spatial_distribution, load_shadow_beam
+motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("34-ID-C")
 
-def plot_3D(xx, yy, zz):
-    figure = plt.figure(figsize=(10, 7))
-    figure.patch.set_facecolor('white')
+# not sure about the movement ranges for hkb4 and vkb4
+DEFAULT_MOVEMENT_RANGES = {#'hkb_4': [-0.200, 0.200], 
+                           #'vkb_4': [-0.200, 0.200], 
+                           'hkb_4': [-20, 20],
+                           'vkb_4': [-20, 20],
+                           'hkb_3': [-0.02, 0.02], # in mrad
+                           'vkb_3': [-0.02, 0.02], # in mrad
+                           'hkb_1': [-30, 30], 
+                           'hkb_2': [-30, 30],  
+                           'vkb_1': [-30, 30],  
+                           'vkb_2': [-30, 30]  
+                           }
 
-    axis = figure.add_subplot(111, projection='3d')
+# I am adding this because the focusing system interface does not currently contain resolution
+# values for hkb_q, vkb_q, hkb_1_2, and vkb_1_2 motors.
+DEFAULT_MOTOR_RESOLUTIONS = {'hkb_4': motor_resolutions.get_motor_resolution("hkb_motor_4_translation")[0],
+                             'vkb_4': motor_resolutions.get_motor_resolution("vkb_motor_4_translation")[0],
+                             'hkb_3': motor_resolutions.get_motor_resolution("hkb_motor_3_pitch")[0],
+                             'vkb_3': motor_resolutions.get_motor_resolution("vkb_motor_3_pitch")[0],
+                             'hkb_q': 0.1, # in mm
+                             'vkb_q': 0.1, # in mm
+                             'hkb_1': motor_resolutions.get_motor_resolution("hkb_motor_1_2_bender")[0],
+                             'vkb_1': motor_resolutions.get_motor_resolution("vkb_motor_1_2_bender")[0],
+                             'hkb_2': motor_resolutions.get_motor_resolution("hkb_motor_1_2_bender")[0],
+                             'vkb_2': motor_resolutions.get_motor_resolution("vkb_motor_1_2_bender")[0],
+                             }
 
-    axis.set_zlabel("Intensity")
+DEFAULT_MOTOR_TOLERANCES = DEFAULT_MOTOR_RESOLUTIONS
 
-    axis.clear()
 
-    x_to_plot, y_to_plot = numpy.meshgrid(xx, yy)
-    z_to_plot = zz
-
-    axis.plot_surface(x_to_plot, y_to_plot, z_to_plot,
-                           rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
-
-    axis.set_xlabel("X [mm]")
-    axis.set_ylabel("Y [mm]")
-    axis.set_zlabel("Intensity [A.U.]")
-    axis.set_title("Spatial Distribution Plot")
-    axis.mouse_init()
-
-    plt.show()
-
-if __name__ == "__main__":
-
-    os.chdir("../work_directory")
-
-    shadow_beam = load_shadow_beam("primary_optics_system_beam.dat")
-
-    # default plot
-    plot_shadow_beam_spatial_distribution(shadow_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
-
-    # extracting data 2D and statistical information
-    shadow_histogram, statistical_data = get_shadow_beam_spatial_distribution(shadow_beam, do_gaussian_fit=True)
-
-    plot_3D(shadow_histogram.hh, shadow_histogram.vv, shadow_histogram.data_2D)
-
-    print(statistical_data.get_parameter("gaussian_fit"))
-
+# These values only apply for the simulation with 50k simulated beams
+DEFAULT_LOSS_TOLERANCES = {'centroid': 2e-4,
+                           'fwhm': 2e-4,
+                           'peak_intensity': -np.inf,
+                           'sigma': 2e-4}

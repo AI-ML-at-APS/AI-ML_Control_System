@@ -44,55 +44,41 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-import os, numpy
+from aps.ai.common.facade.parameters import MotorResolutionRegistry, MotorResolutionSet, MotorType, MotorResolution, DistanceUnits, Movement, AngularUnits
 
-import matplotlib.pyplot as plt
-from matplotlib import cm
+motors = {}
+motors["v_bimorph_mirror_motor_bender"]       = MotorResolution(1.0,  MotorType.OTHER)         # Bimorph mirror: bender is an actuator, "position" is in Volt
+motors["v_bimorph_mirror_motor_pitch"]        = MotorResolution(1e-4, MotorType.ROTATIONAL)    # deg
+motors["v_bimorph_mirror_motor_translation"]  = MotorResolution(1e-4, MotorType.TRANSLATIONAL) # mm
+motors["h_bendable_mirror_motor_bender"]      = MotorResolution(1e-7, MotorType.TRANSLATIONAL) # mm
+motors["h_bendable_mirror_motor_pitch"]       = MotorResolution(1e-4, MotorType.ROTATIONAL)    # deg
+motors["h_bendable_mirror_motor_translation"] = MotorResolution(1e-4, MotorType.TRANSLATIONAL) # mm
 
-try:
-    from mpl_toolkits.mplot3d import Axes3D  # necessario per caricare i plot 3D
-except:
-    pass
+MotorResolutionRegistry.getInstance().register_motor_resolution_set(MotorResolutionSet(motors=motors), "28-ID-B")
 
-from ai.common.util.shadow.common import get_shadow_beam_spatial_distribution, plot_shadow_beam_spatial_distribution, load_shadow_beam
+class AbstractFocusingOptics():
 
-def plot_3D(xx, yy, zz):
-    figure = plt.figure(figsize=(10, 7))
-    figure.patch.set_facecolor('white')
+    #####################################################################################
+    # This methods represent the run-time interface, to interact with the optical system
+    # in real time, like in the real beamline
 
-    axis = figure.add_subplot(111, projection='3d')
+    # V-KB -----------------------
 
-    axis.set_zlabel("Intensity")
+    def move_v_bimorph_mirror_motor_bender(self, actuator_value, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_v_bimorph_mirror_motor_bender(self): raise NotImplementedError()
+    def move_v_bimorph_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
+    def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
+    def move_v_bimorph_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_v_bimorph_mirror_motor_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
 
-    axis.clear()
+    # H-KB -----------------------
 
-    x_to_plot, y_to_plot = numpy.meshgrid(xx, yy)
-    z_to_plot = zz
-
-    axis.plot_surface(x_to_plot, y_to_plot, z_to_plot,
-                           rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
-
-    axis.set_xlabel("X [mm]")
-    axis.set_ylabel("Y [mm]")
-    axis.set_zlabel("Intensity [A.U.]")
-    axis.set_title("Spatial Distribution Plot")
-    axis.mouse_init()
-
-    plt.show()
-
-if __name__ == "__main__":
-
-    os.chdir("../work_directory")
-
-    shadow_beam = load_shadow_beam("primary_optics_system_beam.dat")
-
-    # default plot
-    plot_shadow_beam_spatial_distribution(shadow_beam, xrange=[-0.01, 0.01], yrange=[-0.01, 0.01])
-
-    # extracting data 2D and statistical information
-    shadow_histogram, statistical_data = get_shadow_beam_spatial_distribution(shadow_beam, do_gaussian_fit=True)
-
-    plot_3D(shadow_histogram.hh, shadow_histogram.vv, shadow_histogram.data_2D)
-
-    print(statistical_data.get_parameter("gaussian_fit"))
+    def move_h_bendable_mirror_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_h_bendable_mirror_motor_1_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_h_bendable_mirror_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_h_bendable_mirror_motor_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
+    def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
+    def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_h_bendable_mirror_motor_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
 
