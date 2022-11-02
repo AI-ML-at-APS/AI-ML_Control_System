@@ -48,16 +48,18 @@
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics_factory import shadow_focusing_optics_factory_method
 
+from aps.util.registry import AlreadyInitializedError
+from aps.util.initializer import register_ini_instance, IniMode
 
 #############################################################################
 # DESIGN PATTERN: FACTORY METHOD
 #
 
 def simulated_focusing_optics_factory_method(implementor=Implementors.SHADOW, **kwargs):
-    #try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
-    #except AlreadyInitializedError: pass
-    #try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="benders calibration", ini_file_name="benders_calibration.ini")
-    #except AlreadyInitializedError: pass
+    try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
+    except AlreadyInitializedError: pass
+    try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="benders calibration", ini_file_name="benders_calibration.ini")
+    except AlreadyInitializedError: pass
 
     if implementor==Implementors.SHADOW: return shadow_focusing_optics_factory_method(**kwargs)
     elif implementor==Implementors.SRW:  raise NotImplementedError("SRW simulation not implemented for this beamline")

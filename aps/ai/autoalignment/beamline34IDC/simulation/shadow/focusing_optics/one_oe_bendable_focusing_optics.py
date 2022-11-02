@@ -296,9 +296,9 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
 
         def calculate_bender(widget):
             widget.R0 = widget.R0_out  # use last fit result
-            widget.shadow_oe._oe.FILE_RIP = bytes(widget.ms_defect_file_name, 'utf-8')  # restore original error profile
+            widget._shadow_oe._oe.FILE_RIP = bytes(widget.ms_defect_file_name, 'utf-8')  # restore original error profile
 
-            return apply_bender_surface(widget=widget, shadow_oe=widget.shadow_oe)
+            return apply_bender_surface(widget=widget, shadow_oe=widget._shadow_oe)
 
         q_upstream, q_downstream = bender_manager.get_q_distances()
 
@@ -349,16 +349,16 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommon):
             plt.show()
             '''
 
-        raytracing_widget.shadow_oe._oe.F_RIPPLE = 1
-        raytracing_widget.shadow_oe._oe.F_G_S = 2
-        raytracing_widget.shadow_oe._oe.FILE_RIP = bytes(raytracing_widget.output_file_name_full, 'utf-8')
+        raytracing_widget._shadow_oe._oe.F_RIPPLE = 1
+        raytracing_widget._shadow_oe._oe.F_G_S = 2
+        raytracing_widget._shadow_oe._oe.FILE_RIP = bytes(raytracing_widget.output_file_name_full, 'utf-8')
 
         bender_manager.q_upstream_previous   = q_upstream
         bender_manager.q_downstream_previous = q_downstream
 
         # Redo raytracing with the bender correction as error profile
         output_beam = self._trace_oe(input_beam=input_beam,
-                                     shadow_oe=raytracing_widget.shadow_oe,
+                                     shadow_oe=raytracing_widget._shadow_oe,
                                      widget_class_name=widget_class_name,
                                      oe_name=oe_name,
                                      remove_lost_rays=remove_lost_rays)

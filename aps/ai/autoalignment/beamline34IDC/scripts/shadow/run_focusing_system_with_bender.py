@@ -67,7 +67,7 @@ if __name__ == "__main__":
     # Focusing Optics System -------------------------
 
     focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW,
-                                                     bender=2)
+                                                     bender=1)
 
     input_features = get_default_input_features()
 

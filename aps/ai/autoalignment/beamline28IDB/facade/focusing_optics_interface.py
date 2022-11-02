@@ -50,7 +50,7 @@ motors = {}
 motors["v_bimorph_mirror_motor_bender"]       = MotorResolution(1.0,  MotorType.OTHER)         # Bimorph mirror: bender is an actuator, "position" is in Volt
 motors["v_bimorph_mirror_motor_pitch"]        = MotorResolution(1e-4, MotorType.ROTATIONAL)    # deg
 motors["v_bimorph_mirror_motor_translation"]  = MotorResolution(1e-4, MotorType.TRANSLATIONAL) # mm
-motors["h_bendable_mirror_motor_bender"]      = MotorResolution(1e-7, MotorType.TRANSLATIONAL) # mm
+motors["h_bendable_mirror_motor_bender"]      = MotorResolution(1.0,  MotorType.OTHER)         # Deming's bender: motors are in Volt
 motors["h_bendable_mirror_motor_pitch"]       = MotorResolution(1e-4, MotorType.ROTATIONAL)    # deg
 motors["h_bendable_mirror_motor_translation"] = MotorResolution(1e-4, MotorType.TRANSLATIONAL) # mm
 
@@ -73,10 +73,10 @@ class AbstractFocusingOptics():
 
     # H-KB -----------------------
 
-    def move_h_bendable_mirror_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_h_bendable_mirror_motor_1_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def move_h_bendable_mirror_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_h_bendable_mirror_motor_2_bender(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_h_bendable_mirror_motor_1_bender(self, volt_upstream, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_h_bendable_mirror_motor_1_bender(self): raise NotImplementedError()
+    def move_h_bendable_mirror_motor_2_bender(self, volt_downstream, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_h_bendable_mirror_motor_2_bender(self): raise NotImplementedError()
     def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
     def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()

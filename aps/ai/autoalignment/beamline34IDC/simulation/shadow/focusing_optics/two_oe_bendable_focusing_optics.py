@@ -257,9 +257,9 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_pitch_motor(self._vkb[0], angle, movement, units,
-                                 round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_3_pitch", units=AngularUnits.DEGREES)[1], invert=True)
+                               round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_3_pitch", units=AngularUnits.DEGREES)[1], invert=True)
         self._move_pitch_motor(self._vkb[1], angle, movement, units,
-                                 round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_3_pitch", units=AngularUnits.DEGREES)[1], invert=True)
+                               round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_3_pitch", units=AngularUnits.DEGREES)[1], invert=True)
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
@@ -399,8 +399,8 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
         upstream_widget   = bender_manager._kb_upstream
         downstream_widget = bender_manager._kb_downstream
 
-        upstream_oe   = upstream_widget.shadow_oe.duplicate()
-        downstream_oe = downstream_widget.shadow_oe.duplicate()
+        upstream_oe   = upstream_widget._shadow_oe.duplicate()
+        downstream_oe = downstream_widget._shadow_oe.duplicate()
 
         upstream_oe._oe.RLEN1   = 0.0  # no positive part
         downstream_oe._oe.RLEN2 = 0.0  # no negative part
@@ -426,40 +426,40 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
         # upstream_input_beam._beam.rays   = upstream_input_beam._beam.rays[upstream_beam_cursor]
         # downstream_input_beam._beam.rays = downstream_input_beam._beam.rays[downstream_beam_cursor]
 
-        def calculate_bender(input_beam, widget, do_calculation=True):
+        def calculate_bender(widget, do_calculation=True):
             widget.R0 = widget.R0_out  # use last fit result
 
             if do_calculation:
-                widget.shadow_oe._oe.FILE_RIP = bytes(widget.ms_defect_file_name, 'utf-8')  # restore original error profile
+                widget._shadow_oe._oe.FILE_RIP = bytes(widget.ms_defect_file_name, 'utf-8')  # restore original error profile
 
-                apply_bender_surface(widget=widget, shadow_oe=widget.shadow_oe)
+                apply_bender_surface(widget=widget, shadow_oe=widget._shadow_oe)
             else:
-                widget.shadow_oe._oe.F_RIPPLE = 1
-                widget.shadow_oe._oe.F_G_S = 2
-                widget.shadow_oe._oe.FILE_RIP = bytes(widget.output_file_name_full, 'utf-8')
+                widget._shadow_oe._oe.F_RIPPLE = 1
+                widget._shadow_oe._oe.F_G_S = 2
+                widget._shadow_oe._oe.FILE_RIP = bytes(widget.output_file_name_full, 'utf-8')
 
         q_upstream, q_downstream = bender_manager.get_q_distances()
 
         if (q_upstream != bender_manager.q_upstream_previous) or (q_downstream != bender_manager.q_downstream_previous) or \
                 (not os.path.exists(upstream_widget.output_file_name_full)) or (not os.path.exists(downstream_widget.output_file_name_full)):            # trace both the beam on the whole bender widget
-            calculate_bender(input_beam, upstream_widget)
-            calculate_bender(input_beam, downstream_widget)
+            calculate_bender(upstream_widget)
+            calculate_bender(downstream_widget)
         else:
-            calculate_bender(input_beam, upstream_widget, do_calculation=False)
-            calculate_bender(input_beam, downstream_widget, do_calculation=False)
+            calculate_bender(upstream_widget, do_calculation=False)
+            calculate_bender(downstream_widget, do_calculation=False)
 
         bender_manager.q_upstream_previous   = q_upstream
         bender_manager.q_downstream_previous = q_downstream
 
         # Redo raytracing with the bender correction as error profile
         return self._trace_oe(input_beam=input_beam,
-                              shadow_oe=upstream_widget.shadow_oe,
+                              shadow_oe=upstream_widget._shadow_oe,
                               widget_class_name=widget_class_name,
                               oe_name=oe_name,
                               remove_lost_rays=remove_lost_rays), \
                upstream_beam_cursor, \
                self._trace_oe(input_beam=input_beam,
-                              shadow_oe=downstream_widget.shadow_oe,
+                              shadow_oe=downstream_widget._shadow_oe,
                               widget_class_name=widget_class_name,
                               oe_name=oe_name,
                               remove_lost_rays=remove_lost_rays), \
@@ -482,14 +482,11 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
             else:
                 return 0.0 if movement == Movement.RELATIVE else current_pos
 
-        pos_upstream = check_pos(pos_upstream, current_pos_upstream)
+        pos_upstream   = check_pos(pos_upstream, current_pos_upstream)
         pos_downstream = check_pos(pos_downstream, current_pos_downstream)
 
-        if movement == Movement.ABSOLUTE:
-            bender_manager.set_positions(pos_upstream, pos_downstream)
-        elif movement == Movement.RELATIVE:
-            current_pos_upstream, current_pos_downstream = bender_manager.get_positions()
-            bender_manager.set_positions(current_pos_upstream + pos_upstream, current_pos_downstream + pos_downstream)
+        if movement == Movement.ABSOLUTE:   bender_manager.set_positions(pos_upstream, pos_downstream)
+        elif movement == Movement.RELATIVE: bender_manager.set_positions(current_pos_upstream + pos_upstream, current_pos_downstream + pos_downstream)
         else:
             raise ValueError("Movement not recognized")
 
