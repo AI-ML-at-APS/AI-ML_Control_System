@@ -44,9 +44,87 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import numpy
 
 from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon
 
 class BendableFocusingOptics(FocusingOpticsCommon):
     def __init__(self):
         super(BendableFocusingOptics, self).__init__()
+
+
+    def _initialize_mirrors(self, input_features, reflectivity_file, h_bendable_mirror_error_profile_file):
+        h_bendable_mirror_motor_pitch_angle              = input_features.get_parameter("h_bendable_mirror_motor_pitch_angle")
+        h_bendable_mirror_motor_pitch_angle_shadow       = 90 - numpy.degrees(h_bendable_mirror_motor_pitch_angle)
+        h_bendable_mirror_motor_pitch_delta_angle        = input_features.get_parameter("h_bendable_mirror_motor_pitch_delta_angle")
+        h_bendable_mirror_motor_pitch_delta_angle_shadow = numpy.degrees(h_bendable_mirror_motor_pitch_delta_angle)
+        h_bendable_mirror_motor_translation              = input_features.get_parameter("h_bendable_mirror_motor_translation")
+
+        h_bendable_mirror = Shadow.OE()
+        h_bendable_mirror.ALPHA = 90.0
+        h_bendable_mirror.DUMMY = 0.1
+        h_bendable_mirror.FCYL = 1
+        h_bendable_mirror.FHIT_C = 1
+        h_bendable_mirror.FILE_REFL = reflectivity_file.encode()
+        h_bendable_mirror.FILE_RIP = h_bendable_mirror_error_profile_file.encode()
+        h_bendable_mirror.FMIRR = 2
+        h_bendable_mirror.FWRITE = 1
+        h_bendable_mirror.F_DEFAULT = 0
+        h_bendable_mirror.F_G_S = 2
+        h_bendable_mirror.F_REFLEC = 1
+        h_bendable_mirror.F_RIPPLE = 1
+        h_bendable_mirror.RLEN1 = 140.0
+        h_bendable_mirror.RLEN2 = 140.0
+        h_bendable_mirror.RWIDX1 = 18.14
+        h_bendable_mirror.RWIDX2 = 18.14
+        h_bendable_mirror.SIMAG = input_features.get_parameter("h_bendable_mirror_q_distance")
+        h_bendable_mirror.SSOUR = 63870.0
+        h_bendable_mirror.THETA = h_bendable_mirror_motor_pitch_angle_shadow
+        h_bendable_mirror.T_IMAGE = 0.0
+        h_bendable_mirror.T_INCIDENCE = h_bendable_mirror_motor_pitch_angle_shadow
+        h_bendable_mirror.T_REFLECTION = h_bendable_mirror_motor_pitch_angle_shadow
+        h_bendable_mirror.T_SOURCE = 1370.0
+
+        # DISPLACEMENTS
+        h_bendable_mirror.F_MOVE = 1
+        h_bendable_mirror.OFFY = h_bendable_mirror_motor_translation * numpy.sin(h_bendable_mirror_motor_pitch_angle + h_bendable_mirror_motor_pitch_delta_angle)
+        h_bendable_mirror.OFFZ = h_bendable_mirror_motor_translation * numpy.cos(h_bendable_mirror_motor_pitch_angle + h_bendable_mirror_motor_pitch_delta_angle)
+        h_bendable_mirror.X_ROT = h_bendable_mirror_motor_pitch_delta_angle_shadow
+
+        v_bimorph_mirror_motor_pitch_angle              = input_features.get_parameter("v_bimorph_mirror_motor_pitch_angle")
+        v_bimorph_mirror_motor_pitch_angle_shadow       = 90 - numpy.degrees(v_bimorph_mirror_motor_pitch_angle)
+        v_bimorph_mirror_motor_pitch_delta_angle        = input_features.get_parameter("v_bimorph_mirror_motor_pitch_delta_angle")
+        v_bimorph_mirror_motor_pitch_delta_angle_shadow = numpy.degrees(v_bimorph_mirror_motor_pitch_delta_angle)
+        v_bimorph_mirror_motor_translation              = input_features.get_parameter("v_bimorph_mirror_motor_translation")
+
+        # V-KB
+        v_bimorph_mirror = Shadow.OE()
+        v_bimorph_mirror.ALPHA = 270.0
+        v_bimorph_mirror.DUMMY = 0.1
+        v_bimorph_mirror.FCYL = 1
+        v_bimorph_mirror.FHIT_C = 1
+        v_bimorph_mirror.FILE_REFL = reflectivity_file.encode()
+        v_bimorph_mirror.FMIRR = 2
+        v_bimorph_mirror.FWRITE = 1
+        v_bimorph_mirror.F_DEFAULT = 0
+        v_bimorph_mirror.F_REFLEC = 1
+        v_bimorph_mirror.RLEN1 = 75.0
+        v_bimorph_mirror.RLEN2 = 75.0
+        v_bimorph_mirror.RWIDX1 = 4.0
+        v_bimorph_mirror.RWIDX2 = 4.0
+        v_bimorph_mirror.SIMAG = input_features.get_parameter("v_bimorph_mirror_q_distance")
+        v_bimorph_mirror.SSOUR = 65000.0
+        v_bimorph_mirror.THETA = v_bimorph_mirror_motor_pitch_angle_shadow
+        v_bimorph_mirror.T_IMAGE = 3000.0
+        v_bimorph_mirror.T_INCIDENCE = v_bimorph_mirror_motor_pitch_angle_shadow
+        v_bimorph_mirror.T_REFLECTION = v_bimorph_mirror_motor_pitch_angle_shadow
+        v_bimorph_mirror.T_SOURCE = 1130.0
+
+        # DISPLACEMENTS
+        v_bimorph_mirror.F_MOVE = 1
+        v_bimorph_mirror.OFFY  = v_bimorph_mirror_motor_translation * numpy.sin(v_bimorph_mirror_motor_pitch_angle + v_bimorph_mirror_motor_pitch_delta_angle)
+        v_bimorph_mirror.OFFZ  = v_bimorph_mirror_motor_translation * numpy.cos(v_bimorph_mirror_motor_pitch_angle + v_bimorph_mirror_motor_pitch_delta_angle)
+        v_bimorph_mirror.X_ROT = v_bimorph_mirror_motor_pitch_delta_angle_shadow
+
+        self._h_bendable_mirror = ShadowOpticalElement(h_bendable_mirror)
+        self._v_bimorph_mirror = ShadowOpticalElement(v_bimorph_mirror)
