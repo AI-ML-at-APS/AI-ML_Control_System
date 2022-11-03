@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     # Focusing Optics System -------------------------
 
-    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW, bender=False)
+    focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW, bender=True)
     focusing_system.initialize(input_photon_beam=input_beam,
                                rewrite_preprocessor_files=PreProcessorFiles.NO)
 
@@ -85,10 +85,16 @@ if __name__ == "__main__":
     output_beam = focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed)
 
     plot_distribution(Implementors.SHADOW, output_beam,
-                      xrange=[-0.25, 0.25], yrange=[-0.25, 0.25], title="Initial Beam",
+                      xrange=[-0.5, 0.5], yrange=[-0.5, 0.5], title="Initial Beam",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
-    sys.exit(0)
+    focusing_system.move_v_bimorph_mirror_motor_bender(450, movement=Movement.ABSOLUTE)
+
+    plot_distribution(Implementors.SHADOW, focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed),
+                      xrange=None, yrange=None, title="Change V-KB Shape",
+                      plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
+
+    focusing_system.move_v_bimorph_mirror_motor_bender(170, movement=Movement.ABSOLUTE)
 
     #--------------------------------------------------
     # interaction with the beamline
@@ -96,7 +102,7 @@ if __name__ == "__main__":
     focusing_system.move_h_bendable_mirror_motor_1_bender(-50, movement=Movement.RELATIVE)
 
     plot_distribution(Implementors.SHADOW, focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed),
-                      xrange=[-0.25, 0.25], yrange=[-0.25, 0.25], title="Change H-KB Shape",
+                      xrange=None, yrange=None, title="Change H-KB Shape",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
     focusing_system.move_h_bendable_mirror_motor_pitch(0.1, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)

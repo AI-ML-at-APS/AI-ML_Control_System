@@ -198,18 +198,23 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         downstream_oe._oe.RLEN2 = 0.0  # no negative part
 
         # trace both sides separately and get the beams:
-        upstream_beam_cursor   = numpy.where(self._trace_oe(input_beam=self._input_beam,
-                                                            shadow_oe=upstream_oe,
-                                                            widget_class_name="BendableEllipsoidMirror",
-                                                            oe_name="H-KB_UPSTREAM",
-                                                            remove_lost_rays=False,
-                                                            history=False)._beam.rays[:, 9] == 1)
-        downstream_beam_cursor = numpy.where(self._trace_oe(input_beam=self._input_beam,
-                                                            shadow_oe=downstream_oe,
-                                                            widget_class_name="BendableEllipsoidMirror",
-                                                            oe_name="H-KB_DOWNSTREAM",
-                                                            remove_lost_rays=False,
-                                                            history=False)._beam.rays[:, 9] == 1)
+        upstream_beam   = self._trace_oe(input_beam=self._input_beam,
+                                         shadow_oe=upstream_oe,
+                                         widget_class_name="BendableEllipsoidMirror",
+                                         oe_name="H-KB_UPSTREAM",
+                                         remove_lost_rays=False,
+                                         history=False)
+        downstream_beam = self._trace_oe(input_beam=self._input_beam,
+                                         shadow_oe=downstream_oe,
+                                         widget_class_name="BendableEllipsoidMirror",
+                                         oe_name="H-KB_DOWNSTREAM",
+                                         remove_lost_rays=False,
+                                         history=False)
+
+
+        # trace both sides separately and get the beams:
+        upstream_beam_cursor   = numpy.where(upstream_beam._beam.rays[:, 9] == 1)
+        downstream_beam_cursor = numpy.where(downstream_beam._beam.rays[:, 9] == 1)
 
         def calculate_bender(input_beam, widget, do_calculation=True):
             widget.M1    = widget.M1_out  # use last fit result
@@ -312,7 +317,7 @@ class BendableFocusingOptics(FocusingOpticsCommon):
     def move_v_bimorph_mirror_motor_bender(self, actuator_value, movement=Movement.ABSOLUTE):
         if self.__vkb_bender_manager is None: raise ValueError("Initialize Focusing Optics System first")
 
-        round_digit  = self._motor_resolution.get_motor_resolution("v_bendable_mirror_motor_bender", units=DistanceUnits.OTHER)[1]
+        round_digit  = self._motor_resolution.get_motor_resolution("v_bimorph_mirror_motor_bender", units=DistanceUnits.OTHER)[1]
         current_volt = self.__vkb_bender_manager.get_voltage()
 
         def check_volt(volt, current_volt):

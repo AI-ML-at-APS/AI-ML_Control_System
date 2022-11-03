@@ -73,18 +73,16 @@ class OneMotorCalibratedBenderManager():
         if self._verbose: print(key + ", focus bender voltage from calibration : ", self.get_voltage())
 
     def get_q_distance(self):
-        return self._shadow_oe.SIMAG
+        return self._shadow_oe._oe.SIMAG
 
     def get_voltage(self):
-        return (1/(self._shadow_oe.SIMAG*1e-3) - self.__P1)/self.__P0
+        return (1/(self._shadow_oe._oe.SIMAG*1e-3) - self.__P1)/self.__P0
 
     def get_voltage_for_focus(self, q_distance):
         return (1/(q_distance*1e-3) - self.__P1)/self.__P0
 
     def set_voltage(self, voltage):
-        q = (1e3 / (self.__P0 * voltage + self.__P1))
-        self._shadow_oe.SIMAG                     = q
-        self._shadow_oe.image_side_focal_distance = q
+        self._shadow_oe._oe.SIMAG = (1e3 / (self.__P0 * voltage + self.__P1))
 
     def remove_bender_file(self):
         if os.path.exists(self._shadow_oe.output_file_name_full):   os.remove(self._shadow_oe.output_file_name_full)
