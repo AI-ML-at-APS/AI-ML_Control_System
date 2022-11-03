@@ -95,8 +95,8 @@ if __name__ == "__main__":
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
     focusing_system.move_v_bimorph_mirror_motor_bender(150, movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-90, movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-90, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-100, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-100, movement=Movement.ABSOLUTE)
 
     plot_distribution(Implementors.SHADOW, focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed),
                       xrange=x_range, yrange=y_range, title="Change V-KB Shape",
