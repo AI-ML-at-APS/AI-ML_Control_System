@@ -112,16 +112,21 @@ class __PrimaryOptics(AbstractPrimaryOptics):
         primary_mirror_1.T_REFLECTION = 89.8567605512
         primary_mirror_1.T_SOURCE = 1684.5
 
+        # second mirror is convex
         primary_mirror_2 = Shadow.OE()
         primary_mirror_2.ALPHA = 180.0
         primary_mirror_2.DUMMY = 0.1
         primary_mirror_2.FHIT_C = 1
         primary_mirror_2.FILE_RIP = b'M2.dat'
+        primary_mirror_2.FMIRR = 1
         primary_mirror_2.FWRITE = 1
+        primary_mirror_2.F_CONVEX = 1
+        primary_mirror_2.F_EXT = 1
         primary_mirror_2.F_G_S = 2
         primary_mirror_2.F_RIPPLE = 1
         primary_mirror_2.RLEN1 = 250.0
         primary_mirror_2.RLEN2 = 250.0
+        primary_mirror_2.RMIRR = 2500000.0
         primary_mirror_2.RWIDX1 = 15.0
         primary_mirror_2.RWIDX2 = 15.0
         primary_mirror_2.T_IMAGE = 0.0
@@ -166,8 +171,8 @@ class __PrimaryOptics(AbstractPrimaryOptics):
         slits_screen.F_SCREEN = 1
         slits_screen.I_SLIT = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         slits_screen.N_SCREEN = 1
-        slits_screen.RX_SLIT = numpy.array([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        slits_screen.RZ_SLIT = numpy.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        slits_screen.RX_SLIT = numpy.array([0.85, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        slits_screen.RZ_SLIT = numpy.array([0.42, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         slits_screen.T_IMAGE = 0.0
         slits_screen.T_INCIDENCE = 0.0
         slits_screen.T_REFLECTION = 180.0

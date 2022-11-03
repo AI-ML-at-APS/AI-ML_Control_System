@@ -150,7 +150,7 @@ class HKBMockWidget(MockWidget):
     bender_bin_y = 500
 
     E = 131000
-    h = 10.0
+    h = 12.0
 
     kind_of_bender = 1 # double momentum
     shape          = 0 # trapezium
@@ -211,5 +211,5 @@ class HKBMockWidget(MockWidget):
 
     def initialize_bender_parameters(self, label):
         self.output_file_name_full = congruence.checkFileName(("" if label is None else (label + "_")) + "HKB_bender_profile.dat")
-        self.M1_out    = self.M1    = 447.75
-        self.ratio_out = self.ratio = 1.312
+        self.M1_out    = self.M1    = 500
+        self.ratio_out = self.ratio = 1.3

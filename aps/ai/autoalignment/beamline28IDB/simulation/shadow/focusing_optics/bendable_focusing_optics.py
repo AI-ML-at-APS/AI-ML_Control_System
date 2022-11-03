@@ -137,7 +137,7 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         h_bendable_mirror_down.RWIDX1 = 18.14
         h_bendable_mirror_down.RWIDX2 = 18.14
         h_bendable_mirror_down.SIMAG = -999
-        h_bendable_mirror_down.SSOUR = 63870.0
+        h_bendable_mirror_down.SSOUR = 36527.0 # instead of 63870.0, because of the convexity of M2
         h_bendable_mirror_down.THETA = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror_down.T_IMAGE = 0.0
         h_bendable_mirror_down.T_INCIDENCE = h_bendable_mirror_motor_pitch_angle_shadow
@@ -191,30 +191,6 @@ class BendableFocusingOptics(FocusingOpticsCommon):
     def _trace_h_bendable_mirror(self, random_seed, remove_lost_rays, verbose): 
         upstream_widget   = self.__hkb_bender_manager._kb_upstream
         downstream_widget = self.__hkb_bender_manager._kb_downstream
-        upstream_oe       = upstream_widget._shadow_oe.duplicate()
-        downstream_oe     = downstream_widget._shadow_oe.duplicate()
-
-        upstream_oe._oe.RLEN1   = 0.0  # no positive part
-        downstream_oe._oe.RLEN2 = 0.0  # no negative part
-
-        # trace both sides separately and get the beams:
-        upstream_beam   = self._trace_oe(input_beam=self._input_beam,
-                                         shadow_oe=upstream_oe,
-                                         widget_class_name="BendableEllipsoidMirror",
-                                         oe_name="H-KB_UPSTREAM",
-                                         remove_lost_rays=False,
-                                         history=False)
-        downstream_beam = self._trace_oe(input_beam=self._input_beam,
-                                         shadow_oe=downstream_oe,
-                                         widget_class_name="BendableEllipsoidMirror",
-                                         oe_name="H-KB_DOWNSTREAM",
-                                         remove_lost_rays=False,
-                                         history=False)
-
-
-        # trace both sides separately and get the beams:
-        upstream_beam_cursor   = numpy.where(upstream_beam._beam.rays[:, 9] == 1)
-        downstream_beam_cursor = numpy.where(downstream_beam._beam.rays[:, 9] == 1)
 
         def calculate_bender(input_beam, widget, do_calculation=True):
             widget.M1    = widget.M1_out  # use last fit result
@@ -242,6 +218,9 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         self.__hkb_bender_manager.q_upstream_previous   = q_upstream
         self.__hkb_bender_manager.q_downstream_previous = q_downstream
 
+        upstream_widget._shadow_oe._oe.RLEN1   = 0.0  # no positive part
+        downstream_widget._shadow_oe._oe.RLEN2 = 0.0  # no negative part
+
         # Redo raytracing with the bender correction as error profile
         output_beam_upstream   = self._trace_oe(input_beam=self._input_beam,
                                                 shadow_oe=upstream_widget._shadow_oe,
@@ -253,9 +232,6 @@ class BendableFocusingOptics(FocusingOpticsCommon):
                                                 widget_class_name="BendableEllipsoidMirror",
                                                 oe_name="H-KB_DOWNSTREAM",
                                                 remove_lost_rays=remove_lost_rays)
-
-        output_beam_upstream._beam.rays   = output_beam_upstream._beam.rays[upstream_beam_cursor]
-        output_beam_downstream._beam.rays = output_beam_downstream._beam.rays[downstream_beam_cursor]
 
         return ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=0)
 

@@ -83,7 +83,7 @@ class IdealFocusingOptics(FocusingOpticsCommon):
         h_bendable_mirror.RWIDX1 = 18.14
         h_bendable_mirror.RWIDX2 = 18.14
         h_bendable_mirror.SIMAG = input_features.get_parameter("h_bendable_mirror_q_distance")
-        h_bendable_mirror.SSOUR = 63870.0
+        h_bendable_mirror.SSOUR = 36527.0 # instead of 63870.0, because of the convexity of M2
         h_bendable_mirror.THETA = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror.T_IMAGE = 0.0
         h_bendable_mirror.T_INCIDENCE = h_bendable_mirror_motor_pitch_angle_shadow
