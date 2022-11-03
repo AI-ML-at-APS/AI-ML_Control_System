@@ -146,8 +146,8 @@ class HKBMockWidget(MockWidget):
     ms_type_of_defect = 2
     ms_defect_file_name = "error_profile.dat"
 
-    bender_bin_x = 10
-    bender_bin_y = 200
+    bender_bin_x = 50
+    bender_bin_y = 500
 
     E = 131000
     h = 10.0

@@ -63,6 +63,12 @@ if __name__ == "__main__":
     aspect_ratio = AspectRatio.AUTO
     color_map = ColorMap.VIRIDIS
 
+    detector_x = 2160 * 0.65 * 1e-3
+    detector_y = 2560 * 0.65 * 1e-3
+
+    x_range = [-detector_x/2, detector_x/2]
+    y_range = [-detector_y/2, detector_y/2]
+
     os.chdir("../../../../../../work_directory/28-ID")
 
     clean_up()
@@ -85,30 +91,36 @@ if __name__ == "__main__":
     output_beam = focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed)
 
     plot_distribution(Implementors.SHADOW, output_beam,
-                      xrange=[-0.5, 0.5], yrange=[-0.5, 0.5], title="Initial Beam",
+                      xrange=x_range, yrange=y_range, title="Initial Beam",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
-    focusing_system.move_v_bimorph_mirror_motor_bender(450, movement=Movement.ABSOLUTE)
+    focusing_system.move_v_bimorph_mirror_motor_bender(150, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-90, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-90, movement=Movement.ABSOLUTE)
 
     plot_distribution(Implementors.SHADOW, focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed),
-                      xrange=None, yrange=None, title="Change V-KB Shape",
+                      xrange=x_range, yrange=y_range, title="Change V-KB Shape",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
+    sys.exit(0)
+
     focusing_system.move_v_bimorph_mirror_motor_bender(170, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-90, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-90, movement=Movement.ABSOLUTE)
 
     #--------------------------------------------------
     # interaction with the beamline
 
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-50, movement=Movement.RELATIVE)
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-50, movement=Movement.ABSOLUTE)
 
     plot_distribution(Implementors.SHADOW, focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed),
-                      xrange=None, yrange=None, title="Change H-KB Shape",
+                      xrange=x_range, yrange=y_range, title="Change H-KB Shape",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
     focusing_system.move_h_bendable_mirror_motor_pitch(0.1, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
 
     plot_distribution(Implementors.SHADOW, focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed),
-                      xrange=None, yrange=None, title="Change H-KB Pitch",
+                      xrange=x_range, yrange=y_range, title="Change H-KB Pitch",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
     print(focusing_system.get_h_bendable_mirror_motor_pitch(units=AngularUnits.MILLIRADIANS))
@@ -116,24 +128,24 @@ if __name__ == "__main__":
     focusing_system.move_h_bendable_mirror_motor_translation(10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     plot_distribution(Implementors.SHADOW, focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed),
-                      xrange=None, yrange=None, title="Change H-KB Translation",
+                      xrange=x_range, yrange=y_range, title="Change H-KB Translation",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
     print(focusing_system.get_h_bendable_mirror_motor_translation(units=DistanceUnits.MICRON))
 
     #--------------------------------------------------
 
-    focusing_system.move_v_bimorph_mirror_motor_bender(10, movement=Movement.RELATIVE)
+    focusing_system.move_v_bimorph_mirror_motor_bender(450, movement=Movement.ABSOLUTE)
 
     plot_distribution(Implementors.SHADOW, focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed),
-                      xrange=None, yrange=None, title="Change V-KB Shape",
+                      xrange=x_range, yrange=y_range, title="Change V-KB Shape",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
 
     focusing_system.move_v_bimorph_mirror_motor_pitch(3.2, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS)
 
     plot_distribution(Implementors.SHADOW, focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed),
-                      xrange=None, yrange=None, title="Change V-KB Pitch",
+                      xrange=x_range, yrange=y_range, title="Change V-KB Pitch",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
     print(focusing_system.get_v_bimorph_mirror_motor_pitch(units=AngularUnits.MILLIRADIANS))
@@ -141,7 +153,7 @@ if __name__ == "__main__":
     focusing_system.move_v_bimorph_mirror_motor_translation(-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
     plot_distribution(Implementors.SHADOW, focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed),
-                      xrange=None, yrange=None, title="Change V-KB Translation",
+                      xrange=x_range, yrange=y_range, title="Change V-KB Translation",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
     print(focusing_system.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MICRON))
