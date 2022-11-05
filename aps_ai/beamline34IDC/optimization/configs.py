@@ -47,8 +47,7 @@
 
 import numpy as np
 
-from aps_ai.beamline34IDC.facade.focusing_optics_interface import (
-    AngularUnits, DistanceUnits, MotorResolutionRegistry)
+from aps_ai.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, MotorResolutionRegistry
 
 motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("34-ID-C")
 
@@ -86,3 +85,5 @@ DEFAULT_MOTOR_TOLERANCES = DEFAULT_MOTOR_RESOLUTIONS
 
 # These values only apply for the simulation with 50k simulated beams
 DEFAULT_LOSS_TOLERANCES = {"centroid": 2e-4, "fwhm": 2e-4, "peak_intensity": -np.inf, "sigma": 2e-4}
+
+DEFAULT_CONSTRAINT_OPTIONS = {"centroid", "fwhm", "sigma", "peak_intensity", "sum_intensity"}

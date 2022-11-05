@@ -45,83 +45,80 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
+from typing import List, NoReturn
+
+# This is just for a live plotting utility --------------------------------
+import IPython
+import matplotlib.pyplot as plt
 import numpy as np
 
-from aps_ai.common.facade.parameters import Movement
+from aps_ai.beamline34IDC.optimization import configs
+from aps_ai.beamline34IDC.optimization.common import OptimizationCommon
+
+# Check if we are in a ipython/colab environment
+try:
+    class_name = IPython.get_ipython().__class__.__name__
+    if "Terminal" in class_name:
+        IS_NOTEBOOK = False
+    else:
+        IS_NOTEBOOK = True
+except NameError:
+    IS_NOTEBOOK = False
+
+if IS_NOTEBOOK:
+    from IPython import display
+# ---------------------------------------------------------------------------
 
 
-# Using distance units of micrometers
-# All distance movements are in micrometers: motors 3 and the 'q' parameter.
-def get_movement(movement) -> object:
-    movement_types = {"relative": Movement.RELATIVE, "absolute": Movement.ABSOLUTE}
-    if movement in movement_types:
-        return movement_types[movement]
-    if movement in movement_types.values():
-        return movement
-    raise ValueError
+class EarlyStoppingCallback:
+    """I was originally writing this to use with the scipy optimizer, but I am not using it right now."""
+
+    def __init__(self, optimizer: OptimizationCommon, xtols: List[float] = None, ftol: float = None) -> NoReturn:
+        self.optimizer = optimizer
+        if xtols is None:
+            self.xtols = np.array([configs.DEFAULT_MOTOR_TOLERANCES[mt] for mt in optimizer.motor_types])
+        elif np.ndim(xtols) == 0:
+            self.xtols = np.full(xtols, len(optimizer.motor_types))
+        else:
+            self.xtols = xtols
+
+        if ftol is None:
+            self.ftol = configs.DEFAULT_LOSS_TOLERANCES[optimizer.loss_parameter]
+
+    def call(self, *args, **kwargs) -> NoReturn:
+        x_prev, x_this = self.optimizer._opt_trials_motor_positions[-2:]
+        loss_prev, loss_this = self.optimizer._opt_trials_losses[-2:]
+        if np.all(np.abs(x_prev - x_this) < self.xtols) or np.abs():
+            pass
 
 
-def get_motor_move_fn(focusing_system, motor):
-    motor_move_fns = {
-        "hkb_4": focusing_system.move_hkb_motor_4_translation,
-        "hkb_3": focusing_system.move_hkb_motor_3_pitch,
-        # hkb_q': focusing_system.change_hkb_shape,
-        "vkb_4": focusing_system.move_vkb_motor_4_translation,
-        "vkb_3": focusing_system.move_vkb_motor_3_pitch,
-        #'vkb_q': focusing_system.change_vkb_shape,
-        "hkb_1": focusing_system.move_hkb_motor_1_bender,
-        "hkb_2": focusing_system.move_hkb_motor_2_bender,
-        "vkb_1": focusing_system.move_vkb_motor_1_bender,
-        "vkb_2": focusing_system.move_vkb_motor_2_bender,
-    }
+class LivePlotCallback:
+    def __init__(self, optimizer: OptimizationCommon, **fig_kwargs) -> NoReturn:
+        if not IS_NOTEBOOK:
+            raise Exception("Cannot use live plot callback outside ipython environment for now.")
+        self.optimizer = optimizer
+        self._fig_initialized = False
+        self.fig_kwargs = fig_kwargs
 
-    if motor in motor_move_fns:
-        return motor_move_fns[motor]
-    if motor in motor_move_fns.values():
-        return motor
-    raise ValueError
+    def _initialize_fig(self) -> NoReturn:
+        self.fig, self.ax = plt.subplots(1, 1, **self.fig_kwargs)
+        self.hdisplay = display.display("", display_id=True)
+        self.ax.set_xlabel("Calls")
+        self.ax.set_ylabel("Loss")
+        self.ax.set_yscale("log")
+        self._fig_initialized = True
 
+    def call(self, *args, **kwargs) -> NoReturn:
 
-def move_motors(focusing_system, motors, translations, movement="relative"):
-    movement = get_movement(movement)
-    if np.ndim(motors) == 0:
-        motors = [motors]
-    if np.ndim(translations) == 0:
-        translations = [translations]
-    for motor, trans in zip(motors, translations):
-        # if trans == 0: continue
-        motor_move_fn = get_motor_move_fn(focusing_system, motor)
-        motor_move_fn(trans, movement=movement)
-    return focusing_system
+        if not self._fig_initialized:
+            self._initialize_fig()
+        x_points = np.arange(self.optimizer._opt_fn_call_counter)
 
+        colors = x_points / x_points.size
+        self.ax.scatter(x_points, self.optimizer._opt_trials_losses, marker="o", c=colors, cmap="jet")
+        self.ax.autoscale_view()
+        self.hdisplay.update(self.fig)
 
-def get_motor_absolute_position_fn(focusing_system, motor):
-    motor_get_pos_fns = {
-        "hkb_4": focusing_system.get_hkb_motor_4_translation,
-        "hkb_3": focusing_system.get_hkb_motor_3_pitch,
-        "hkb_q": focusing_system.get_hkb_q_distance,
-        "vkb_4": focusing_system.get_vkb_motor_4_translation,
-        "vkb_3": focusing_system.get_vkb_motor_3_pitch,
-        "vkb_q": focusing_system.get_vkb_q_distance,
-        "hkb_1": focusing_system.get_hkb_motor_1_bender,
-        "hkb_2": focusing_system.get_hkb_motor_2_bender,
-        "vkb_1": focusing_system.get_vkb_motor_1_bender,
-        "vkb_2": focusing_system.get_vkb_motor_2_bender,
-    }
-    if motor in motor_get_pos_fns:
-        return motor_get_pos_fns[motor]
-    if motor in motor_get_pos_fns.values():
-        return motor
-    raise ValueError
-
-
-def get_absolute_positions(focusing_system, motors):
-
-    if np.ndim(motors) == 0:
-        motors = [motors]
-
-    positions = []
-    for motor in motors:
-        position = get_motor_absolute_position_fn(focusing_system, motor)()
-        positions.append(position)
-    return positions
+    def close(self) -> NoReturn:
+        if self._fig_initialized:
+            plt.close(self.fig)

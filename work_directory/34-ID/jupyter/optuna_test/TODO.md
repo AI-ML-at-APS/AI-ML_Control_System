@@ -16,3 +16,7 @@ I spoke with Xianbo, and we are actually capable of reproducing the 34-ID KB at 
 
 
 Saugat can keep working on 34-ID, but I will start creating the libraries for 28-ID asap. The beam is not very coherent and we don’t have coherence slits, so the ray-tracing will be faster.
+
+## TODO - 10/18/22
+
+For 28-ID, we only need to optimize the centroid, not the sigma. 

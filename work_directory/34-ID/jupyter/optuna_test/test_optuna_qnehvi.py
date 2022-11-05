@@ -160,7 +160,7 @@ def qnei_candidates_func(
 
 
 
-@experimental_func("2.4.0")
+#@experimental_func("2.4.0")
 def qnehvi_candidates_func(
     train_x: "torch.Tensor",
     train_obj: "torch.Tensor",
