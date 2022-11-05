@@ -44,26 +44,28 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os
 
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors, Beamline
+from aps.ai.autoalignment.common.simulation.facade.source_interface import Sources, StorageRing
+from aps.ai.autoalignment.common.simulation.facade.source_factory import source_factory_method, Implementors
+from aps.ai.autoalignment.common.util.srw.common import plot_srw_wavefront_spatial_distribution, get_srw_wavefront_distribution_info, save_srw_wavefront
 
-focusing_optics = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
-focusing_optics.initialize()
+if __name__ == "__main__":
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    verbose = False
 
-print("COH-SLITS", focusing_optics.get_coherence_slits_parameters())
+    os.chdir("../../../../../../work_directory/34-ID")
 
-print("VKB, bender", focusing_optics.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("VKB, pitch", focusing_optics.get_vkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=DistanceUnits.MICRON))
+    source = source_factory_method(implementor=Implementors.SRW, kind_of_source=Sources.UNDULATOR)
+    source.initialize(storage_ring=StorageRing.APS)
+    source.set_energy(energy=5000)
 
-print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    source_wavefront = source.get_source_beam(verbose=verbose)
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    save_srw_wavefront(source_wavefront, "srw_undulator_source.dat")
 
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    plot_srw_wavefront_spatial_distribution(source_wavefront)
+
+    srw_histogram, info = get_srw_wavefront_distribution_info(source_wavefront, do_gaussian_fit=True)
+
+    print(info)

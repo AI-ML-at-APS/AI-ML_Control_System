@@ -45,25 +45,43 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors, Beamline
+from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits
+from aps.ai.autoalignment.common.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics
+from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics
 
-focusing_optics = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
-focusing_optics.initialize()
+def get_default_input_features(): # units: mm, mrad and micron for the bender
+    return DictionaryWrapper(coh_slits_h_aperture=0.03,
+                             coh_slits_h_center=0.0,
+                             coh_slits_v_aperture=0.07,
+                             coh_slits_v_center=0.0,
+                             vkb_q_distance=231,
+                             vkb_motor_4_translation=0.0,
+                             vkb_motor_3_pitch_angle=0.003,
+                             vkb_motor_3_delta_pitch_angle=0.0,
+                             vkb_motor_1_bender_position=144.0, #138.0,#142.5,
+                             vkb_motor_2_bender_position=231.5, #243.5, #299.5,
+                             hkb_q_distance=123,
+                             hkb_motor_4_translation=0.0,
+                             hkb_motor_3_pitch_angle=0.003,
+                             hkb_motor_3_delta_pitch_angle=0.0,
+                             hkb_motor_1_bender_position=215.5,#250.0515,
+                             hkb_motor_2_bender_position=112.5 #157.0341
+                             )
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+class AbstractSimulatedFocusingOptics34ID(AbstractSimulatedFocusingOptics, AbstractFocusingOptics):
 
-print("COH-SLITS", focusing_optics.get_coherence_slits_parameters())
+    #####################################################################################
+    # This methods represent the run-time interface, to interact with the optical system
+    # in real time, like in the real beamline. FOR SIMULATION PURPOSES ONLY
 
-print("VKB, bender", focusing_optics.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("VKB, pitch", focusing_optics.get_vkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=DistanceUnits.MICRON))
+    # V-KB -----------------------
 
-print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    def change_vkb_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_vkb_q_distance(self): raise NotImplementedError()
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    # H-KB -----------------------
 
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    def change_hkb_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_hkb_q_distance(self): raise NotImplementedError()
+

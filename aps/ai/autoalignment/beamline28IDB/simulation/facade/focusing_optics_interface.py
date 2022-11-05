@@ -45,25 +45,38 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors, Beamline
+from orangecontrib.ml.util.data_structures import DictionaryWrapper
 
-focusing_optics = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
-focusing_optics.initialize()
+from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+def get_default_input_features(): # units: mm, mrad and micron for the bender
+    return DictionaryWrapper(v_bimorph_mirror_q_distance=1500.0,
+                             v_bimorph_mirror_motor_translation=0.0,
+                             v_bimorph_mirror_motor_pitch_angle=0.003,
+                             v_bimorph_mirror_motor_pitch_delta_angle=0.0,
+                             v_bimorph_mirror_motor_bender_voltage=170,
+                             h_bendable_mirror_q_distance=2250.0, #2630.0,
+                             h_bendable_mirror_motor_translation=0.0,
+                             h_bendable_mirror_motor_pitch_angle=0.003,
+                             h_bendable_mirror_motor_pitch_delta_angle=0.0,
+                             h_bendable_mirror_motor_1_bender_voltage=-90,
+                             h_bendable_mirror_motor_2_bender_voltage=-90
+                             )
 
-print("COH-SLITS", focusing_optics.get_coherence_slits_parameters())
+class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
 
-print("VKB, bender", focusing_optics.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("VKB, pitch", focusing_optics.get_vkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=DistanceUnits.MICRON))
+    #####################################################################################
+    # This methods represent the run-time interface, to interact with the optical system
+    # in real time, like in the real beamline. FOR SIMULATION PURPOSES ONLY
 
-print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    # V-KB -----------------------
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    def change_h_bendable_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def get_h_bendable_mirror_q_distance(self): raise NotImplementedError()
 
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    # H-KB -----------------------
+
+    def change_v_bimorph_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def get_v_bimorph_mirror_q_distance(self): raise NotImplementedError()
+

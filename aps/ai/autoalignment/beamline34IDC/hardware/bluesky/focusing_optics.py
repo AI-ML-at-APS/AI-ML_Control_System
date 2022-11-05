@@ -45,25 +45,45 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors, Beamline
+from aps.ai.autoalignment.common.facade.parameters import AngularUnits, DistanceUnits, Movement
+from aps.ai.autoalignment.common.hardware.facade.parameters import Directions
+from aps.ai.autoalignment.common.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
 
-focusing_optics = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
-focusing_optics.initialize()
+def bluesky_focusing_optics_factory_method(**kwargs):
+    return __BlueskyFocusingOptics(**kwargs)
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+class __BlueskyFocusingOptics(AbstractHardwareFocusingOptics):
+    def __init__(self, **kwargs):
+        pass
 
-print("COH-SLITS", focusing_optics.get_coherence_slits_parameters())
+    def initialize(self, **kwargs):
+        pass
 
-print("VKB, bender", focusing_optics.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("VKB, pitch", focusing_optics.get_vkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=DistanceUnits.MICRON))
+    #####################################################################################
+    # This methods represent the run-time interface, to interact with the optical system
+    # in real time, like in the real beamline
 
-print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    def modify_coherence_slits(self, coh_slits_h_center=None, coh_slits_v_center=None, coh_slits_h_aperture=None, coh_slits_v_aperture=None): pass
+    def get_coherence_slits_parameters(self): pass # center x, center z, aperture x, aperture z
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    # V-KB -----------------------
 
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
+    def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
+    def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
+    def get_vkb_motor_4_translation(self): pass
+    def move_vkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
+    def get_vkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
+
+    # H-KB -----------------------
+
+    def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): pass
+    def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS): pass
+    def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE): pass
+    def get_hkb_motor_4_translation(self): pass
+    def move_hkb_motor_1_2_bender(self, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): pass
+    def get_hkb_motor_1_2_bender(self, units=DistanceUnits.MICRON): pass
+
+    # PROTECTED GENERIC MOTOR METHODS
+    
+    def get_beam_scan(self, direction=Directions.HORIZONTAL): pass

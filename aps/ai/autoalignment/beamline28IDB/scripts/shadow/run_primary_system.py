@@ -11,7 +11,7 @@
 # UChicago Argonne, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR        #
 # ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is     #
 # modified to produce derivative works, such modified software should     #
-# be clearly marked, so as not to confuse it with the version available   #
+# be clearly marked, so as not to confuse it witn available   #
 # from ANL.                                                               #
 #                                                                         #
 # Additionally, redistribution and use in source and binary forms, with   #
@@ -44,26 +44,36 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os
 
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors, Beamline
+from aps.ai.autoalignment.beamline28IDB.simulation.facade.primary_optics_factory import primary_optics_factory_method
 
-focusing_optics = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
-focusing_optics.initialize()
+from aps.ai.autoalignment.common.simulation.facade.source_factory import Implementors
+from aps.ai.autoalignment.common.util.shadow.common import load_source_beam, save_shadow_beam, plot_shadow_beam_spatial_distribution, PlotMode
+from aps.ai.autoalignment.common.util import clean_up
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+import Shadow
 
-print("COH-SLITS", focusing_optics.get_coherence_slits_parameters())
+if __name__ == "__main__":
+    verbose = True
 
-print("VKB, bender", focusing_optics.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("VKB, pitch", focusing_optics.get_vkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=DistanceUnits.MICRON))
+    os.chdir("../../../../../../work_directory/28-ID")
 
-print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    clean_up()
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    # Source -------------------------
+    source_beam = load_source_beam("undulator_source.dat")
 
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    # Primary Optics System -------------------------
+    primary_system = primary_optics_factory_method(implementor=Implementors.SHADOW)
+    primary_system.initialize(source_photon_beam=source_beam, relative_source_position=1300)
+
+    output_beam = primary_system.get_photon_beam(verbose=verbose)
+
+    save_shadow_beam(output_beam, "primary_optics_system_beam.dat")
+
+    plot_shadow_beam_spatial_distribution(output_beam, plot_mode=PlotMode.BOTH)#, xrange=[-0.2, 0.2], yrange=[-0.2, 0.2])
+
+    Shadow.ShadowTools.histo1(output_beam._beam, 11, nolost=1, ref=23, xrange=[19650, 20150])
+
+    clean_up()

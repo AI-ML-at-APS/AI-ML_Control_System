@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------- #
-# Copyright (c) 2021, UChicago Argonne, LLC. All rights reserved.         #
+# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2021. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -44,26 +44,46 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import numpy
 
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors, Beamline
+from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits, AngularUnits
 
-focusing_optics = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
-focusing_optics.initialize()
+from epics import caget, caput
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+class AbstractEpicsOptics:
 
-print("COH-SLITS", focusing_optics.get_coherence_slits_parameters())
+    # PRIVATE METHODS
 
-print("VKB, bender", focusing_optics.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("VKB, pitch", focusing_optics.get_vkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=DistanceUnits.MICRON))
+    @classmethod
+    def _move_translational_motor(cls, motor, pos, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+        if units == DistanceUnits.MILLIMETERS: pos *= 1e3
+        elif units == DistanceUnits.MICRON: pass
+        else: raise ValueError("Distance units not recognized")
 
-print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+        if movement == Movement.ABSOLUTE:   caput(motor + ".VAL", pos)
+        elif movement == Movement.RELATIVE: caput(motor + ".RLV", pos)
+        else: raise ValueError("Movement not recognized")
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    @classmethod
+    def _move_rotational_motor(cls, motor, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
+        if units == AngularUnits.MILLIRADIANS: pass
+        elif units == AngularUnits.DEGREES:    angle = 1e3 * numpy.radians(angle)
+        elif units == AngularUnits.RADIANS:    angle = 1e3 * angle
+        else:  raise ValueError("Angular units not recognized")
 
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+        if movement == Movement.ABSOLUTE:   caput(motor + ".VAL", angle)
+        elif movement == Movement.RELATIVE: caput(motor + ".RLV", angle)
+        else: raise ValueError("Movement not recognized")
+
+    @classmethod
+    def _get_translational_motor_position(cls, motor, units=DistanceUnits.MICRON):
+        if units == DistanceUnits.MICRON:        return caget(motor + ".VAL")
+        elif units == DistanceUnits.MILLIMETERS: return 1e-3 * caget(motor + ".VAL")
+        else: raise ValueError("Distance units not recognized")
+
+    @classmethod
+    def _get_rotational_motor_angle(cls, motor, units=AngularUnits.MILLIRADIANS):
+        if units == AngularUnits.MILLIRADIANS: return caget(motor)
+        elif units == AngularUnits.DEGREES:    return numpy.degrees(caget(motor) * 1e-3)
+        elif units == AngularUnits.RADIANS:    return caget(motor) * 1e-3
+        else: raise ValueError("Angular units not recognized")

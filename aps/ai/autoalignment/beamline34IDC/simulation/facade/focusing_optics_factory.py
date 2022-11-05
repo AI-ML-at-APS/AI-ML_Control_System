@@ -45,25 +45,22 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors, Beamline
+from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
+from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics_factory import shadow_focusing_optics_factory_method
+from aps.ai.autoalignment.beamline34IDC.simulation.srw.focusing_optics import srw_focusing_optics_factory_method
 
-focusing_optics = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
-focusing_optics.initialize()
+from aps.util.registry import AlreadyInitializedError
+from aps.util.initializer import register_ini_instance, IniMode
+#############################################################################
+# DESIGN PATTERN: FACTORY METHOD
+#
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+def simulated_focusing_optics_factory_method(implementor=Implementors.SHADOW, **kwargs):
+    try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
+    except AlreadyInitializedError: pass
+    try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="benders calibration", ini_file_name="benders_calibration.ini")
+    except AlreadyInitializedError: pass
 
-print("COH-SLITS", focusing_optics.get_coherence_slits_parameters())
-
-print("VKB, bender", focusing_optics.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("VKB, pitch", focusing_optics.get_vkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=DistanceUnits.MICRON))
-
-print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
-
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
-
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    if implementor==Implementors.SHADOW: return shadow_focusing_optics_factory_method(**kwargs)
+    elif implementor==Implementors.SRW:  return srw_focusing_optics_factory_method(**kwargs)
+    else: raise ValueError("Implementor not recognized")

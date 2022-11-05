@@ -44,26 +44,37 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os
 
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AngularUnits, DistanceUnits, Movement
-from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors, Beamline
+from aps.ai.autoalignment.common.simulation.facade.source_interface import Sources, StorageRing
+from aps.ai.autoalignment.common.simulation.facade.source_factory import source_factory_method, Implementors
+from aps.ai.autoalignment.common.util.shadow.common import plot_shadow_beam_spatial_distribution, plot_shadow_beam_divergence_distribution, get_shadow_beam_spatial_distribution, save_source_beam
+from aps.ai.autoalignment.common.util import clean_up
 
-focusing_optics = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS, beamline=Beamline.VIRTUAL)
-focusing_optics.initialize()
+if __name__ == "__main__":
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    verbose = False
 
-print("COH-SLITS", focusing_optics.get_coherence_slits_parameters())
+    os.chdir("../../../../../../work_directory/28-ID")
 
-print("VKB, bender", focusing_optics.get_vkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("VKB, pitch", focusing_optics.get_vkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("VKB, translation", focusing_optics.get_vkb_motor_4_translation(units=DistanceUnits.MICRON))
+    clean_up()
 
-print("HKB, bender", focusing_optics.get_hkb_motor_1_2_bender(units=DistanceUnits.MICRON))
-print("HKB, pitch", focusing_optics.get_hkb_motor_3_pitch(units=AngularUnits.MILLIRADIANS))
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.UNDULATOR)
+    source.initialize(n_rays=100000, random_seed=56565, verbose=True, storage_ring=StorageRing.APS)
+    source.set_K_on_specific_harmonic(harmonic_energy=4000, harmonic_number=1, which=source.KDirection.VERTICAL)
+    source.set_energy(photon_energy_distribution=source.PhotonEnergyDistributions.RANGE, energy=[19600.0, 20200.0], energy_points=61)
+    source.set_undulator_parameters(longitudinal_central_position=-1.3, waist_position_user_defined=0.6814)
+    source.set_wavefront_parameters(source_dimension_wf_h_slit_gap=2e-3,
+                                    source_dimension_wf_v_slit_gap=1e-3,
+                                    source_dimension_wf_h_slit_points=200,
+                                    source_dimension_wf_v_slit_points=100,
+                                    source_dimension_wf_distance=25.5)
+    source.set_angular_acceptance_from_aperture(aperture=[0.1, 0.5], distance=28300)
 
-focusing_optics.move_hkb_motor_4_translation(300, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    source_beam = source.get_source_beam(verbose=verbose)
 
-print("HKB, translation", focusing_optics.get_hkb_motor_4_translation(units=DistanceUnits.MICRON))
+    save_source_beam(source_beam, "undulator_source.dat")
+
+    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-0.2, 0.2], yrange=[-0.05, 0.05])
+
+    clean_up()
