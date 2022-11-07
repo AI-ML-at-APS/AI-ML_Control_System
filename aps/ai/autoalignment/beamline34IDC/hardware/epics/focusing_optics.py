@@ -47,7 +47,7 @@
 
 import os, numpy, time
 
-from epics import caget, caput
+from epics import PV
 
 from aps.common.registry import AlreadyInitializedError
 from aps.common.initializer import register_ini_instance, IniMode
@@ -55,7 +55,7 @@ from aps.ai.autoalignment.common.facade.parameters import AngularUnits, Distance
 from aps.ai.autoalignment.common.hardware.facade.parameters import Beamline, Directions
 
 from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptics
-from aps.ai.autoalignment.common.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
+from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics
 
 def epics_focusing_optics_factory_method(**kwargs):
     try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
@@ -64,35 +64,38 @@ def epics_focusing_optics_factory_method(**kwargs):
     return __EpicsFocusingOptics(**kwargs)
 
 class Scan:
-    SHUTTER  = {Beamline.REAL : '34idc:FastShutterState',     Beamline.VIRTUAL : '34idSim:FastShutterState'}
-    DETECTOR = {Beamline.REAL : '34idcTIM2:cam1',             Beamline.VIRTUAL : '34idSimTIM2:cam1'}
-    COUNTS   = {Beamline.REAL : '34idcTIM2:Stats5:Total_RBV', Beamline.VIRTUAL : '34idSimTIM2:Stats5:Total_RBV'}
+    SHUTTER      = {Beamline.REAL : PV('34idc:FastShutterState'),     Beamline.VIRTUAL : PV('34idSim:FastShutterState')}
+    COUNTS       = {Beamline.REAL : PV('34idcTIM2:Stats5:Total_RBV'), Beamline.VIRTUAL : PV('34idSimTIM2:Stats5:Total_RBV')}
+    ACQUIRE      = {Beamline.REAL : PV('34idcTIM2:cam1:Acquire'),     Beamline.VIRTUAL : PV('34idSimTIM2:cam1:Acquire')}
+    ACQUIRE_TIME = {Beamline.REAL : PV('34idcTIM2:cam1:AcquireTime'), Beamline.VIRTUAL : PV('34idSimTIM2:cam1:AcquireTime')}
 
 
 class Motors:
-    COH_SLITS_H_CENTER   = {Beamline.REAL : '34idc:m58:c2:m5', Beamline.VIRTUAL : '34idSim:m58:c2:m5'}
-    COH_SLITS_H_APERTURE = {Beamline.REAL : '34idc:m58:c2:m6', Beamline.VIRTUAL : '34idSim:m58:c2:m6'}
-    COH_SLITS_V_CENTER   = {Beamline.REAL : '34idc:m58:c2:m7', Beamline.VIRTUAL : '34idSim:m58:c2:m7'}
-    COH_SLITS_V_APERTURE = {Beamline.REAL : '34idc:m58:c2:m8', Beamline.VIRTUAL : '34idSim:m58:c2:m8'}
+    COH_SLITS_H_CENTER   = {Beamline.REAL : PV('34idc:m58:c2:m5'), Beamline.VIRTUAL : PV('34idSim:m58:c2:m5')}
+    COH_SLITS_H_APERTURE = {Beamline.REAL : PV('34idc:m58:c2:m6'), Beamline.VIRTUAL : PV('34idSim:m58:c2:m6')}
+    COH_SLITS_V_CENTER   = {Beamline.REAL : PV('34idc:m58:c2:m7'), Beamline.VIRTUAL : PV('34idSim:m58:c2:m7')}
+    COH_SLITS_V_APERTURE = {Beamline.REAL : PV('34idc:m58:c2:m8'), Beamline.VIRTUAL : PV('34idSim:m58:c2:m8')}
 
-    VKB_MOTOR_1 = {Beamline.REAL : '34idc:m58:c1:m3', Beamline.VIRTUAL : '34idSim:m58:c1:m3'} # upstream force micron
-    VKB_MOTOR_2 = {Beamline.REAL : '34idc:m58:c1:m4', Beamline.VIRTUAL : '34idSim:m58:c1:m4'} # downstream force micron
-    VKB_MOTOR_3 = {Beamline.REAL : '34idc:m58:c1:m2', Beamline.VIRTUAL : '34idSim:m58:c1:m2'} # pitch mrad
-    VKB_MOTOR_4 = {Beamline.REAL : '34idc:m58:c1:m1', Beamline.VIRTUAL : '34idSim:m58:c1:m1'} # translation micron
+    VKB_MOTOR_1 = {Beamline.REAL : PV('34idc:m58:c1:m3'), Beamline.VIRTUAL : PV('34idSim:m58:c1:m3')} # upstream force micron
+    VKB_MOTOR_2 = {Beamline.REAL : PV('34idc:m58:c1:m4'), Beamline.VIRTUAL : PV('34idSim:m58:c1:m4')} # downstream force micron
+    VKB_MOTOR_3 = {Beamline.REAL : PV('34idc:m58:c1:m2'), Beamline.VIRTUAL : PV('34idSim:m58:c1:m2')} # pitch mrad
+    VKB_MOTOR_4 = {Beamline.REAL : PV('34idc:m58:c1:m1'), Beamline.VIRTUAL : PV('34idSim:m58:c1:m1')} # translation micron
 
-    HKB_MOTOR_1 = {Beamline.REAL : '34idc:m58:c1:m7', Beamline.VIRTUAL : '34idSim:m58:c1:m7'}
-    HKB_MOTOR_2 = {Beamline.REAL : '34idc:m58:c1:m8', Beamline.VIRTUAL : '34idSim:m58:c1:m8'}
-    HKB_MOTOR_3 = {Beamline.REAL : '34idc:m58:c1:m6', Beamline.VIRTUAL : '34idSim:m58:c1:m6'}
-    HKB_MOTOR_4 = {Beamline.REAL : '34idc:m58:c1:m5', Beamline.VIRTUAL : '34idSim:m58:c1:m5'}
+    HKB_MOTOR_1 = {Beamline.REAL : PV('34idc:m58:c1:m7'), Beamline.VIRTUAL : PV('34idSim:m58:c1:m7')}
+    HKB_MOTOR_2 = {Beamline.REAL : PV('34idc:m58:c1:m8'), Beamline.VIRTUAL : PV('34idSim:m58:c1:m8')}
+    HKB_MOTOR_3 = {Beamline.REAL : PV('34idc:m58:c1:m6'), Beamline.VIRTUAL : PV('34idSim:m58:c1:m6')}
+    HKB_MOTOR_4 = {Beamline.REAL : PV('34idc:m58:c1:m5'), Beamline.VIRTUAL : PV('34idSim:m58:c1:m5')}
 
-    SAMPLE_STAGE_X        = {Beamline.REAL : '34idc:lab:m1'   , Beamline.VIRTUAL : '34idSim:lab:m1'   }
-    SAMPLE_STAGE_Y        = {Beamline.REAL : '34idc:lab:m2'   , Beamline.VIRTUAL : '34idSim:lab:m2'   }
-    SAMPLE_STAGE_Z        = {Beamline.REAL : '34idc:lab:m3'   , Beamline.VIRTUAL : '34idSim:lab:m3'   } # fine Z motion
-    SAMPLE_STAGE_Z_COARSE = {Beamline.REAL : '34idc:mxv:c0:m1', Beamline.VIRTUAL : '34idSim:mxv:c0:m1'} # coarse Z motion
+    SAMPLE_STAGE_X        = {Beamline.REAL : PV('34idc:lab:m1'   ), Beamline.VIRTUAL : PV('34idSim:lab:m1'   ) }
+    SAMPLE_STAGE_Y        = {Beamline.REAL : PV('34idc:lab:m2'   ), Beamline.VIRTUAL : PV('34idSim:lab:m2'   ) }
+    SAMPLE_STAGE_Z        = {Beamline.REAL : PV('34idc:lab:m3'   ), Beamline.VIRTUAL : PV('34idSim:lab:m3'   ) } # fine Z motion
+    SAMPLE_STAGE_Z_COARSE = {Beamline.REAL : PV('34idc:mxv:c0:m1'), Beamline.VIRTUAL : PV('34idSim:mxv:c0:m1')} # coarse Z motion
 
-class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractHardwareFocusingOptics):
+class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
     
     def __init__(self, **kwargs):
+        super().__init__(translational_units=DistanceUnits.MICRON, angular_units=AngularUnits.MILLIRADIANS)
+
         try:    beamline = kwargs["beamline"]
         except: beamline = Beamline.REAL
         
@@ -102,7 +105,7 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractHardwareFocusingOptics)
         os.environ["PATH"] = os.environ["PATH"] + ":" + "/Users/lrebuffi/Documents/Workspace/External_Codes/EPICS/epics-base/bin/darwin-x86/"
 
         if self.__beamline   == Beamline.VIRTUAL: os.environ["EPICS_CA_ADDR_LIST"] = "164.54.138.190"
-        elif self.__beamline == Beamline.REAL:    os.environ["EPICS_CA_ADDR_LIST"] = "boh"
+        elif self.__beamline == Beamline.REAL:    pass # it should be already initialized
 
     #####################################################################################
     # This methods represent the run-time interface, to interact with the optical system
@@ -113,20 +116,20 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractHardwareFocusingOptics)
         elif units == DistanceUnits.MILLIMETERS: factor = 1e3
         else: raise ValueError("Distance units not recognized")
 
-        if not coh_slits_h_center is None:   caput(Motors.COH_SLITS_H_CENTER[self.__beamline] + ".VAL",   factor*coh_slits_h_center)
-        if not coh_slits_v_center is None:   caput(Motors.COH_SLITS_V_CENTER[self.__beamline] + ".VAL",   factor*coh_slits_v_center)
-        if not coh_slits_h_aperture is None: caput(Motors.COH_SLITS_H_APERTURE[self.__beamline] + ".VAL", factor*coh_slits_h_aperture)
-        if not coh_slits_v_aperture is None: caput(Motors.COH_SLITS_V_APERTURE[self.__beamline] + ".VAL", factor*coh_slits_v_aperture)
+        if not coh_slits_h_center is None:   Motors.COH_SLITS_H_CENTER[self.__beamline].put(factor*coh_slits_h_center)
+        if not coh_slits_v_center is None:   Motors.COH_SLITS_V_CENTER[self.__beamline].put(factor*coh_slits_v_center)
+        if not coh_slits_h_aperture is None: Motors.COH_SLITS_H_APERTURE[self.__beamline].put(factor*coh_slits_h_aperture)
+        if not coh_slits_v_aperture is None: Motors.COH_SLITS_V_APERTURE[self.__beamline].put(factor*coh_slits_v_aperture)
 
     def get_coherence_slits_parameters(self, units=DistanceUnits.MICRON):
         if units == DistanceUnits.MICRON:        factor = 1.0
         elif units == DistanceUnits.MILLIMETERS: factor = 1e-3
         else: raise ValueError("Distance units not recognized")
 
-        return factor*caget(Motors.COH_SLITS_H_CENTER[self.__beamline] + ".VAL"), \
-               factor*caget(Motors.COH_SLITS_V_CENTER[self.__beamline] + ".VAL"), \
-               factor*caget(Motors.COH_SLITS_H_APERTURE[self.__beamline] + ".VAL"), \
-               factor*caget(Motors.COH_SLITS_V_APERTURE[self.__beamline] + ".VAL")
+        return factor*Motors.COH_SLITS_H_CENTER[self.__beamline].get(), \
+               factor*Motors.COH_SLITS_V_CENTER[self.__beamline].get(), \
+               factor*Motors.COH_SLITS_H_APERTURE[self.__beamline].get(), \
+               factor*Motors.COH_SLITS_V_APERTURE[self.__beamline].get()
 
     # V-KB -----------------------
 
@@ -200,31 +203,30 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractHardwareFocusingOptics)
         
         return data_h, data_v
 
-    def __scan(self, motor_name, first, final, steps):
-        current = caget(motor_name + ".VAL")
+    def __scan(self, motor, first, final, steps):
+        current = motor.get()
         stepsize = (final - first) / float(steps)
         first = current + first
 
         data = numpy.zeros((steps, 2), float)
 
-        DETECTOR = Scan.DETECTOR[self.__beamline]
         COUNTS   = Scan.COUNTS[self.__beamline]
 
-        caput(Scan.SHUTTER[self.__beamline], 1)
-        caput(DETECTOR + ':AcquireTime', 0.3)
+        Scan.SHUTTER[self.__beamline].put(1)
+        Scan.ACQUIRE_TIME[self.__beamline].put(0.3)
 
         for i in range(steps):
-            caput(motor_name + ".VAL", first + i * stepsize)
-            caput(DETECTOR + ':Acquire', 1)
+            motor.put(first + i * stepsize)
+            Scan.ACQUIRE[self.__beamline].put(1)
 
             time.sleep(0.2)
 
-            while (caget(DETECTOR + ':Acquire') != 0): time.sleep(0.1)
+            while Scan.ACQUIRE[self.__beamline].get() != 0: time.sleep(0.1)
     
             data[i, 0] = i * stepsize + first
-            data[i, 1] = caget(COUNTS)
+            data[i, 1] = COUNTS.get()
 
         # put the motor on the peak!
-        caput(motor_name + ".VAL", data[numpy.argmax(data[:, 1]), 0])
+        motor.put(data[numpy.argmax(data[:, 1]), 0])
 
         return data

@@ -123,9 +123,9 @@ class TwoMotorsCalibratedBenderManager():
         return (1/(q_distance*1e-3) - self.__P1_upstream)/self.__P0_upstream, \
                (1/(q_distance*1e-3) - self.__P1_downstream)/self.__P0_downstream
 
-    def set_voltages(self, volt_upstream, volt_downstream):
-        self._kb_upstream.set_q_distance(1e3/(self.__P0_upstream * volt_upstream + self.__P1_upstream))
-        self._kb_downstream.set_q_distance(1e3/(self.__P0_downstream * volt_downstream + self.__P1_downstream))
+    def set_voltages(self, pos_upstream, pos_downstream):
+        self._kb_upstream.set_q_distance(1e3/(self.__P0_upstream * pos_upstream + self.__P1_upstream))
+        self._kb_downstream.set_q_distance(1e3/(self.__P0_downstream * pos_downstream + self.__P1_downstream))
 
         if not self._kb_raytracing is None: self._kb_raytracing.set_q_distance(0.5*(self._kb_upstream.get_q_distance() + self._kb_downstream.get_q_distance()))
 

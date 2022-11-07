@@ -48,42 +48,51 @@ import numpy
 
 from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits, AngularUnits
 
-from epics import caget, caput
+from epics import PV
 
-class AbstractEpicsOptics:
+class AbstractEpicsOptics():
+
+    def __init__(self, translational_units=DistanceUnits.MICRON, angular_units=AngularUnits.MILLIRADIANS):
+        self.__translational_units=translational_units
+        self.__angular_units=angular_units
 
     # PRIVATE METHODS
 
-    @classmethod
-    def _move_translational_motor(cls, motor, pos, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
+    def _move_translational_motor(self, pv : PV, pos, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON, wait=True):
         if units == DistanceUnits.MILLIMETERS: pos *= 1e3
         elif units == DistanceUnits.MICRON: pass
         else: raise ValueError("Distance units not recognized")
 
-        if movement == Movement.ABSOLUTE:   caput(motor + ".VAL", pos)
-        elif movement == Movement.RELATIVE: caput(motor + ".RLV", pos)
+        if movement == Movement.ABSOLUTE:   pv.put(pos, wait=wait)
+        elif movement == Movement.RELATIVE: pv.put(pv.get() + pos, wait=wait)
         else: raise ValueError("Movement not recognized")
 
-    @classmethod
-    def _move_rotational_motor(cls, motor, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        if units == AngularUnits.MILLIRADIANS: pass
-        elif units == AngularUnits.DEGREES:    angle = 1e3 * numpy.radians(angle)
-        elif units == AngularUnits.RADIANS:    angle = 1e3 * angle
+    def _move_rotational_motor(self, pv : PV, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS, wait=True):
+        if units == AngularUnits.MILLIRADIANS:
+            if self.__angular_units   == AngularUnits.MILLIRADIANS: pass
+            elif self.__angular_units == AngularUnits.DEGREES:      angle = numpy.degrees(1e-3 * angle)
+            elif self.__angular_units == AngularUnits.RADIANS:      angle = 1e-3 * angle
+        elif units == AngularUnits.DEGREES:
+            if self.__angular_units   == AngularUnits.MILLIRADIANS: angle = 1e3 * numpy.radians(angle)
+            elif self.__angular_units == AngularUnits.DEGREES:      pass
+            elif self.__angular_units == AngularUnits.RADIANS:      angle = numpy.radians(angle)
+        elif units == AngularUnits.RADIANS:
+            if self.__angular_units   == AngularUnits.MILLIRADIANS: angle = 1e3 * angle
+            elif self.__angular_units == AngularUnits.DEGREES:      angle = numpy.degrees(angle)
+            elif self.__angular_units == AngularUnits.RADIANS:      pass
         else:  raise ValueError("Angular units not recognized")
 
-        if movement == Movement.ABSOLUTE:   caput(motor + ".VAL", angle)
-        elif movement == Movement.RELATIVE: caput(motor + ".RLV", angle)
+        if movement == Movement.ABSOLUTE:   pv.put(angle, wait=wait)
+        elif movement == Movement.RELATIVE: pv.put(pv.get() + angle, wait=wait)
         else: raise ValueError("Movement not recognized")
 
-    @classmethod
-    def _get_translational_motor_position(cls, motor, units=DistanceUnits.MICRON):
-        if units == DistanceUnits.MICRON:        return caget(motor + ".VAL")
-        elif units == DistanceUnits.MILLIMETERS: return 1e-3 * caget(motor + ".VAL")
+    def _get_translational_motor_position(self, pv : PV, units=DistanceUnits.MICRON):
+        if units == DistanceUnits.MICRON:        return pv.get()
+        elif units == DistanceUnits.MILLIMETERS: return 1e-3 * pv.get()
         else: raise ValueError("Distance units not recognized")
 
-    @classmethod
-    def _get_rotational_motor_angle(cls, motor, units=AngularUnits.MILLIRADIANS):
-        if units == AngularUnits.MILLIRADIANS: return caget(motor)
-        elif units == AngularUnits.DEGREES:    return numpy.degrees(caget(motor) * 1e-3)
-        elif units == AngularUnits.RADIANS:    return caget(motor) * 1e-3
+    def _get_rotational_motor_angle(self, pv : PV, units=AngularUnits.MILLIRADIANS):
+        if units == AngularUnits.MILLIRADIANS: return pv.get()
+        elif units == AngularUnits.DEGREES:    return numpy.degrees(pv.get() * 1e-3)
+        elif units == AngularUnits.RADIANS:    return pv.get() * 1e-3
         else: raise ValueError("Angular units not recognized")
