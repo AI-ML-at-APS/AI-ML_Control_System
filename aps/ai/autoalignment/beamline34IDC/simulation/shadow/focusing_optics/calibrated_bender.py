@@ -52,7 +52,7 @@ from orangecontrib.ml.util.mocks import MockWidget
 
 from oasys.widgets.abstract.benders.double_rod_bendable_ellispoid_mirror import calculate_W0, calculate_taper_factor
 
-from aps.util.initializer import get_registered_ini_instance
+from aps.common.initializer import get_registered_ini_instance
 
 class CalibratedBenderManager():
     __P0_upstream = 0.0

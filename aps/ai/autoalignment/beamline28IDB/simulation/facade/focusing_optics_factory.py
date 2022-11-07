@@ -48,8 +48,8 @@
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics_factory import shadow_focusing_optics_factory_method
 
-from aps.util.registry import AlreadyInitializedError
-from aps.util.initializer import register_ini_instance, IniMode
+from aps.common.registry import AlreadyInitializedError
+from aps.common.initializer import register_ini_instance, IniMode
 
 #############################################################################
 # DESIGN PATTERN: FACTORY METHOD
