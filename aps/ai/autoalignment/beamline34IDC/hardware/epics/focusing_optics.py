@@ -49,8 +49,8 @@ import os, numpy, time
 
 from epics import caget, caput
 
-from aps.util.registry import AlreadyInitializedError
-from aps.util.initializer import register_ini_instance, IniMode
+from aps.common.registry import AlreadyInitializedError
+from aps.common.initializer import register_ini_instance, IniMode
 from aps.ai.autoalignment.common.facade.parameters import AngularUnits, DistanceUnits, Movement
 from aps.ai.autoalignment.common.hardware.facade.parameters import Beamline, Directions
 

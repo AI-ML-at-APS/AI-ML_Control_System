@@ -50,7 +50,7 @@ import os
 from oasys.widgets import congruence
 from orangecontrib.ml.util.mocks import MockWidget
 
-from aps.util.initializer import get_registered_ini_instance
+from aps.common.initializer import get_registered_ini_instance
 
 
 class OneMotorCalibratedBenderManager():
