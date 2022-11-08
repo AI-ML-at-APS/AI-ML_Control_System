@@ -48,7 +48,7 @@ import numpy
 from orangecontrib.shadow.util.shadow_util import ShadowMath, ShadowCongruence
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam
 
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from aps.common.ml.data_structures import DictionaryWrapper
 
 from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits, DistanceUnits
 from aps.ai.autoalignment.common.util.shadow.common import EmptyBeamException

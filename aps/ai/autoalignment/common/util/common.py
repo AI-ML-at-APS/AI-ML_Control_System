@@ -47,8 +47,8 @@
 import numpy
 from matplotlib import pyplot as plt
 from matplotlib import cm
-from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from aps.common.plot.image import get_sigma, get_fwhm, get_average
+from aps.common.ml.data_structures import DictionaryWrapper
 
 from aps.ai.autoalignment.common.util.gaussian_fit import calculate_2D_gaussian_fit
 

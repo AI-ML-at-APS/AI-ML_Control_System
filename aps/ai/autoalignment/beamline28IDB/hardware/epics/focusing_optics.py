@@ -50,8 +50,9 @@ import numpy
 from epics import PV
 
 from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
-from aps.common.measurment.beamline.image_processor import ImageProcessor as ImageProcessorCommon
+from aps.common.measurment.beamline.image_processor import ImageProcessor as ImageProcessorCommon, IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
 from aps.common.measurment.beamline.image_collector import ImageCollector
+from aps.common.plot.image import get_sigma, get_fwhm, get_rms
 
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
 from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptics
@@ -122,13 +123,45 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
     def __init__(self, **kwargs):
         super().__init__(translational_units=DistanceUnits.MILLIMETERS, angular_units=AngularUnits.DEGREES)
         
-        try: measurement_directory = kwargs["measurement_directory"]
+        try:    measurement_directory = kwargs["measurement_directory"]
         except: measurement_directory = os.curdir
 
         self.__image_collector = ImageCollector(measurement_directory=measurement_directory)
         self.__image_processor = ImageProcessor(data_collection_directory=measurement_directory)
 
-    def get_photon_beam(self, **kwargs): pass
+    def get_photon_beam(self, **kwargs):
+        try: from_raw_image    = kwargs["from_raw_image"]
+        except: from_raw_image = False
+
+        self.__image_collector.restore_status()
+
+        try:
+            self.__image_collector.collect_single_shot_image(index=1)
+
+            raw_image, crop_region, cropped_image = self.__image_processor.get_image_data(image_index=1)
+
+            output = {}
+
+            if from_raw_image:
+                output["h_coord"] = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[0]/2, IMAGE_SIZE_PIXEL_HxV[0]/2, IMAGE_SIZE_PIXEL_HxV[0])*PIXEL_SIZE*1e3
+                output["v_coord"] = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[1]/2, IMAGE_SIZE_PIXEL_HxV[1]/2, IMAGE_SIZE_PIXEL_HxV[1])*PIXEL_SIZE*1e3
+                output["image"]   = raw_image
+            else:
+                output["width"]      = (crop_region[1]-crop_region[0])*PIXEL_SIZE*1e3
+                output["height"]     = (crop_region[3]-crop_region[2])*PIXEL_SIZE*1e3
+                output["centroid_h"] = (crop_region[0] + 0.5*output["length_h"])*PIXEL_SIZE*1e3
+                output["centroid_v"] = (crop_region[2] + 0.5*output["length_v"])*PIXEL_SIZE*1e3
+                output["h_coord"]    = numpy.linspace(crop_region[0], crop_region[1], cropped_image.shape[0])*PIXEL_SIZE*1e3
+                output["v_coord"]    = numpy.linspace(crop_region[2], crop_region[3], cropped_image.shape[1])*PIXEL_SIZE*1e3
+                output["image"]      = cropped_image
+
+            self.__image_collector.save_status()
+
+            return output
+        except Exception as e:
+            self.__image_collector.save_status()
+
+            raise e
     
     def initialize(self, **kwargs): pass
     
@@ -146,7 +179,7 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         elif units == AngularUnits.RADIANS: pass
         elif units == AngularUnits.DEGREES: angle = numpy.radians(angle)
 
-        pos = 0.5*Motors.DISTANCE_V_MOTORS*numpy.sin(angle)
+        pos = 0.5*DISTANCE_V_MOTORS*numpy.sin(angle)
 
         if movement==Movement.ABSOLUTE:
             zero_pos = 0.5 * (self._get_translational_motor_position(Motors.TRANSLATION_VO, units=units) +
@@ -163,7 +196,7 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
     def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.DEGREE):
         pos = (self._get_translational_motor_position(Motors.TRANSLATION_VO, units=DistanceUnits.MILLIMETERS) -
                self._get_translational_motor_position(Motors.TRANSLATION_DO, units=DistanceUnits.MILLIMETERS))
-        angle = numpy.arcsin(pos/Motors.DISTANCE_V_MOTORS)
+        angle = numpy.arcsin(pos/DISTANCE_V_MOTORS)
 
         if units == AngularUnits.MILLIRADIANS: angle *= 1e3
         elif units == AngularUnits.RADIANS: pass

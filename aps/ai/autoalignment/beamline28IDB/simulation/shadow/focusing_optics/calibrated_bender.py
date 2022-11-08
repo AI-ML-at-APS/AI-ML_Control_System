@@ -48,8 +48,7 @@
 import os
 
 from oasys.widgets import congruence
-from orangecontrib.ml.util.mocks import MockWidget
-
+from aps.common.ml.mocks import MockWidget
 from aps.common.initializer import get_registered_ini_instance
 
 
