@@ -53,9 +53,9 @@ from aps.common.initializer import IniMode, register_ini_instance, get_registere
 from aps.common.measurment.beamline.image_processor import ImageProcessor as ImageProcessorCommon
 from aps.common.measurment.beamline.image_collector import ImageCollector
 
-from aps.ai.autoalignment.common.facade.parameters import MotorResolutionRegistry, MotorResolutionSet, MotorType, MotorResolution, DistanceUnits, Movement, AngularUnits
+from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
 from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptics
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics, DISTANCE_V_MOTORS
 
 APPLICATION_NAME = "IMAGE-PROCESSOR"
 
@@ -78,9 +78,6 @@ ini_file.set_list_at_ini( section="Execution",   key="Image-Transfer-Matrix", va
 ini_file.push()
 
 def epics_focusing_optics_factory_method(**kwargs):
-    #try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
-    #except AlreadyInitializedError: pass
-
     return __EpicsFocusingOptics(kwargs)
 
 
@@ -104,9 +101,6 @@ class Motors:
     TRANSLATION_DO = PV(pvname='1bmopt:m14')
     LATERAL_V      = PV(pvname='1bmopt:m15')
     BENDER_V       = PV(pvname='simJTEC:E4')
-
-    DISTANCE_V_MOTORS = 360 # mm
-
 
 class ImageProcessor(ImageProcessorCommon):
     def __init__(self, data_collection_directory):
