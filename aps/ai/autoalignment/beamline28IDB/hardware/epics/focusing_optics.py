@@ -81,15 +81,6 @@ ini_file.push()
 def epics_focusing_optics_factory_method(**kwargs):
     return __EpicsFocusingOptics(kwargs)
 
-
-# translation h: 28idb:m23
-# pitch h:       28idb:m24
-# bender 2 pv names
-
-# V: pitch 2 + 1 motors
-#    translation 3 motors together
-
-
 class Motors:
     # Horizontal mirror:
     TRANSLATION_H = PV(pvname='28idb:m23')
@@ -169,7 +160,6 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         if movement == Movement.ABSOLUTE:   Motors.BENDER_V.put(actuator_value)
         elif movement == Movement.RELATIVE: Motors.BENDER_V.put(Motors.BENDER_V.get() + actuator_value)
         else: raise ValueError("Movement not recognized")
-
         
     def get_v_bimorph_mirror_motor_bender(self): 
         return Motors.BENDER_V.get()
