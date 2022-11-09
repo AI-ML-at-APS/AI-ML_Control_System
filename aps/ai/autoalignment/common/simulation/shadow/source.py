@@ -47,15 +47,13 @@
 import Shadow
 import numpy
 
-from aps.ai.autoalignment.common.util.shadow.common import fix_Intensity, m2ev
-from orangecontrib.ml.util.mocks import MockWidget
-
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowSource, ShadowOpticalElement
 from orangecontrib.shadow_advanced_tools.widgets.sources.attributes.hybrid_undulator_attributes import HybridUndulatorAttributes
 import orangecontrib.shadow_advanced_tools.widgets.sources.bl.hybrid_undulator_bl as HU
 
+from aps.common.ml.mocks import MockWidget
+from aps.ai.autoalignment.common.util.shadow.common import fix_Intensity, m2ev, TTYInibitor
 from aps.ai.autoalignment.common.simulation.facade.source_interface import AbstractSource, Sources, StorageRing, ElectronBeamAPS_U, ElectronBeamAPS
-from aps.ai.autoalignment.common.util.shadow.common import TTYInibitor
 
 def shadow_source_factory_method(kind_of_source=Sources.GAUSSIAN):
     if kind_of_source == Sources.GAUSSIAN:    return __ShadowGaussianUndulatorSource()

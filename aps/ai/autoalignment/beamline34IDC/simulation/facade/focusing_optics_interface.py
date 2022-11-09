@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from aps.common.ml.data_structures import DictionaryWrapper
 from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits
 from aps.ai.autoalignment.common.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics
 from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics

@@ -44,9 +44,191 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os
+
+import numpy
+from epics import PV
+
+from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
+from aps.common.measurment.beamline.image_processor import ImageProcessor as ImageProcessorCommon, IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
+from aps.common.measurment.beamline.image_collector import ImageCollector
+from aps.common.plot.image import get_sigma, get_fwhm, get_rms
+
+from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
+from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptics
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics, DISTANCE_V_MOTORS
+
+APPLICATION_NAME = "IMAGE-PROCESSOR"
+
+register_ini_instance(IniMode.LOCAL_FILE,
+                      ini_file_name="image_processor.ini",
+                      application_name=APPLICATION_NAME,
+                      verbose=False)
+ini_file = get_registered_ini_instance(APPLICATION_NAME)
+
+ENERGY                = ini_file.get_float_from_ini(section="Execution", key="Energy",                default=20000.0)
+SOURCE_DISTANCE_V     = ini_file.get_float_from_ini(section="Execution", key="Source-Distance-V",     default=1.5)
+SOURCE_DISTANCE_H     = ini_file.get_float_from_ini(section="Execution", key="Source-Distance-H",     default=1.5)
+IMAGE_TRANSFER_MATRIX = ini_file.get_list_from_ini( section="Execution", key="Image-Transfer-Matrix", default=[0, 1, 0], type=int)
+
+ini_file.set_value_at_ini(section="Execution",   key="Energy",                value=ENERGY)
+ini_file.set_value_at_ini(section="Execution",   key="Source-Distance-V",     value=SOURCE_DISTANCE_V)
+ini_file.set_value_at_ini(section="Execution",   key="Source-Distance-H",     value=SOURCE_DISTANCE_H)
+ini_file.set_list_at_ini( section="Execution",   key="Image-Transfer-Matrix", values_list=IMAGE_TRANSFER_MATRIX)
+
+ini_file.push()
 
 def epics_focusing_optics_factory_method(**kwargs):
-    #try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
-    #except AlreadyInitializedError: pass
+    return __EpicsFocusingOptics(kwargs)
 
-    return None
+class Motors:
+    # Horizontal mirror:
+    TRANSLATION_H = PV(pvname='28idb:m23')
+    PITCH_H       = PV(pvname='28idb:m24')
+    BENDER_H_1    = PV(pvname='28idb:xxx')
+    BENDER_H_2    = PV(pvname='28idb:xxx')
+
+    TRANSLATION_VO = PV(pvname='1bmopt:m13')
+    TRANSLATION_DI = PV(pvname='1bmopt:m12')
+    TRANSLATION_DO = PV(pvname='1bmopt:m14')
+    LATERAL_V      = PV(pvname='1bmopt:m15')
+    BENDER_V       = PV(pvname='simJTEC:E4')
+
+class ImageProcessor(ImageProcessorCommon):
+    def __init__(self, data_collection_directory):
+        super(ImageProcessor, self).__init__(data_collection_directory=data_collection_directory,
+                         energy=ENERGY,
+                         source_distance=[SOURCE_DISTANCE_H, SOURCE_DISTANCE_V],
+                         image_transfer_matrix=IMAGE_TRANSFER_MATRIX)
+
+
+    def generate_simulated_mask(self, image_index_for_mask=1, verbose=False):
+        image_transfer_matrix = super(ImageProcessor, self).generate_simulated_mask(image_index_for_mask, verbose)
+
+        ini_file = get_registered_ini_instance(APPLICATION_NAME)
+        ini_file.set_list_at_ini(section="Execution", key="Image-Transfer-Matrix", values_list=image_transfer_matrix)
+        ini_file.push()
+
+class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
+
+    def __init__(self, **kwargs):
+        super().__init__(translational_units=DistanceUnits.MILLIMETERS, angular_units=AngularUnits.DEGREES)
+        
+        try:    measurement_directory = kwargs["measurement_directory"]
+        except: measurement_directory = os.curdir
+
+        self.__image_collector = ImageCollector(measurement_directory=measurement_directory)
+        self.__image_processor = ImageProcessor(data_collection_directory=measurement_directory)
+
+    def get_photon_beam(self, **kwargs):
+        try: from_raw_image    = kwargs["from_raw_image"]
+        except: from_raw_image = False
+
+        self.__image_collector.restore_status()
+
+        try:
+            self.__image_collector.collect_single_shot_image(index=1)
+
+            raw_image, crop_region, cropped_image = self.__image_processor.get_image_data(image_index=1)
+
+            output = {}
+
+            if from_raw_image:
+                output["h_coord"] = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[0]/2, IMAGE_SIZE_PIXEL_HxV[0]/2, IMAGE_SIZE_PIXEL_HxV[0])*PIXEL_SIZE*1e3
+                output["v_coord"] = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[1]/2, IMAGE_SIZE_PIXEL_HxV[1]/2, IMAGE_SIZE_PIXEL_HxV[1])*PIXEL_SIZE*1e3
+                output["image"]   = raw_image
+            else:
+                output["width"]      = (crop_region[1]-crop_region[0])*PIXEL_SIZE*1e3
+                output["height"]     = (crop_region[3]-crop_region[2])*PIXEL_SIZE*1e3
+                output["centroid_h"] = (crop_region[0] + 0.5*output["length_h"])*PIXEL_SIZE*1e3
+                output["centroid_v"] = (crop_region[2] + 0.5*output["length_v"])*PIXEL_SIZE*1e3
+                output["h_coord"]    = numpy.linspace(crop_region[0], crop_region[1], cropped_image.shape[0])*PIXEL_SIZE*1e3
+                output["v_coord"]    = numpy.linspace(crop_region[2], crop_region[3], cropped_image.shape[1])*PIXEL_SIZE*1e3
+                output["image"]      = cropped_image
+
+            self.__image_collector.save_status()
+
+            return output
+        except Exception as e:
+            self.__image_collector.save_status()
+
+            raise e
+    
+    def initialize(self, **kwargs): pass
+    
+    def move_v_bimorph_mirror_motor_bender(self, actuator_value, movement=Movement.ABSOLUTE):
+        if movement == Movement.ABSOLUTE:   Motors.BENDER_V.put(actuator_value)
+        elif movement == Movement.RELATIVE: Motors.BENDER_V.put(Motors.BENDER_V.get() + actuator_value)
+        else: raise ValueError("Movement not recognized")
+        
+    def get_v_bimorph_mirror_motor_bender(self): 
+        return Motors.BENDER_V.get()
+    
+    def move_v_bimorph_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES):
+        if units == AngularUnits.MILLIRADIANS: angle *= 1e-3
+        elif units == AngularUnits.RADIANS: pass
+        elif units == AngularUnits.DEGREES: angle = numpy.radians(angle)
+
+        pos = 0.5*DISTANCE_V_MOTORS*numpy.sin(angle)
+
+        if movement==Movement.ABSOLUTE:
+            zero_pos = 0.5 * (self._get_translational_motor_position(Motors.TRANSLATION_VO, units=units) +
+                              self._get_translational_motor_position(Motors.TRANSLATION_DO, units=units))
+
+            self._move_translational_motor(Motors.TRANSLATION_VO, zero_pos+pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DO, zero_pos-pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DI, zero_pos-pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+        elif movement==Movement.RELATIVE:
+            self._move_translational_motor(Motors.TRANSLATION_VO,  pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DO, -pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DI, -pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+
+    def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.DEGREES):
+        pos = (self._get_translational_motor_position(Motors.TRANSLATION_VO, units=DistanceUnits.MILLIMETERS) -
+               self._get_translational_motor_position(Motors.TRANSLATION_DO, units=DistanceUnits.MILLIMETERS))
+        angle = numpy.arcsin(pos/DISTANCE_V_MOTORS)
+
+        if units == AngularUnits.MILLIRADIANS: angle *= 1e3
+        elif units == AngularUnits.RADIANS: pass
+        elif units == AngularUnits.DEGREES: angle = numpy.degrees(angle)
+
+        return angle
+
+    def move_v_bimorph_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS):
+        self._move_translational_motor(Motors.TRANSLATION_VO, translation, movement=movement, units=units)
+        self._move_translational_motor(Motors.TRANSLATION_DO, translation, movement=movement, units=units)
+        self._move_translational_motor(Motors.TRANSLATION_DI, translation, movement=movement, units=units)        
+        
+    def get_v_bimorph_mirror_motor_translation(self, units=DistanceUnits.MILLIMETERS):
+        return 0.5*(self._get_translational_motor_position(Motors.TRANSLATION_VO, units=units) +
+                    self._get_translational_motor_position(Motors.TRANSLATION_DO, units=units))
+
+    # H-KB -----------------------
+
+    def move_h_bendable_mirror_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE):
+        if movement == Movement.ABSOLUTE:   Motors.BENDER_H_1.put(pos_upstream)
+        elif movement == Movement.RELATIVE: Motors.BENDER_H_1.put(Motors.BENDER_H_1.get() + pos_upstream)
+        else: raise ValueError("Movement not recognized")
+
+    def get_h_bendable_mirror_motor_1_bender(self): 
+        return Motors.BENDER_H_1.get()
+
+    def move_h_bendable_mirror_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE):
+        if movement == Movement.ABSOLUTE:   Motors.BENDER_H_2.put(pos_downstream)
+        elif movement == Movement.RELATIVE: Motors.BENDER_H_2.put(Motors.BENDER_H_2.get() + pos_downstream)
+        else: raise ValueError("Movement not recognized")
+    
+    def get_h_bendable_mirror_motor_2_bender(self): 
+        return Motors.BENDER_H_2.get()
+
+    def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES):
+        self._move_rotational_motor(Motors.PITCH_H, angle, movement, units)
+
+    def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.DEGREES):
+        return self._get_rotational_motor_angle(Motors.PITCH_H, units)
+
+    def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS):
+        self._move_rotational_motor(Motors.TRANSLATION_H, translation, movement, units)
+
+    def get_h_bendable_mirror_motor_translation(self, units=DistanceUnits.MILLIMETERS):
+        return self._get_translational_motor_position(Motors.TRANSLATION_H, units)

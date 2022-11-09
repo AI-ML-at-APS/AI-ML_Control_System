@@ -48,11 +48,10 @@
 import os, numpy
 
 from oasys.widgets import congruence
-from orangecontrib.ml.util.mocks import MockWidget
-
 from oasys.widgets.abstract.benders.double_rod_bendable_ellispoid_mirror import calculate_W0, calculate_taper_factor
 
 from aps.common.initializer import get_registered_ini_instance
+from aps.common.ml.mocks import MockWidget
 
 class CalibratedBenderManager():
     __P0_upstream = 0.0

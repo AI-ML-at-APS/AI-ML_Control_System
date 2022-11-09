@@ -49,7 +49,7 @@ import numpy
 from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits, AngularUnits
 from aps.ai.autoalignment.common.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics
 
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from aps.common.ml.data_structures import DictionaryWrapper
 
 from wofrysrw.beamline.srw_beamline import SRWBeamline
 from wofrysrw.beamline.optical_elements.srw_optical_element import SRWOpticalElementDisplacement

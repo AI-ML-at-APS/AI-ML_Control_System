@@ -44,7 +44,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from aps.common.ml.data_structures import DictionaryWrapper
 
 from aps.ai.autoalignment.common.facade.focusing_optics_interface import AbstractFocusingOptics
 

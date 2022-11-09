@@ -44,19 +44,25 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import numpy
+from aps.ai.autoalignment.common.facade.focusing_optics_interface import AbstractFocusingOptics as CommonAbstractFocusingOptics
 from aps.ai.autoalignment.common.facade.parameters import MotorResolutionRegistry, MotorResolutionSet, MotorType, MotorResolution, DistanceUnits, Movement, AngularUnits
+
+DISTANCE_V_MOTORS = 360 # mm
+
+__v_bimorph_mirror_motor_pitch_resolution = numpy.round(numpy.degrees(numpy.arcsin(5e-4 / DISTANCE_V_MOTORS)), 5)
 
 motors = {}
 motors["v_bimorph_mirror_motor_bender"]       = MotorResolution(1.0,  MotorType.OTHER)         # Bimorph mirror: bender is an actuator, "position" is in Volt
-motors["v_bimorph_mirror_motor_pitch"]        = MotorResolution(1e-4, MotorType.ROTATIONAL)    # deg
-motors["v_bimorph_mirror_motor_translation"]  = MotorResolution(1e-4, MotorType.TRANSLATIONAL) # mm
+motors["v_bimorph_mirror_motor_pitch"]        = MotorResolution(__v_bimorph_mirror_motor_pitch_resolution, MotorType.ROTATIONAL)    # deg
+motors["v_bimorph_mirror_motor_translation"]  = MotorResolution(5e-4, MotorType.TRANSLATIONAL) # mm
 motors["h_bendable_mirror_motor_bender"]      = MotorResolution(1.0,  MotorType.OTHER)         # Deming's bender: motors are in Volt
-motors["h_bendable_mirror_motor_pitch"]       = MotorResolution(1e-4, MotorType.ROTATIONAL)    # deg
-motors["h_bendable_mirror_motor_translation"] = MotorResolution(1e-4, MotorType.TRANSLATIONAL) # mm
+motors["h_bendable_mirror_motor_pitch"]       = MotorResolution(1e-5, MotorType.ROTATIONAL)    # deg
+motors["h_bendable_mirror_motor_translation"] = MotorResolution(5e-4, MotorType.TRANSLATIONAL) # mm
 
 MotorResolutionRegistry.getInstance().register_motor_resolution_set(MotorResolutionSet(motors=motors), "28-ID-B")
 
-class AbstractFocusingOptics():
+class AbstractFocusingOptics(CommonAbstractFocusingOptics):
 
     #####################################################################################
     # This methods represent the run-time interface, to interact with the optical system
@@ -66,19 +72,19 @@ class AbstractFocusingOptics():
 
     def move_v_bimorph_mirror_motor_bender(self, actuator_value, movement=Movement.ABSOLUTE): raise NotImplementedError()
     def get_v_bimorph_mirror_motor_bender(self): raise NotImplementedError()
-    def move_v_bimorph_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def move_v_bimorph_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_v_bimorph_mirror_motor_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_v_bimorph_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES): raise NotImplementedError()
+    def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.DEGREES): raise NotImplementedError()
+    def move_v_bimorph_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS): raise NotImplementedError()
+    def get_v_bimorph_mirror_motor_translation(self, units=DistanceUnits.MILLIMETERS): raise NotImplementedError()
 
     # H-KB -----------------------
 
-    def move_h_bendable_mirror_motor_1_bender(self, volt_upstream, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def move_h_bendable_mirror_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE): raise NotImplementedError()
     def get_h_bendable_mirror_motor_1_bender(self): raise NotImplementedError()
-    def move_h_bendable_mirror_motor_2_bender(self, volt_downstream, movement=Movement.ABSOLUTE): raise NotImplementedError()
+    def move_h_bendable_mirror_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE): raise NotImplementedError()
     def get_h_bendable_mirror_motor_2_bender(self): raise NotImplementedError()
-    def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS): raise NotImplementedError()
-    def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_h_bendable_mirror_motor_translation(self, units=DistanceUnits.MICRON): raise NotImplementedError()
+    def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES): raise NotImplementedError()
+    def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.DEGREES): raise NotImplementedError()
+    def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS): raise NotImplementedError()
+    def get_h_bendable_mirror_motor_translation(self, units=DistanceUnits.MILLIMETERS): raise NotImplementedError()
 

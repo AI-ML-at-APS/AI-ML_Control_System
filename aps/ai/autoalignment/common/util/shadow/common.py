@@ -53,7 +53,7 @@ from srxraylib.metrology import dabam
 from oasys.util.error_profile_util import DabamInputParameters, calculate_dabam_profile
 from oasys.util.oasys_util import get_sigma, get_fwhm, get_average
 from oasys.widgets import congruence
-from orangecontrib.ml.util.mocks import MockWidget
+
 from orangecontrib.shadow.util.shadow_objects import ShadowBeam, ShadowOpticalElement, ShadowSource, ShadowOEHistoryItem
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
@@ -61,7 +61,9 @@ import scipy.constants as codata
 
 from aps.ai.autoalignment.common.util.common import get_info, plot_2D, Flip, PlotMode, AspectRatio, ColorMap, Histogram
 from aps.ai.autoalignment.common.util.gaussian_fit import calculate_2D_gaussian_fit
-from orangecontrib.ml.util.data_structures import DictionaryWrapper
+from aps.common.ml.data_structures import DictionaryWrapper
+from aps.common.ml.mocks import MockWidget
+
 
 m2ev = codata.c * codata.h / codata.e
 

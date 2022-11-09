@@ -106,12 +106,12 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         h_bendable_mirror_up.RWIDX1 = 18.14
         h_bendable_mirror_up.RWIDX2 = 18.14
         h_bendable_mirror_up.SIMAG = -999
-        h_bendable_mirror_up.SSOUR = 63870.0
+        h_bendable_mirror_up.SSOUR = 36527.0 + self._shift_horizontal_mirror
         h_bendable_mirror_up.THETA = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror_up.T_IMAGE = 0.0
         h_bendable_mirror_up.T_INCIDENCE = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror_up.T_REFLECTION = h_bendable_mirror_motor_pitch_angle_shadow
-        h_bendable_mirror_up.T_SOURCE = 1370.0
+        h_bendable_mirror_up.T_SOURCE = 1370.0 + self._shift_horizontal_mirror
 
         # DISPLACEMENTS
         h_bendable_mirror_up.F_MOVE = 1
@@ -137,12 +137,12 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         h_bendable_mirror_down.RWIDX1 = 18.14
         h_bendable_mirror_down.RWIDX2 = 18.14
         h_bendable_mirror_down.SIMAG = -999
-        h_bendable_mirror_down.SSOUR = 36527.0 # instead of 63870.0, because of the convexity of M2
+        h_bendable_mirror_down.SSOUR = 36527.0 + self._shift_horizontal_mirror # instead of 63870.0, because of the convexity of M2
         h_bendable_mirror_down.THETA = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror_down.T_IMAGE = 0.0
         h_bendable_mirror_down.T_INCIDENCE = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror_down.T_REFLECTION = h_bendable_mirror_motor_pitch_angle_shadow
-        h_bendable_mirror_down.T_SOURCE = 1370.0
+        h_bendable_mirror_down.T_SOURCE = 1370.0 + self._shift_horizontal_mirror
 
         # DISPLACEMENTS
         h_bendable_mirror_down.F_MOVE = 1
@@ -174,10 +174,10 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         v_bimorph_mirror.SIMAG = -999
         v_bimorph_mirror.SSOUR = 65000.0
         v_bimorph_mirror.THETA = v_bimorph_mirror_motor_pitch_angle_shadow
-        v_bimorph_mirror.T_IMAGE = 3000.0
+        v_bimorph_mirror.T_IMAGE = 3000.0 - self._shift_detector
         v_bimorph_mirror.T_INCIDENCE = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_REFLECTION = v_bimorph_mirror_motor_pitch_angle_shadow
-        v_bimorph_mirror.T_SOURCE = 1130.0
+        v_bimorph_mirror.T_SOURCE = 1130.0 - self._shift_horizontal_mirror
 
         # DISPLACEMENTS
         v_bimorph_mirror.F_MOVE = 1
@@ -243,8 +243,8 @@ class BendableFocusingOptics(FocusingOpticsCommon):
                               remove_lost_rays=remove_lost_rays)
         
 
-    def move_h_bendable_mirror_motor_1_bender(self, volt_upstream, movement=Movement.ABSOLUTE):
-        self.__move_motor_1_2_bender(self.__hkb_bender_manager, volt_upstream, None, movement,
+    def move_h_bendable_mirror_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE):
+        self.__move_motor_1_2_bender(self.__hkb_bender_manager, pos_upstream, None, movement,
                                      round_digit=self._motor_resolution.get_motor_resolution("h_bendable_mirror_motor_bender", units=DistanceUnits.OTHER)[1])
 
         if not self._h_bendable_mirror in self._modified_elements: self._modified_elements.append(self._h_bendable_mirror)
@@ -253,8 +253,8 @@ class BendableFocusingOptics(FocusingOpticsCommon):
     def get_h_bendable_mirror_motor_1_bender(self):
         return self.__get_motor_1_2_bender(self.__hkb_bender_manager)[0]
 
-    def move_h_bendable_mirror_motor_2_bender(self, volt_downstream, movement=Movement.ABSOLUTE):
-        self.__move_motor_1_2_bender(self.__hkb_bender_manager, None, volt_downstream, movement,
+    def move_h_bendable_mirror_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE):
+        self.__move_motor_1_2_bender(self.__hkb_bender_manager, None, pos_downstream, movement,
                                      round_digit=self._motor_resolution.get_motor_resolution("h_bendable_mirror_motor_bender", units=DistanceUnits.OTHER)[1])
 
         if not self._h_bendable_mirror in self._modified_elements: self._modified_elements.append(self._h_bendable_mirror)
@@ -335,23 +335,23 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         return self._get_q_distance(self._v_bimorph_mirror)
 
     @classmethod
-    def __move_motor_1_2_bender(cls, bender_manager, volt_upstream, volt_downstream, movement=Movement.ABSOLUTE, round_digit=0):
+    def __move_motor_1_2_bender(cls, bender_manager, pos_upstream, pos_downstream, movement=Movement.ABSOLUTE, round_digit=0):
         if bender_manager is None: raise ValueError("Initialize Focusing Optics System first")
 
-        current_volt_upstream, current_volt_downstream = bender_manager.get_voltages()
+        current_pos_upstream, current_pos_downstream = bender_manager.get_voltages()
 
         def check_volt(volt, current_volt):
             if not volt is None: return round(volt, round_digit)
             else:                return 0.0 if movement == Movement.RELATIVE else current_volt
 
-        volt_upstream   = check_volt(volt_upstream, current_volt_upstream)
-        volt_downstream = check_volt(volt_downstream, current_volt_downstream)
+        pos_upstream   = check_volt(pos_upstream, current_pos_upstream)
+        pos_downstream = check_volt(pos_downstream, current_pos_downstream)
 
         if movement == Movement.ABSOLUTE:
-            bender_manager.set_voltages(volt_upstream, volt_downstream)
+            bender_manager.set_voltages(pos_upstream, pos_downstream)
         elif movement == Movement.RELATIVE:
-            current_volt_upstream, current_volt_downstream = bender_manager.get_voltages()
-            bender_manager.set_voltages(current_volt_upstream + volt_upstream, current_volt_downstream + volt_downstream)
+            current_pos_upstream, current_pos_downstream = bender_manager.get_voltages()
+            bender_manager.set_voltages(current_pos_upstream + pos_upstream, current_pos_downstream + pos_downstream)
         else:
             raise ValueError("Movement not recognized")
 

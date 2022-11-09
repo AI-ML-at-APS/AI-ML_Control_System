@@ -45,6 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 from aps.ai.autoalignment.common.facade.parameters import MotorResolutionRegistry, MotorResolutionSet, MotorType, MotorResolution, DistanceUnits, Movement, AngularUnits
+from aps.ai.autoalignment.common.facade.focusing_optics_interface import AbstractFocusingOptics as CommonAbstractFocusingOptics
 
 motors = {}
 motors["coh_slits_motors"]        = MotorResolution(1e-7, MotorType.TRANSLATIONAL) # mm
@@ -57,7 +58,7 @@ motors["hkb_motor_4_translation"] = MotorResolution(1e-4, MotorType.TRANSLATIONA
 
 MotorResolutionRegistry.getInstance().register_motor_resolution_set(MotorResolutionSet(motors=motors), "34-ID-C")
 
-class AbstractFocusingOptics():
+class AbstractFocusingOptics(CommonAbstractFocusingOptics):
 
     #####################################################################################
     # This methods represent the run-time interface, to interact with the optical system
