@@ -106,12 +106,12 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         h_bendable_mirror_up.RWIDX1 = 18.14
         h_bendable_mirror_up.RWIDX2 = 18.14
         h_bendable_mirror_up.SIMAG = -999
-        h_bendable_mirror_up.SSOUR = 63870.0
+        h_bendable_mirror_up.SSOUR = 36527.0 + self._shift_horizontal_mirror
         h_bendable_mirror_up.THETA = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror_up.T_IMAGE = 0.0
         h_bendable_mirror_up.T_INCIDENCE = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror_up.T_REFLECTION = h_bendable_mirror_motor_pitch_angle_shadow
-        h_bendable_mirror_up.T_SOURCE = 1370.0
+        h_bendable_mirror_up.T_SOURCE = 1370.0 + self._shift_horizontal_mirror
 
         # DISPLACEMENTS
         h_bendable_mirror_up.F_MOVE = 1
@@ -137,12 +137,12 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         h_bendable_mirror_down.RWIDX1 = 18.14
         h_bendable_mirror_down.RWIDX2 = 18.14
         h_bendable_mirror_down.SIMAG = -999
-        h_bendable_mirror_down.SSOUR = 36527.0 # instead of 63870.0, because of the convexity of M2
+        h_bendable_mirror_down.SSOUR = 36527.0 + self._shift_horizontal_mirror # instead of 63870.0, because of the convexity of M2
         h_bendable_mirror_down.THETA = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror_down.T_IMAGE = 0.0
         h_bendable_mirror_down.T_INCIDENCE = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror_down.T_REFLECTION = h_bendable_mirror_motor_pitch_angle_shadow
-        h_bendable_mirror_down.T_SOURCE = 1370.0
+        h_bendable_mirror_down.T_SOURCE = 1370.0 + self._shift_horizontal_mirror
 
         # DISPLACEMENTS
         h_bendable_mirror_down.F_MOVE = 1
@@ -174,10 +174,10 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         v_bimorph_mirror.SIMAG = -999
         v_bimorph_mirror.SSOUR = 65000.0
         v_bimorph_mirror.THETA = v_bimorph_mirror_motor_pitch_angle_shadow
-        v_bimorph_mirror.T_IMAGE = 3000.0
+        v_bimorph_mirror.T_IMAGE = 3000.0 - self._shift_detector
         v_bimorph_mirror.T_INCIDENCE = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_REFLECTION = v_bimorph_mirror_motor_pitch_angle_shadow
-        v_bimorph_mirror.T_SOURCE = 1130.0
+        v_bimorph_mirror.T_SOURCE = 1130.0 - self._shift_horizontal_mirror
 
         # DISPLACEMENTS
         v_bimorph_mirror.F_MOVE = 1

@@ -49,6 +49,7 @@ import sys
 
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
+from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import get_default_input_features, Layout
 from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits, DistanceUnits
 
 from aps.ai.autoalignment.common.util.common import PlotMode, AspectRatio, ColorMap
@@ -79,7 +80,9 @@ if __name__ == "__main__":
 
     focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW, bender=True)
     focusing_system.initialize(input_photon_beam=input_beam,
-                               rewrite_preprocessor_files=PreProcessorFiles.NO)
+                               input_features=get_default_input_features(layout=Layout.AUTO_FOCUSING),
+                               rewrite_preprocessor_files=PreProcessorFiles.NO,
+                               layout=Layout.AUTO_FOCUSING)
 
     # ----------------------------------------------------------------
     # perturbation of the incident beam to make adjustements necessary

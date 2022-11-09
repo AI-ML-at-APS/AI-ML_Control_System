@@ -164,7 +164,7 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
     def get_v_bimorph_mirror_motor_bender(self): 
         return Motors.BENDER_V.get()
     
-    def move_v_bimorph_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREE):
+    def move_v_bimorph_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES):
         if units == AngularUnits.MILLIRADIANS: angle *= 1e-3
         elif units == AngularUnits.RADIANS: pass
         elif units == AngularUnits.DEGREES: angle = numpy.radians(angle)
@@ -183,7 +183,7 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
             self._move_translational_motor(Motors.TRANSLATION_DO, -pos, movement=movement, units=DistanceUnits.MILLIMETERS)
             self._move_translational_motor(Motors.TRANSLATION_DI, -pos, movement=movement, units=DistanceUnits.MILLIMETERS)
 
-    def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.DEGREE):
+    def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.DEGREES):
         pos = (self._get_translational_motor_position(Motors.TRANSLATION_VO, units=DistanceUnits.MILLIMETERS) -
                self._get_translational_motor_position(Motors.TRANSLATION_DO, units=DistanceUnits.MILLIMETERS))
         angle = numpy.arcsin(pos/DISTANCE_V_MOTORS)
@@ -221,10 +221,10 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
     def get_h_bendable_mirror_motor_2_bender(self): 
         return Motors.BENDER_H_2.get()
 
-    def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREE): 
+    def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES):
         self._move_rotational_motor(Motors.PITCH_H, angle, movement, units)
 
-    def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.DEGREE):
+    def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.DEGREES):
         return self._get_rotational_motor_angle(Motors.PITCH_H, units)
 
     def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS):

@@ -50,7 +50,7 @@ from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 
 from aps.ai.autoalignment.common.util.shadow.common import TTYInibitor, PreProcessorFiles, write_reflectivity_file, plot_shadow_beam_spatial_distribution
 from aps.ai.autoalignment.common.simulation.shadow.focusing_optics import ShadowFocusingOptics
-from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features
+from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features, Layout
 from aps.ai.autoalignment.common.facade.parameters import MotorResolutionRegistry
 
 class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics):
@@ -68,6 +68,13 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
                    **kwargs):
 
         super(FocusingOpticsCommon, self).initialize(input_photon_beam, input_features, **kwargs)
+
+        try:    layout = kwargs["layout"]
+        except: layout = Layout.AUTO_ALIGNMENT
+
+        self._layout           = layout
+        self._shift_horizontal_mirror = 0.0 if self._layout == Layout.AUTO_ALIGNMENT else 300.0
+        self._shift_detector          = 0.0 if self._layout == Layout.AUTO_ALIGNMENT else -500.0
 
         self._motor_resolution = MotorResolutionRegistry.getInstance().get_motor_resolution_set("28-ID-B")
 

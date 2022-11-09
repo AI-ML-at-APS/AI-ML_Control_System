@@ -51,7 +51,7 @@ import Shadow
 from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement
 
 from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits, DistanceUnits
-from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon
+from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon, Layout
 
 class IdealFocusingOptics(FocusingOpticsCommon):
 
@@ -83,12 +83,12 @@ class IdealFocusingOptics(FocusingOpticsCommon):
         h_bendable_mirror.RWIDX1 = 18.14
         h_bendable_mirror.RWIDX2 = 18.14
         h_bendable_mirror.SIMAG = input_features.get_parameter("h_bendable_mirror_q_distance")
-        h_bendable_mirror.SSOUR = 36527.0 # instead of 63870.0, because of the convexity of M2
+        h_bendable_mirror.SSOUR = 36527.0 + self._shift_horizontal_mirror # instead of 63870.0, because of the convexity of M2
         h_bendable_mirror.THETA = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror.T_IMAGE = 0.0
         h_bendable_mirror.T_INCIDENCE = h_bendable_mirror_motor_pitch_angle_shadow
         h_bendable_mirror.T_REFLECTION = h_bendable_mirror_motor_pitch_angle_shadow
-        h_bendable_mirror.T_SOURCE = 1370.0
+        h_bendable_mirror.T_SOURCE = 1370.0 + self._shift_horizontal_mirror
 
         # DISPLACEMENTS
         h_bendable_mirror.F_MOVE = 1
@@ -120,10 +120,10 @@ class IdealFocusingOptics(FocusingOpticsCommon):
         v_bimorph_mirror.SIMAG = input_features.get_parameter("v_bimorph_mirror_q_distance")
         v_bimorph_mirror.SSOUR = 65000.0
         v_bimorph_mirror.THETA = v_bimorph_mirror_motor_pitch_angle_shadow
-        v_bimorph_mirror.T_IMAGE = 3000.0
+        v_bimorph_mirror.T_IMAGE = 3000.0 - self._shift_detector
         v_bimorph_mirror.T_INCIDENCE = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_REFLECTION = v_bimorph_mirror_motor_pitch_angle_shadow
-        v_bimorph_mirror.T_SOURCE = 1130.0
+        v_bimorph_mirror.T_SOURCE = 1130.0 - self._shift_horizontal_mirror
 
         # DISPLACEMENTS
         v_bimorph_mirror.F_MOVE = 1
