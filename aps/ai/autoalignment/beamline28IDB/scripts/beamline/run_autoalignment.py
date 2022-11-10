@@ -45,11 +45,75 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps.common.registry import AlreadyInitializedError
-from aps.common.traffic_light import register_traffic_light_instance
+import os, sys
+from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
+from aps.common.scripts.script_registry import get_registered_running_script_instance, register_running_script_instance
+
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline.executors.autoalignment_executor import AutoalignmentScript
 from aps.ai.autoalignment.beamline28IDB.util.beamline.default_values import DefaultValues
 
-AA_28ID_BEAMLINE_SCRIPTS = "aa-28id-beamline-scripts"
+APPLICATION_NAME = "RUN-AUTOALIGNMENT"
 
-try: register_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS, common_directory=DefaultValues.ROOT_DIRECTORY)
-except AlreadyInitializedError: pass
+def __get_input_parameters(sys_argv):
+    register_ini_instance(IniMode.LOCAL_FILE,
+                          ini_file_name="run_autoalignment.ini",
+                          application_name=APPLICATION_NAME,
+                          verbose=False)
+
+    ini_file = get_registered_ini_instance(APPLICATION_NAME)
+
+    root_directory                 = ini_file.get_string_from_ini( section="Directories", key="Root-Directory", default=DefaultValues.ROOT_DIRECTORY)
+    energy                         = ini_file.get_float_from_ini(  section="Execution",   key="Energy",         default=DefaultValues.ENERGY)
+
+    regenerate_ini                 = False
+    exit_script                    = False
+
+    if len(sys_argv) > 2:
+        for i in range(2, len(sys_argv)):
+            if "-ri"   == sys_argv[i][:3]: exit_script = regenerate_ini   = True
+            elif "--h"   == sys_argv[i][:3]:
+                print("Run Experiment\n\npython -m aps.ai.bimorph_mirror BLE REX <options>\n\n" +
+                      "Options: -ri (to regenerate ini file with default value)>")
+                exit_script = True
+
+    ini_file = get_registered_ini_instance(APPLICATION_NAME)
+    if regenerate_ini:
+        ini_file.set_value_at_ini(section="Directories", key="Root-Directory",                 value=DefaultValues.ROOT_DIRECTORY)
+        ini_file.set_value_at_ini(section="Execution",   key="Energy",                         value=20000.0)
+
+        print("File ini regenerated with default values in\n" + os.path.abspath(os.curdir))
+    else:
+        ini_file.set_value_at_ini(section="Directories", key="Root-Directory",                 value=root_directory)
+        ini_file.set_value_at_ini(section="Execution",   key="Energy",                         value=energy)
+
+    ini_file.push()
+
+    try: print("Variable QT_QPA_PLATFORM=", os.environ["QT_QPA_PLATFORM"])
+    except: print("Variable QT_QPA_PLATFORM not defined")
+
+    if exit_script: sys.exit(0)
+
+    return root_directory, energy
+
+
+def run_script(sys_argv):
+    if "linux" in sys.platform: os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+
+    root_directory, energy = __get_input_parameters(sys_argv)
+
+    script = AutoalignmentScript(root_directory=root_directory, energy=energy)
+    register_running_script_instance(script)
+
+    script.execute_script()
+
+# ===================================================================================================
+# ===================================================================================================
+# ===================================================================================================
+
+if __name__ == "__main__":
+    try:
+        run_script(sys.argv)
+    except KeyboardInterrupt:
+        running_script = get_registered_running_script_instance()
+        if not running_script is None: running_script.manage_keyboard_interrupt()
+        else: print("\nScript interrupted by user")

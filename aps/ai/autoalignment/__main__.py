@@ -44,3 +44,48 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+
+from aps.common.scripts.script_registry import get_registered_running_script_instance
+
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline.script_executor import run_script as b28_run_script
+
+def run_script(sys_argv):
+    def show_help(error=False):
+        print("")
+        if error:
+            print("*************************************************************")
+            print("********              Command not valid!             ********")
+            print("*************************************************************\n")
+        else:
+            print("=============================================================")
+            print("  WELCOME TO AUTO-ALIGNMENT/AUTOFOCUS AI-DRIVEN CONTROLLER   ")
+            print("=============================================================\n")
+        print("To launch a script:         python -m aps.ai.autoalignment <facility> <script id> <options>")
+        print("To show help of a script:   python -m aps.ai.autoalignment <facility> <script id> --h")
+        print("To show help of a facility: python -m aps.ai.autoalignment <facility> --h")
+        print("To show this help:          python -m aps.ai.autoalignment --h")
+        print("* Available facilities:\n" +
+              "    1) Beamline 28-ID-B, id: 28ID\n" +
+              "    2) Beamline 34-ID-C, id: 34ID\n")
+
+    if len(sys_argv) == 1 or sys_argv[1] == "--h":
+        show_help()
+    else:
+        if sys_argv[1]   == "28ID": b28_run_script(sys_argv)
+        elif sys_argv[1] == "34ID": print("Not implemented, yet")
+        else: show_help(error=True)
+
+# ===================================================================================================
+# ===================================================================================================
+# ===================================================================================================
+
+import sys
+if __name__=="__main__":
+    try:
+        run_script(sys.argv)
+    except KeyboardInterrupt:
+        running_script = get_registered_running_script_instance()
+        if not running_script is None: running_script.manage_keyboard_interrupt()
+        else: print("\nScript interrupted by user")
+
+

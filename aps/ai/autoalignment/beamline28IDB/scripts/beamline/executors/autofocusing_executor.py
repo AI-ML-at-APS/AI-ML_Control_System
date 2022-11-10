@@ -45,11 +45,12 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps.common.registry import AlreadyInitializedError
-from aps.common.traffic_light import register_traffic_light_instance
-from aps.ai.autoalignment.beamline28IDB.util.beamline.default_values import DefaultValues
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline.executors.generic_executor import GenericScript
 
-AA_28ID_BEAMLINE_SCRIPTS = "aa-28id-beamline-scripts"
+class AutofocusingScript(GenericScript):
 
-try: register_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS, common_directory=DefaultValues.ROOT_DIRECTORY)
-except AlreadyInitializedError: pass
+    def __init__(self, root_directory, energy):
+        super(AutofocusingScript, self).__init__(root_directory, energy)
+
+    def _execute_script_inner(self, **kwargs):
+        pass

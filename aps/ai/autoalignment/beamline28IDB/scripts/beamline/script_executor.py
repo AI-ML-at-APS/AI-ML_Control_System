@@ -44,12 +44,46 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+from aps.common.scripts.script_registry import get_registered_running_script_instance
 
-from aps.common.registry import AlreadyInitializedError
-from aps.common.traffic_light import register_traffic_light_instance
-from aps.ai.autoalignment.beamline28IDB.util.beamline.default_values import DefaultValues
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline.run_autoalignment import run_script as aa_run_script
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline.run_autofocusing  import run_script as af_run_script
 
-AA_28ID_BEAMLINE_SCRIPTS = "aa-28id-beamline-scripts"
+def run_script(sys_argv):
+    def show_help(error=False):
+        print("")
+        if error:
+            print("*************************************************************")
+            print("********              Command not valid!             ********")
+            print("*************************************************************\n")
+        else:
+            print("=============================================================")
+            print("  WELCOME TO AUTO-ALIGNMENT/AUTOFOCUS AI-DRIVEN CONTROLLER   ")
+            print("                  28-ID-B BEAMLINE SCRIPTS                   ")
+            print("=============================================================\n")
+        print("To launch a script:         python -m aps.ai.autoalignment 28ID <script id> <options>")
+        print("To show help of a script:   python -m aps.ai.autoalignment 28ID <script id> --h")
+        print("To show this help:          python -m aps.ai.autoalignment 28ID --h")
+        print("* Available scripts:\n" +
+              "    1) Auto-alignment, id: AA\n" +
+              "    2) Auto-focusing,  id: AF\n")
 
-try: register_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS, common_directory=DefaultValues.ROOT_DIRECTORY)
-except AlreadyInitializedError: pass
+    if len(sys_argv) == 2 or sys_argv[2] == "--h":
+        show_help()
+    else:
+        if sys_argv[2]   == "AA": aa_run_script(sys_argv)
+        elif sys_argv[2] == "AF": af_run_script(sys_argv)
+        else: show_help(error=True)
+
+# ===================================================================================================
+# ===================================================================================================
+# ===================================================================================================
+
+import sys
+if __name__=="__main__":
+    try:
+        run_script(sys.argv)
+    except KeyboardInterrupt as e:
+        running_script = get_registered_running_script_instance()
+        if not running_script is None: running_script.manage_keyboard_interrupt()
+        else: print("\nScript interrupted by user")

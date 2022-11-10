@@ -44,12 +44,40 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+from datetime import date
 
 from aps.common.registry import AlreadyInitializedError
-from aps.common.traffic_light import register_traffic_light_instance
-from aps.ai.autoalignment.beamline28IDB.util.beamline.default_values import DefaultValues
+from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
 
-AA_28ID_BEAMLINE_SCRIPTS = "aa-28id-beamline-scripts"
+import scipy.constants as codata
+M2EV = codata.c*codata.h/codata.e  # lambda(m)  = m2eV / energy(eV)
 
-try: register_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS, common_directory=DefaultValues.ROOT_DIRECTORY)
+APPLICATION_NAME = "AA-28ID-DEFAULT-VALUES"
+
+try:
+    register_ini_instance(IniMode.LOCAL_FILE,
+                          ini_file_name="default-values.ini",
+                          application_name=APPLICATION_NAME,
+                          verbose=False)
 except AlreadyInitializedError: pass
+
+ini_file = get_registered_ini_instance(APPLICATION_NAME)
+
+today = date.today()
+year  = today.year
+month = today.month-1
+months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+root_directory = "/data/Beamline28IDB_" + months[month] + str(year) + "/"
+
+_ROOT_DIRECTORY      = ini_file.get_string_from_ini( section="Directories", key="Root-Directory",      default=root_directory)
+_ENERGY              = ini_file.get_float_from_ini(  section="Execution",   key="Energy",              default=20000)
+
+ini_file.set_value_at_ini(section="Directories", key="Root-Directory",      value=_ROOT_DIRECTORY)
+ini_file.set_value_at_ini(section="Execution",   key="Energy",              value=_ENERGY)
+ini_file.push()
+
+class DefaultValues:
+    ROOT_DIRECTORY      = _ROOT_DIRECTORY
+    ENERGY              = _ENERGY
+    WAVELENGTH          = M2EV/_ENERGY

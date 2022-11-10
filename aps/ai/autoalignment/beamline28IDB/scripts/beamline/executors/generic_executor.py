@@ -44,12 +44,36 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+from aps.common.scripts.abstract_script import AbstractScript
+from aps.common.traffic_light import get_registered_traffic_light_instance
 
-from aps.common.registry import AlreadyInitializedError
-from aps.common.traffic_light import register_traffic_light_instance
-from aps.ai.autoalignment.beamline28IDB.util.beamline.default_values import DefaultValues
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline import AA_28ID_BEAMLINE_SCRIPTS
 
-AA_28ID_BEAMLINE_SCRIPTS = "aa-28id-beamline-scripts"
+class GenericScript(AbstractScript):
 
-try: register_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS, common_directory=DefaultValues.ROOT_DIRECTORY)
-except AlreadyInitializedError: pass
+    def __init__(self, root_directory, energy):
+        self._root_directory = root_directory
+        self._energy         = energy
+
+        self.__initialize_traffic_light()
+
+    def execute_script(self, **kwargs):
+        try:
+            self._execute_script_inner(**kwargs)
+        except Exception as e:
+            try:    self.__traffic_light.set_green_light()
+            except: pass
+
+            print("Script interrupted by the following exception:\n" + str(e))
+
+    def manage_keyboard_interrupt(self):
+        print("\n" + self._get_script_name() + " interrupted by user")
+
+        try:    self.__traffic_light.set_green_light()
+        except: pass
+
+    def __initialize_traffic_light(self):
+        self.__traffic_light = get_registered_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS)
+
+    def _execute_script_inner(self, **kwargs): raise NotImplementedError()
+    def _get_script_name(self): raise NotImplementedError()
