@@ -50,19 +50,40 @@ from aps.common.ml.data_structures import DictionaryWrapper
 from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 
-def get_default_input_features(): # units: mm, mrad and micron for the bender
-    return DictionaryWrapper(v_bimorph_mirror_q_distance=1500.0,
-                             v_bimorph_mirror_motor_translation=0.0,
-                             v_bimorph_mirror_motor_pitch_angle=0.003,
-                             v_bimorph_mirror_motor_pitch_delta_angle=0.0,
-                             v_bimorph_mirror_motor_bender_voltage=170,
-                             h_bendable_mirror_q_distance=2250.0, #2630.0,
-                             h_bendable_mirror_motor_translation=0.0,
-                             h_bendable_mirror_motor_pitch_angle=0.003,
-                             h_bendable_mirror_motor_pitch_delta_angle=0.0,
-                             h_bendable_mirror_motor_1_bender_voltage=-90,
-                             h_bendable_mirror_motor_2_bender_voltage=-90
-                             )
+class Layout:
+    AUTO_ALIGNMENT = 0
+    AUTO_FOCUSING  = 1
+
+def get_default_input_features(**kwargs): # units: mm, mrad and micron for the bender
+    try:    layout = kwargs["layout"]
+    except: layout = Layout.AUTO_ALIGNMENT
+
+    if layout == Layout.AUTO_ALIGNMENT:
+        return DictionaryWrapper(v_bimorph_mirror_q_distance=892.0,
+                                 v_bimorph_mirror_motor_translation=0.0,
+                                 v_bimorph_mirror_motor_pitch_angle=0.003,
+                                 v_bimorph_mirror_motor_pitch_delta_angle=0.0,
+                                 v_bimorph_mirror_motor_bender_voltage=170,
+                                 h_bendable_mirror_q_distance=2022.0,
+                                 h_bendable_mirror_motor_translation=0.0,
+                                 h_bendable_mirror_motor_pitch_angle=0.003,
+                                 h_bendable_mirror_motor_pitch_delta_angle=0.0,
+                                 h_bendable_mirror_motor_1_bender_voltage=-90,
+                                 h_bendable_mirror_motor_2_bender_voltage=-90
+                                 )
+    elif layout == Layout.AUTO_FOCUSING:
+        return DictionaryWrapper(v_bimorph_mirror_q_distance=2500.0,
+                                 v_bimorph_mirror_motor_translation=0.0,
+                                 v_bimorph_mirror_motor_pitch_angle=0.003,
+                                 v_bimorph_mirror_motor_pitch_delta_angle=0.0,
+                                 v_bimorph_mirror_motor_bender_voltage=432.0,
+                                 h_bendable_mirror_q_distance=3330.0,
+                                 h_bendable_mirror_motor_translation=0.0,
+                                 h_bendable_mirror_motor_pitch_angle=0.003,
+                                 h_bendable_mirror_motor_pitch_delta_angle=0.0,
+                                 h_bendable_mirror_motor_1_bender_voltage=-177,
+                                 h_bendable_mirror_motor_2_bender_voltage=-170
+                                 )
 
 class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
 
