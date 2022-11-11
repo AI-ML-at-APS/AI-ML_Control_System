@@ -88,7 +88,7 @@ INSTALL_REQUIRES = (
     'aps_common_libraries',
     'OASYS1-ShadowOui>=1.5.131',
     'OASYS1-ShadowOui-Advanced-Tools>=1.0.82',
-    'OASYS1-ML>=0.0.1',
+    'oasys-srwpy',
     'pyepics'
 )
 

@@ -44,6 +44,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import time
+
 from aps.common.scripts.abstract_script import AbstractScript
 from aps.common.traffic_light import get_registered_traffic_light_instance
 
@@ -51,15 +53,37 @@ from aps.ai.autoalignment.beamline28IDB.scripts.beamline import AA_28ID_BEAMLINE
 
 class GenericScript(AbstractScript):
 
-    def __init__(self, root_directory, energy):
+    def __init__(self, root_directory, energy, period, n_cycles, mocking_mode):
         self._root_directory = root_directory
         self._energy         = energy
+        self.__mocking_mode   = mocking_mode
+        self.__period        = period * 60.0 # in seconds
+        self.__n_cycles      = n_cycles
 
         self.__initialize_traffic_light()
 
     def execute_script(self, **kwargs):
+        cycles = 0
+
         try:
-            self._execute_script_inner(**kwargs)
+            while(cycles < self.__n_cycles):
+                cycles += 1
+                self.__traffic_light.request_red_light()
+
+                print("Running " + self._get_script_name() + " #" + str(cycles))
+
+                if self.__mocking_mode:
+                    print("Mocking Mode: do nothing and wait 5 second")
+                    time.sleep(5)
+                else:
+                    self._execute_script_inner(**kwargs)
+
+                self.__traffic_light.set_green_light()
+
+                print(self._get_script_name() + " #" + str(cycles) + " completed.\n"
+                      "Pausing for " + str(self.__period) + " seconds.")
+
+                time.sleep(self.__period)
         except Exception as e:
             try:    self.__traffic_light.set_green_light()
             except: pass

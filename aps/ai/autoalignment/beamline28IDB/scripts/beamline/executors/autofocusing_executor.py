@@ -49,8 +49,8 @@ from aps.ai.autoalignment.beamline28IDB.scripts.beamline.executors.generic_execu
 
 class AutofocusingScript(GenericScript):
 
-    def __init__(self, root_directory, energy):
-        super(AutofocusingScript, self).__init__(root_directory, energy)
+    def __init__(self, root_directory, energy, period, n_cycles):
+        super(AutofocusingScript, self).__init__(root_directory, energy, period, n_cycles)
 
     def _execute_script_inner(self, **kwargs):
         pass

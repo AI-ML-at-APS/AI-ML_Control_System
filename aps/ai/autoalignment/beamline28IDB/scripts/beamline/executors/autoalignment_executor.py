@@ -46,11 +46,16 @@
 # ----------------------------------------------------------------------- #
 
 from aps.ai.autoalignment.beamline28IDB.scripts.beamline.executors.generic_executor import GenericScript
+import time
 
 class AutoalignmentScript(GenericScript):
 
-    def __init__(self, root_directory, energy):
-        super(AutoalignmentScript, self).__init__(root_directory, energy)
+    def __init__(self, root_directory, energy, period, n_cycles):
+        super(AutoalignmentScript, self).__init__(root_directory, energy, period, n_cycles)
+
+    def _get_script_name(self):
+        return "Autoalignment"
 
     def _execute_script_inner(self, **kwargs):
         pass
+
