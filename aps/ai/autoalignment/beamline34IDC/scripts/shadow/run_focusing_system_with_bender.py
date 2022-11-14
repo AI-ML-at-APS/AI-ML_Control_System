@@ -111,10 +111,10 @@ if __name__ == "__main__":
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    plot_shadow_beam_spatial_distribution(output_beam, nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
-    plot_shadow_beam_spatial_distribution(output_beam, nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.INTERNAL)
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.INTERNAL)
 
-    _, dict = get_shadow_beam_spatial_distribution(output_beam, nbins=201, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
+    _, dict = get_shadow_beam_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
 
     print("Initial Sigma (HxV): ", round(dict.get_parameter("h_sigma")*1e6, 0), " x ", round(dict.get_parameter("v_sigma")*1e6, 0), " nm")
 

@@ -76,13 +76,13 @@ def get_default_input_features(**kwargs): # units: mm, mrad and micron for the b
                                  v_bimorph_mirror_motor_translation=0.0,
                                  v_bimorph_mirror_motor_pitch_angle=0.003,
                                  v_bimorph_mirror_motor_pitch_delta_angle=0.0,
-                                 v_bimorph_mirror_motor_bender_voltage=432.0,
+                                 v_bimorph_mirror_motor_bender_voltage=419.0,
                                  h_bendable_mirror_q_distance=3330.0,
                                  h_bendable_mirror_motor_translation=0.0,
                                  h_bendable_mirror_motor_pitch_angle=0.003,
                                  h_bendable_mirror_motor_pitch_delta_angle=0.0,
-                                 h_bendable_mirror_motor_1_bender_voltage=-177,
-                                 h_bendable_mirror_motor_2_bender_voltage=-170
+                                 h_bendable_mirror_motor_1_bender_voltage=-168,
+                                 h_bendable_mirror_motor_2_bender_voltage=-161
                                  )
 
 class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):

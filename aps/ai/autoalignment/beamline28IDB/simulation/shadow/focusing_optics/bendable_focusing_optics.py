@@ -174,7 +174,7 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         v_bimorph_mirror.SIMAG = -999
         v_bimorph_mirror.SSOUR = 65000.0
         v_bimorph_mirror.THETA = v_bimorph_mirror_motor_pitch_angle_shadow
-        v_bimorph_mirror.T_IMAGE = 3000.0 - self._shift_detector
+        v_bimorph_mirror.T_IMAGE = 3000.0 + self._shift_detector
         v_bimorph_mirror.T_INCIDENCE = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_REFLECTION = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_SOURCE = 1130.0 - self._shift_horizontal_mirror
