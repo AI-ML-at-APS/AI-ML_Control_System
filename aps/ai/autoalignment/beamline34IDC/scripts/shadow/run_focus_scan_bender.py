@@ -149,7 +149,7 @@ if __name__ == "__main__":
                                                                                                near_field_calculation=True,
                                                                                                debug_mode=False,
                                                                                                random_seed=random_seed),
-                                                               nbins=201, xrange=xrange, yrange=yrange)
+                                                               xrange=xrange, yrange=yrange)
 
                 s_v = dict.get_parameter("v_sigma")
                 s_h = dict.get_parameter("h_sigma")
