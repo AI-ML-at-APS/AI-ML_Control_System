@@ -104,13 +104,13 @@ class HybridFailureException(Exception):
         super().__init__("Hybrid Algorithm failed for " + oe)
 
 
-def __get_arrays(shadow_beam, var_1, var_2, nbins=201, nolost=1, xrange=None, yrange=None):
-    ticket = shadow_beam._beam.histo2(var_1, var_2, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=0)
+def __get_arrays(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None):
+    ticket = shadow_beam._beam.histo2(var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=0)
 
     return ticket['bin_h_center'], ticket['bin_v_center'], ticket["histogram"]
 
-def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
-    ticket = shadow_beam._beam.histo2(var_1, var_2, nbins=nbins, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=1)
+def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
+    ticket = shadow_beam._beam.histo2(var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=1)
 
     hh   = ticket["histogram"]
     xx   = ticket['bin_h_center']
@@ -139,26 +139,26 @@ def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins=201, nolost=
                gaussian_fit=gaussian_fit
     )
 
-def __plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins=201, nolost=1, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
+def __plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
     if plot_mode in [PlotMode.INTERNAL, PlotMode.BOTH]:
-        x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins, nolost, xrange, yrange)
+        x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins_h, nbins_v, nolost, xrange, yrange)
 
         plot_2D(x_array, y_array, z_array, title, None, None, int_um="", peak_um="", flip=Flip.BOTH, aspect_ratio=aspect_ratio, color_map=color_map)
 
     if plot_mode in [PlotMode.NATIVE, PlotMode.BOTH]:
-        Shadow.ShadowTools.plotxy(shadow_beam._beam, var_1, var_2, nbins=nbins, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
+        Shadow.ShadowTools.plotxy(shadow_beam._beam, var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
 
-def get_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
-    return __get_shadow_beam_distribution(shadow_beam, 1, 3, nbins, nolost, xrange, yrange, do_gaussian_fit)
+def get_shadow_beam_spatial_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
+    return __get_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, xrange, yrange, do_gaussian_fit)
 
-def get_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
-    return __get_shadow_beam_distribution(shadow_beam, 4, 6, nbins, nolost, xrange, yrange, do_gaussian_fit)
+def get_shadow_beam_divergence_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
+    return __get_shadow_beam_distribution(shadow_beam, 4, 6, nbins_h, nbins_v, nolost, xrange, yrange, do_gaussian_fit)
 
-def plot_shadow_beam_spatial_distribution(shadow_beam, nbins=201, nolost=1, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
-    __plot_shadow_beam_distribution(shadow_beam, 1, 3, nbins, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
+def plot_shadow_beam_spatial_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
+    __plot_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
 
-def plot_shadow_beam_divergence_distribution(shadow_beam, nbins=201, nolost=1, title="X',Z'", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
-    __plot_shadow_beam_distribution(shadow_beam, 4, 6, nbins, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
+def plot_shadow_beam_divergence_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, title="X',Z'", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
+    __plot_shadow_beam_distribution(shadow_beam, 4, 6, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
 
 def save_source_beam(source_beam, file_name="source_beam.dat"):
     source_beam.getOEHistory(0)._shadow_source_start.src.write("parameters_start_" + file_name)
