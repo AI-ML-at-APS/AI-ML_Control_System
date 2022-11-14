@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------- #
-# Copyright (c) 2021, UChicago Argonne, LLC. All rights reserved.         #
+# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2021. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -45,59 +45,47 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-from aps.common.ml.data_structures import DictionaryWrapper
+from aps.common.scripts.script_registry import get_registered_running_script_instance
 
-from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline.script_executor import run_script as b28_run_script
 
-class Layout:
-    AUTO_ALIGNMENT = 0
-    AUTO_FOCUSING  = 1
+def run_script(sys_argv):
+    def show_help(error=False):
+        print("")
+        if error:
+            print("*************************************************************")
+            print("********              Command not valid!             ********")
+            print("*************************************************************\n")
+        else:
+            print("=============================================================")
+            print("  WELCOME TO AUTO-ALIGNMENT/AUTOFOCUS AI-DRIVEN CONTROLLER   ")
+            print("=============================================================\n")
+        print("To launch a script:         python -m aps.ai.autoalignment <facility> <script id> <options>")
+        print("To show help of a script:   python -m aps.ai.autoalignment <facility> <script id> --h")
+        print("To show help of a facility: python -m aps.ai.autoalignment <facility> --h")
+        print("To show this help:          python -m aps.ai.autoalignment --h")
+        print("* Available facilities:\n" +
+              "    1) Beamline 28-ID-B, id: 28ID\n" +
+              "    2) Beamline 34-ID-C, id: 34ID\n")
 
-def get_default_input_features(**kwargs): # units: mm, mrad and micron for the bender
-    try:    layout = kwargs["layout"]
-    except: layout = Layout.AUTO_ALIGNMENT
+    if len(sys_argv) == 1 or sys_argv[1] == "--h":
+        show_help()
+    else:
+        if sys_argv[1]   == "28ID": b28_run_script(sys_argv)
+        elif sys_argv[1] == "34ID": print("Not implemented, yet")
+        else: show_help(error=True)
 
-    if layout == Layout.AUTO_ALIGNMENT:
-        return DictionaryWrapper(v_bimorph_mirror_q_distance=892.0,
-                                 v_bimorph_mirror_motor_translation=0.0,
-                                 v_bimorph_mirror_motor_pitch_angle=0.003,
-                                 v_bimorph_mirror_motor_pitch_delta_angle=0.0,
-                                 v_bimorph_mirror_motor_bender_voltage=170,
-                                 h_bendable_mirror_q_distance=2022.0,
-                                 h_bendable_mirror_motor_translation=0.0,
-                                 h_bendable_mirror_motor_pitch_angle=0.003,
-                                 h_bendable_mirror_motor_pitch_delta_angle=0.0,
-                                 h_bendable_mirror_motor_1_bender_voltage=-90,
-                                 h_bendable_mirror_motor_2_bender_voltage=-90
-                                 )
-    elif layout == Layout.AUTO_FOCUSING:
-        return DictionaryWrapper(v_bimorph_mirror_q_distance=2500.0,
-                                 v_bimorph_mirror_motor_translation=0.0,
-                                 v_bimorph_mirror_motor_pitch_angle=0.003,
-                                 v_bimorph_mirror_motor_pitch_delta_angle=0.0,
-                                 v_bimorph_mirror_motor_bender_voltage=432.0,
-                                 h_bendable_mirror_q_distance=3330.0,
-                                 h_bendable_mirror_motor_translation=0.0,
-                                 h_bendable_mirror_motor_pitch_angle=0.003,
-                                 h_bendable_mirror_motor_pitch_delta_angle=0.0,
-                                 h_bendable_mirror_motor_1_bender_voltage=-177,
-                                 h_bendable_mirror_motor_2_bender_voltage=-170
-                                 )
+# ===================================================================================================
+# ===================================================================================================
+# ===================================================================================================
 
-class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
+import sys
+if __name__=="__main__":
+    try:
+        run_script(sys.argv)
+    except KeyboardInterrupt:
+        running_script = get_registered_running_script_instance()
+        if not running_script is None: running_script.manage_keyboard_interrupt()
+        else: print("\nScript interrupted by user")
 
-    #####################################################################################
-    # This methods represent the run-time interface, to interact with the optical system
-    # in real time, like in the real beamline. FOR SIMULATION PURPOSES ONLY
-
-    # V-KB -----------------------
-
-    def change_h_bendable_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_h_bendable_mirror_q_distance(self): raise NotImplementedError()
-
-    # H-KB -----------------------
-
-    def change_v_bimorph_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
-    def get_v_bimorph_mirror_q_distance(self): raise NotImplementedError()
 

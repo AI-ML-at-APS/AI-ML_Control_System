@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# #########################################################################
-# Copyright (c) 2020, UChicago Argonne, LLC. All rights reserved.         #
+# ----------------------------------------------------------------------- #
+# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2020. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -43,80 +43,47 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN       #
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
-# #########################################################################
+# ----------------------------------------------------------------------- #
+from aps.common.scripts.script_registry import get_registered_running_script_instance
 
-import os
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline.run_autoalignment import run_script as aa_run_script
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline.run_autofocusing  import run_script as af_run_script
 
-try:
-    from setuptools import find_packages, setup
-except AttributeError:
-    from setuptools import find_packages, setup
+def run_script(sys_argv):
+    def show_help(error=False):
+        print("")
+        if error:
+            print("*************************************************************")
+            print("********              Command not valid!             ********")
+            print("*************************************************************\n")
+        else:
+            print("=============================================================")
+            print("  WELCOME TO AUTO-ALIGNMENT/AUTOFOCUS AI-DRIVEN CONTROLLER   ")
+            print("                  28-ID-B BEAMLINE SCRIPTS                   ")
+            print("=============================================================\n")
+        print("To launch a script:         python -m aps.ai.autoalignment 28ID <script id> <options>")
+        print("To show help of a script:   python -m aps.ai.autoalignment 28ID <script id> --h")
+        print("To show this help:          python -m aps.ai.autoalignment 28ID --h")
+        print("* Available scripts:\n" +
+              "    1) Auto-alignment, id: AA\n" +
+              "    2) Auto-focusing,  id: AF\n")
 
-NAME = 'ML-Control-System-34-ID-C'
-VERSION = '0.0.2'
-ISRELEASED = False
+    if len(sys_argv) == 2 or sys_argv[2] == "--h":
+        show_help()
+    else:
+        if sys_argv[2]   == "AA": aa_run_script(sys_argv)
+        elif sys_argv[2] == "AF": af_run_script(sys_argv)
+        else: show_help(error=True)
 
-DESCRIPTION = 'ML Control System for the Beamline 34-ID-C @ APS'
-README_FILE = os.path.join(os.path.dirname(__file__), 'README.md')
-LONG_DESCRIPTION = open(README_FILE).read()
-AUTHOR = 'Luca Rebuffi'
-AUTHOR_EMAIL = 'lrebuffi@anl.gov'
-URL = 'https://github.com/APS-34-ID-C/ML_Control_System'
-DOWNLOAD_URL = 'https://github.com/APS-34-ID-C/ML_Control_System'
-LICENSE = 'GPLv3'
+# ===================================================================================================
+# ===================================================================================================
+# ===================================================================================================
 
-KEYWORDS = (
-    'raytracing',
-    'simulator',
-    'machine learning'
-)
-
-CLASSIFIERS = (
-    'Development Status :: 5 - Production/Stable',
-    'Environment :: X11 Applications :: Qt',
-    'Environment :: Console',
-    'Environment :: Plugins',
-    'Programming Language :: Python :: 3',
-    'Intended Audience :: Science/Research',
-)
-
-SETUP_REQUIRES = (
-    'setuptools',
-)
-
-INSTALL_REQUIRES = (
-    'aps_common_libraries',
-    'OASYS1-ShadowOui>=1.5.131',
-    'OASYS1-ShadowOui-Advanced-Tools>=1.0.82',
-    'oasys-srwpy',
-    'pyepics'
-)
-
-PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
-
-PACKAGE_DATA = {}
-NAMESPACE_PACAKGES = ["aps", "aps.ai", "aps.ai.autoalignment"]
-ENTRY_POINTS = {}
-
-if __name__ == '__main__':
-     setup(
-          name = NAME,
-          version = VERSION,
-          description = DESCRIPTION,
-          long_description = LONG_DESCRIPTION,
-          author = AUTHOR,
-          author_email = AUTHOR_EMAIL,
-          url = URL,
-          download_url = DOWNLOAD_URL,
-          license = LICENSE,
-          keywords = KEYWORDS,
-          classifiers = CLASSIFIERS,
-          packages = PACKAGES,
-          package_data = PACKAGE_DATA,
-          setup_requires = SETUP_REQUIRES,
-          install_requires = INSTALL_REQUIRES,
-          entry_points = ENTRY_POINTS,
-          namespace_packages=NAMESPACE_PACAKGES,
-          include_package_data = True,
-          zip_safe = False,
-          )
+import sys
+if __name__=="__main__":
+    try:
+        run_script(sys.argv)
+    except KeyboardInterrupt as e:
+        running_script = get_registered_running_script_instance()
+        if not running_script is None: running_script.manage_keyboard_interrupt()
+        else: print("\nScript interrupted by user")

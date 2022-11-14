@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------- #
-# Copyright (c) 2021, UChicago Argonne, LLC. All rights reserved.         #
+# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2021. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -44,60 +44,60 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import time
 
-from aps.common.ml.data_structures import DictionaryWrapper
+from aps.common.scripts.abstract_script import AbstractScript
+from aps.common.traffic_light import get_registered_traffic_light_instance
 
-from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline import AA_28ID_BEAMLINE_SCRIPTS
 
-class Layout:
-    AUTO_ALIGNMENT = 0
-    AUTO_FOCUSING  = 1
+class GenericScript(AbstractScript):
 
-def get_default_input_features(**kwargs): # units: mm, mrad and micron for the bender
-    try:    layout = kwargs["layout"]
-    except: layout = Layout.AUTO_ALIGNMENT
+    def __init__(self, root_directory, energy, period, n_cycles, mocking_mode):
+        self._root_directory = root_directory
+        self._energy         = energy
+        self.__mocking_mode   = mocking_mode
+        self.__period        = period * 60.0 # in seconds
+        self.__n_cycles      = n_cycles
 
-    if layout == Layout.AUTO_ALIGNMENT:
-        return DictionaryWrapper(v_bimorph_mirror_q_distance=892.0,
-                                 v_bimorph_mirror_motor_translation=0.0,
-                                 v_bimorph_mirror_motor_pitch_angle=0.003,
-                                 v_bimorph_mirror_motor_pitch_delta_angle=0.0,
-                                 v_bimorph_mirror_motor_bender_voltage=170,
-                                 h_bendable_mirror_q_distance=2022.0,
-                                 h_bendable_mirror_motor_translation=0.0,
-                                 h_bendable_mirror_motor_pitch_angle=0.003,
-                                 h_bendable_mirror_motor_pitch_delta_angle=0.0,
-                                 h_bendable_mirror_motor_1_bender_voltage=-90,
-                                 h_bendable_mirror_motor_2_bender_voltage=-90
-                                 )
-    elif layout == Layout.AUTO_FOCUSING:
-        return DictionaryWrapper(v_bimorph_mirror_q_distance=2500.0,
-                                 v_bimorph_mirror_motor_translation=0.0,
-                                 v_bimorph_mirror_motor_pitch_angle=0.003,
-                                 v_bimorph_mirror_motor_pitch_delta_angle=0.0,
-                                 v_bimorph_mirror_motor_bender_voltage=432.0,
-                                 h_bendable_mirror_q_distance=3330.0,
-                                 h_bendable_mirror_motor_translation=0.0,
-                                 h_bendable_mirror_motor_pitch_angle=0.003,
-                                 h_bendable_mirror_motor_pitch_delta_angle=0.0,
-                                 h_bendable_mirror_motor_1_bender_voltage=-177,
-                                 h_bendable_mirror_motor_2_bender_voltage=-170
-                                 )
+        self.__initialize_traffic_light()
 
-class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
+    def execute_script(self, **kwargs):
+        cycles = 0
 
-    #####################################################################################
-    # This methods represent the run-time interface, to interact with the optical system
-    # in real time, like in the real beamline. FOR SIMULATION PURPOSES ONLY
+        try:
+            while(cycles < self.__n_cycles):
+                cycles += 1
+                self.__traffic_light.request_red_light()
 
-    # V-KB -----------------------
+                print("Running " + self._get_script_name() + " #" + str(cycles))
 
-    def change_h_bendable_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_h_bendable_mirror_q_distance(self): raise NotImplementedError()
+                if self.__mocking_mode:
+                    print("Mocking Mode: do nothing and wait 5 second")
+                    time.sleep(5)
+                else:
+                    self._execute_script_inner(**kwargs)
 
-    # H-KB -----------------------
+                self.__traffic_light.set_green_light()
 
-    def change_v_bimorph_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
-    def get_v_bimorph_mirror_q_distance(self): raise NotImplementedError()
+                print(self._get_script_name() + " #" + str(cycles) + " completed.\n"
+                      "Pausing for " + str(self.__period) + " seconds.")
 
+                time.sleep(self.__period)
+        except Exception as e:
+            try:    self.__traffic_light.set_green_light()
+            except: pass
+
+            print("Script interrupted by the following exception:\n" + str(e))
+
+    def manage_keyboard_interrupt(self):
+        print("\n" + self._get_script_name() + " interrupted by user")
+
+        try:    self.__traffic_light.set_green_light()
+        except: pass
+
+    def __initialize_traffic_light(self):
+        self.__traffic_light = get_registered_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS)
+
+    def _execute_script_inner(self, **kwargs): raise NotImplementedError()
+    def _get_script_name(self): raise NotImplementedError()

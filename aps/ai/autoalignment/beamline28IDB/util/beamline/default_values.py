@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# #########################################################################
-# Copyright (c) 2020, UChicago Argonne, LLC. All rights reserved.         #
+# ----------------------------------------------------------------------- #
+# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2020. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -43,80 +43,47 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN       #
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
-# #########################################################################
+# ----------------------------------------------------------------------- #
+from datetime import date
 
-import os
+from aps.common.registry import AlreadyInitializedError
+from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
+
+import scipy.constants as codata
+M2EV = codata.c*codata.h/codata.e  # lambda(m)  = m2eV / energy(eV)
+
+APPLICATION_NAME = "AA-28ID-DEFAULT-VALUES"
 
 try:
-    from setuptools import find_packages, setup
-except AttributeError:
-    from setuptools import find_packages, setup
+    register_ini_instance(IniMode.LOCAL_FILE,
+                          ini_file_name="default-values.ini",
+                          application_name=APPLICATION_NAME,
+                          verbose=False)
+except AlreadyInitializedError: pass
 
-NAME = 'ML-Control-System-34-ID-C'
-VERSION = '0.0.2'
-ISRELEASED = False
+ini_file = get_registered_ini_instance(APPLICATION_NAME)
 
-DESCRIPTION = 'ML Control System for the Beamline 34-ID-C @ APS'
-README_FILE = os.path.join(os.path.dirname(__file__), 'README.md')
-LONG_DESCRIPTION = open(README_FILE).read()
-AUTHOR = 'Luca Rebuffi'
-AUTHOR_EMAIL = 'lrebuffi@anl.gov'
-URL = 'https://github.com/APS-34-ID-C/ML_Control_System'
-DOWNLOAD_URL = 'https://github.com/APS-34-ID-C/ML_Control_System'
-LICENSE = 'GPLv3'
+today = date.today()
+year  = today.year
+month = today.month-1
+months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-KEYWORDS = (
-    'raytracing',
-    'simulator',
-    'machine learning'
-)
+root_directory = "/data/Beamline28IDB_" + months[month] + str(year) + "/"
 
-CLASSIFIERS = (
-    'Development Status :: 5 - Production/Stable',
-    'Environment :: X11 Applications :: Qt',
-    'Environment :: Console',
-    'Environment :: Plugins',
-    'Programming Language :: Python :: 3',
-    'Intended Audience :: Science/Research',
-)
+_ROOT_DIRECTORY = ini_file.get_string_from_ini( section="Directories", key="Root-Directory", default=root_directory)
+_ENERGY         = ini_file.get_float_from_ini(  section="Execution",   key="Energy",         default=20000)
+_PERIOD         = ini_file.get_float_from_ini(  section="Execution",   key="Period",         default=30)
+_N_CYCLES       = ini_file.get_float_from_ini(  section="Execution",   key="N-Cycles",       default=100)
 
-SETUP_REQUIRES = (
-    'setuptools',
-)
+ini_file.set_value_at_ini(section="Directories", key="Root-Directory", value=_ROOT_DIRECTORY)
+ini_file.set_value_at_ini(section="Execution",   key="Energy",         value=_ENERGY)
+ini_file.set_value_at_ini(section="Execution",   key="Period",         value=_PERIOD)
+ini_file.set_value_at_ini(section="Execution",   key="N-Cycles",       value=_N_CYCLES)
+ini_file.push()
 
-INSTALL_REQUIRES = (
-    'aps_common_libraries',
-    'OASYS1-ShadowOui>=1.5.131',
-    'OASYS1-ShadowOui-Advanced-Tools>=1.0.82',
-    'oasys-srwpy',
-    'pyepics'
-)
-
-PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))
-
-PACKAGE_DATA = {}
-NAMESPACE_PACAKGES = ["aps", "aps.ai", "aps.ai.autoalignment"]
-ENTRY_POINTS = {}
-
-if __name__ == '__main__':
-     setup(
-          name = NAME,
-          version = VERSION,
-          description = DESCRIPTION,
-          long_description = LONG_DESCRIPTION,
-          author = AUTHOR,
-          author_email = AUTHOR_EMAIL,
-          url = URL,
-          download_url = DOWNLOAD_URL,
-          license = LICENSE,
-          keywords = KEYWORDS,
-          classifiers = CLASSIFIERS,
-          packages = PACKAGES,
-          package_data = PACKAGE_DATA,
-          setup_requires = SETUP_REQUIRES,
-          install_requires = INSTALL_REQUIRES,
-          entry_points = ENTRY_POINTS,
-          namespace_packages=NAMESPACE_PACAKGES,
-          include_package_data = True,
-          zip_safe = False,
-          )
+class DefaultValues:
+    ROOT_DIRECTORY = _ROOT_DIRECTORY
+    ENERGY         = _ENERGY
+    WAVELENGTH     = M2EV/_ENERGY
+    PERIOD         = _PERIOD
+    N_CYCLES       = _N_CYCLES
