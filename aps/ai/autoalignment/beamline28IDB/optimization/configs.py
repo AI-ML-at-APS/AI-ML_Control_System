@@ -46,81 +46,59 @@
 # ----------------------------------------------------------------------- #
 
 import numpy as np
-from aps.ai.autoalignment.common.facade.parameters import Movement
+
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import (
+    AngularUnits, DistanceUnits, MotorResolutionRegistry)
+
+motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("28-ID-B")
 
 
-# Using distance units of micrometers
-# All distance movements are in micrometers: motors 3 and the 'q' parameter.
-def get_movement(movement) -> object:
-    movement_types = {"relative": Movement.RELATIVE, "absolute": Movement.ABSOLUTE}
-    if movement in movement_types:
-        return movement_types[movement]
-    if movement in movement_types.values():
-        return movement
-    raise ValueError
+DEFAULT_DISTANCE_UNIT = DistanceUnits.MICRON
+DEFAULT_ANGLE_UNIT = AngularUnits.MILLIRADIANS
+DEFAULT_ACTUATOR_UNIT = DistanceUnits.OTHER  # This should be volts
 
+# not sure about the movement ranges for hkb4 and vkb4
+UNITS_PER_MOTOR = {
+    "hb_1": DEFAULT_ACTUATOR_UNIT,
+    "hb_2": DEFAULT_ACTUATOR_UNIT,
+    "hb_pitch": DEFAULT_ANGLE_UNIT,
+    "hb_trans": DEFAULT_DISTANCE_UNIT,
+    "vb_bender": DEFAULT_ACTUATOR_UNIT,
+    "vb_pitch": DEFAULT_ANGLE_UNIT,
+    "vb_trans": DEFAULT_DISTANCE_UNIT,
+}
 
-def get_motor_move_fn(focusing_system, motor):
-    motor_move_fns = {
-        "hkb_4": focusing_system.move_hkb_motor_4_translation,
-        "hkb_3": focusing_system.move_hkb_motor_3_pitch,
-        # hkb_q': focusing_system.change_hkb_shape,
-        "vkb_4": focusing_system.move_vkb_motor_4_translation,
-        "vkb_3": focusing_system.move_vkb_motor_3_pitch,
-        #'vkb_q': focusing_system.change_vkb_shape,
-        "hkb_1": focusing_system.move_hkb_motor_1_bender,
-        "hkb_2": focusing_system.move_hkb_motor_2_bender,
-        "vkb_1": focusing_system.move_vkb_motor_1_bender,
-        "vkb_2": focusing_system.move_vkb_motor_2_bender,
-    }
+# not sure about the movement ranges for hkb4 and vkb4
+DEFAULT_MOVEMENT_RANGES = {
+    "hb_1": [-50, 50],
+    "hb_2": [-50, 50],
+    "hb_pitch": [-0.5, 0.5],  # in mrad
+    "hb_trans": [-50, 50],  # in mrad
+    "vb_bender": [-30, 30],
+    "vb_pitch": [-10, 10],
+    "vb_trans": [-30, 30],
+}
+# These are shorthands for the longer names in the focusing system interface.
+# The units for the bender motors are Volts.
+DEFAULT_MOTOR_RESOLUTIONS = {
+    "hb_1": motor_resolutions.get_motor_resolution("h_bendable_mirror_motor_bender", DEFAULT_ACTUATOR_UNIT)[0],
+    "hb_2": motor_resolutions.get_motor_resolution("h_bendable_mirror_motor_bender", DEFAULT_ACTUATOR_UNIT)[0],
+    "hb_pitch": motor_resolutions.get_motor_resolution("h_bendable_mirror_motor_pitch", DEFAULT_ANGLE_UNIT)[0],
+    "hb_trans": motor_resolutions.get_motor_resolution("h_bendable_mirror_motor_translation", DEFAULT_DISTANCE_UNIT)[0],
+    "vb_bender": motor_resolutions.get_motor_resolution("v_bimorph_mirror_motor_bender", DEFAULT_ACTUATOR_UNIT)[0],
+    "vb_pitch": motor_resolutions.get_motor_resolution("v_bimorph_mirror_motor_pitch", DEFAULT_ANGLE_UNIT)[0],
+    "vb_trans": motor_resolutions.get_motor_resolution("v_bimorph_mirror_motor_translation", DEFAULT_DISTANCE_UNIT)[0],
+}
 
-    if motor in motor_move_fns:
-        return motor_move_fns[motor]
-    if motor in motor_move_fns.values():
-        return motor
-    raise ValueError
+DEFAULT_MOTOR_TOLERANCES = DEFAULT_MOTOR_RESOLUTIONS
 
+# These values only apply for the simulation with 50k simulated beams
+DEFAULT_LOSS_TOLERANCES = {"centroid": 2e-4, "fwhm": 2e-4, "peak_intensity": -np.inf, "sigma": 2e-4}
 
-def move_motors(focusing_system, motors, translations, movement="relative"):
-    movement = get_movement(movement)
-    if np.ndim(motors) == 0:
-        motors = [motors]
-    if np.ndim(translations) == 0:
-        translations = [translations]
-    for motor, trans in zip(motors, translations):
-        # if trans == 0: continue
-        motor_move_fn = get_motor_move_fn(focusing_system, motor)
-        motor_move_fn(trans, movement=movement)
-    return focusing_system
+DEFAULT_CONSTRAINT_OPTIONS = {"centroid", "fwhm", "sigma", "peak_intensity", "sum_intensity"}
 
+DETECTOR_X = 2160 * 0.65 * 1e-3
+DETECTOR_Y = 2560 * 0.65 * 1e-3
 
-def get_motor_absolute_position_fn(focusing_system, motor):
-    motor_get_pos_fns = {
-        "hkb_4": focusing_system.get_hkb_motor_4_translation,
-        "hkb_3": focusing_system.get_hkb_motor_3_pitch,
-        "hkb_q": focusing_system.get_hkb_q_distance,
-        "vkb_4": focusing_system.get_vkb_motor_4_translation,
-        "vkb_3": focusing_system.get_vkb_motor_3_pitch,
-        "vkb_q": focusing_system.get_vkb_q_distance,
-        "hkb_1": focusing_system.get_hkb_motor_1_bender,
-        "hkb_2": focusing_system.get_hkb_motor_2_bender,
-        "vkb_1": focusing_system.get_vkb_motor_1_bender,
-        "vkb_2": focusing_system.get_vkb_motor_2_bender,
-    }
-    if motor in motor_get_pos_fns:
-        return motor_get_pos_fns[motor]
-    if motor in motor_get_pos_fns.values():
-        return motor
-    raise ValueError
-
-
-def get_absolute_positions(focusing_system, motors):
-
-    if np.ndim(motors) == 0:
-        motors = [motors]
-
-    positions = []
-    for motor in motors:
-        position = get_motor_absolute_position_fn(focusing_system, motor)()
-        positions.append(position)
-    return positions
+X_RANGE = [-DETECTOR_X / 2, DETECTOR_X / 2]
+Y_RANGE = [-DETECTOR_Y / 2, DETECTOR_Y / 2]
