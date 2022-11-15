@@ -45,12 +45,14 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
-import numpy as np
 from typing import List
 
+import numpy as np
 
+import aps.ai.autoalignment.beamline28IDB.optimization.configs as configs
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import \
+    AbstractFocusingOptics
 from aps.ai.autoalignment.common.facade.parameters import Movement
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 
 
 # Using distance units of micrometers
@@ -92,7 +94,14 @@ def move_motors(
         values = [values]
     for motor, value in zip(motors, values):
         motor_move_fn = get_motor_move_fn(focusing_system, motor)
-        motor_move_fn(value, movement=movement)
+        unit = configs.UNITS_PER_MOTOR[motor]
+        if unit == configs.DEFAULT_ACTUATOR_UNIT:
+            motor_move_fn(
+                value,
+                movement=movement,
+            )
+        else:
+            motor_move_fn(value, movement=movement, units=unit)
     return focusing_system
 
 
@@ -120,6 +129,10 @@ def get_absolute_positions(focusing_system, motors):
 
     positions = []
     for motor in motors:
-        position = get_motor_absolute_position_fn(focusing_system, motor)()
+        unit = configs.UNITS_PER_MOTOR[motor]
+        if unit == configs.DEFAULT_ACTUATOR_UNIT:
+            position = get_motor_absolute_position_fn(focusing_system, motor)()
+        else:
+            position = get_motor_absolute_position_fn(focusing_system, motor)(units=unit)
         positions.append(position)
     return positions

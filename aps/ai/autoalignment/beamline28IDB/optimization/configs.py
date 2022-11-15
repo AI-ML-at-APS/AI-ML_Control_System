@@ -48,27 +48,34 @@
 import numpy as np
 
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import (
-    AngularUnits,
-    DistanceUnits,
-    MotorResolutionRegistry,
-)
+    AngularUnits, DistanceUnits, MotorResolutionRegistry)
 
 motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("28-ID-B")
 
-motors = {}
 
 DEFAULT_DISTANCE_UNIT = DistanceUnits.MICRON
 DEFAULT_ANGLE_UNIT = AngularUnits.MILLIRADIANS
 DEFAULT_ACTUATOR_UNIT = DistanceUnits.OTHER  # This should be volts
 
 # not sure about the movement ranges for hkb4 and vkb4
+UNITS_PER_MOTOR = {
+    "hb_1": DEFAULT_ACTUATOR_UNIT,
+    "hb_2": DEFAULT_ACTUATOR_UNIT,
+    "hb_pitch": DEFAULT_ANGLE_UNIT,
+    "hb_trans": DEFAULT_DISTANCE_UNIT,
+    "vb_bender": DEFAULT_ACTUATOR_UNIT,
+    "vb_pitch": DEFAULT_ANGLE_UNIT,
+    "vb_trans": DEFAULT_DISTANCE_UNIT,
+}
+
+# not sure about the movement ranges for hkb4 and vkb4
 DEFAULT_MOVEMENT_RANGES = {
     "hb_1": [-50, 50],
     "hb_2": [-50, 50],
-    "hb_pitch": [-0.02, 0.02],  # in mrad
-    "hb_trans": [-20, 20],  # in mrad
+    "hb_pitch": [-0.5, 0.5],  # in mrad
+    "hb_trans": [-50, 50],  # in mrad
     "vb_bender": [-30, 30],
-    "vb_pitch": [-0.02, 0.02],
+    "vb_pitch": [-10, 10],
     "vb_trans": [-30, 30],
 }
 # These are shorthands for the longer names in the focusing system interface.
@@ -78,7 +85,7 @@ DEFAULT_MOTOR_RESOLUTIONS = {
     "hb_2": motor_resolutions.get_motor_resolution("h_bendable_mirror_motor_bender", DEFAULT_ACTUATOR_UNIT)[0],
     "hb_pitch": motor_resolutions.get_motor_resolution("h_bendable_mirror_motor_pitch", DEFAULT_ANGLE_UNIT)[0],
     "hb_trans": motor_resolutions.get_motor_resolution("h_bendable_mirror_motor_translation", DEFAULT_DISTANCE_UNIT)[0],
-    "vb_bender": motor_resolutions.get_motor_resolution("v_bimorph_mirror_motor_bender", DEFAULT_ACTUATOR_UNIT),
+    "vb_bender": motor_resolutions.get_motor_resolution("v_bimorph_mirror_motor_bender", DEFAULT_ACTUATOR_UNIT)[0],
     "vb_pitch": motor_resolutions.get_motor_resolution("v_bimorph_mirror_motor_pitch", DEFAULT_ANGLE_UNIT)[0],
     "vb_trans": motor_resolutions.get_motor_resolution("v_bimorph_mirror_motor_translation", DEFAULT_DISTANCE_UNIT)[0],
 }
@@ -89,3 +96,9 @@ DEFAULT_MOTOR_TOLERANCES = DEFAULT_MOTOR_RESOLUTIONS
 DEFAULT_LOSS_TOLERANCES = {"centroid": 2e-4, "fwhm": 2e-4, "peak_intensity": -np.inf, "sigma": 2e-4}
 
 DEFAULT_CONSTRAINT_OPTIONS = {"centroid", "fwhm", "sigma", "peak_intensity", "sum_intensity"}
+
+DETECTOR_X = 2160 * 0.65 * 1e-3
+DETECTOR_Y = 2560 * 0.65 * 1e-3
+
+X_RANGE = [-DETECTOR_X / 2, DETECTOR_X / 2]
+Y_RANGE = [-DETECTOR_Y / 2, DETECTOR_Y / 2]

@@ -47,7 +47,11 @@
 
 import numpy as np
 
-from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import MotorResolutionRegistry
+from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import (
+    MotorResolutionRegistry,
+    DistanceUnits,
+    AngularUnits,
+)
 
 motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("34-ID-C")
 
