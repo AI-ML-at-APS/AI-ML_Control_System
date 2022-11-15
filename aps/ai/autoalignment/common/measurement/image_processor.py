@@ -44,20 +44,40 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
+from aps.common.measurment.beamline.image_processor import ImageProcessor as ImageProcessorCommon
 
-from aps.ai.autoalignment.beamline28IDB.scripts.beamline.executors.generic_executor import GenericScript
-import time
+APPLICATION_NAME = "IMAGE-PROCESSOR"
 
-class AutoalignmentScript(GenericScript):
+register_ini_instance(IniMode.LOCAL_FILE,
+                      ini_file_name="image_processor.ini",
+                      application_name=APPLICATION_NAME,
+                      verbose=False)
+ini_file = get_registered_ini_instance(APPLICATION_NAME)
 
-    def __init__(self, root_directory, energy, period, n_cycles, mocking_mode, simulation_mode):
-        super(AutoalignmentScript, self).__init__(root_directory, energy, period, n_cycles, mocking_mode, simulation_mode)
+ENERGY                = ini_file.get_float_from_ini(section="Execution", key="Energy",                default=20000.0)
+SOURCE_DISTANCE_V     = ini_file.get_float_from_ini(section="Execution", key="Source-Distance-V",     default=1.5)
+SOURCE_DISTANCE_H     = ini_file.get_float_from_ini(section="Execution", key="Source-Distance-H",     default=1.5)
+IMAGE_TRANSFER_MATRIX = ini_file.get_list_from_ini( section="Execution", key="Image-Transfer-Matrix", default=[0, 1, 0], type=int)
+
+ini_file.set_value_at_ini(section="Execution",   key="Energy",                value=ENERGY)
+ini_file.set_value_at_ini(section="Execution",   key="Source-Distance-V",     value=SOURCE_DISTANCE_V)
+ini_file.set_value_at_ini(section="Execution",   key="Source-Distance-H",     value=SOURCE_DISTANCE_H)
+ini_file.set_list_at_ini( section="Execution",   key="Image-Transfer-Matrix", values_list=IMAGE_TRANSFER_MATRIX)
+
+ini_file.push()
+
+class ImageProcessor(ImageProcessorCommon):
+    def __init__(self, data_collection_directory):
+        super(ImageProcessor, self).__init__(data_collection_directory=data_collection_directory,
+                                             energy=ENERGY,
+                                             source_distance=[SOURCE_DISTANCE_H, SOURCE_DISTANCE_V],
+                                             image_transfer_matrix=IMAGE_TRANSFER_MATRIX)
 
 
+    def generate_simulated_mask(self, image_index_for_mask=1, verbose=False):
+        image_transfer_matrix = super(ImageProcessor, self).generate_simulated_mask(image_index_for_mask, verbose)
 
-    def _get_script_name(self):
-        return "Autoalignment"
-
-    def _execute_script_inner(self, **kwargs):
-        pass
-
+        ini_file = get_registered_ini_instance(APPLICATION_NAME)
+        ini_file.set_list_at_ini(section="Execution", key="Image-Transfer-Matrix", values_list=image_transfer_matrix)
+        ini_file.push()

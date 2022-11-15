@@ -45,48 +45,35 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os
+import time
 
 import numpy
 from epics import PV
 
-from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
-from aps.common.measurment.beamline.image_processor import ImageProcessor as ImageProcessorCommon, IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
+from aps.common.measurment.beamline.image_processor import IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
 from aps.common.measurment.beamline.image_collector import ImageCollector
-from aps.common.plot.image import get_sigma, get_fwhm, get_rms
 
+from aps.ai.autoalignment.common.measurement.image_processor import ImageProcessor
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
 from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptics
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics, DISTANCE_V_MOTORS
+from aps.ai.autoalignment.beamline28IDB.hardware.facade.parameters import HWPhotonBeam
 
-APPLICATION_NAME = "IMAGE-PROCESSOR"
-
-register_ini_instance(IniMode.LOCAL_FILE,
-                      ini_file_name="image_processor.ini",
-                      application_name=APPLICATION_NAME,
-                      verbose=False)
-ini_file = get_registered_ini_instance(APPLICATION_NAME)
-
-ENERGY                = ini_file.get_float_from_ini(section="Execution", key="Energy",                default=20000.0)
-SOURCE_DISTANCE_V     = ini_file.get_float_from_ini(section="Execution", key="Source-Distance-V",     default=1.5)
-SOURCE_DISTANCE_H     = ini_file.get_float_from_ini(section="Execution", key="Source-Distance-H",     default=1.5)
-IMAGE_TRANSFER_MATRIX = ini_file.get_list_from_ini( section="Execution", key="Image-Transfer-Matrix", default=[0, 1, 0], type=int)
-
-ini_file.set_value_at_ini(section="Execution",   key="Energy",                value=ENERGY)
-ini_file.set_value_at_ini(section="Execution",   key="Source-Distance-V",     value=SOURCE_DISTANCE_V)
-ini_file.set_value_at_ini(section="Execution",   key="Source-Distance-H",     value=SOURCE_DISTANCE_H)
-ini_file.set_list_at_ini( section="Execution",   key="Image-Transfer-Matrix", values_list=IMAGE_TRANSFER_MATRIX)
-
-ini_file.push()
 
 def epics_focusing_optics_factory_method(**kwargs):
     return __EpicsFocusingOptics(kwargs)
 
 class Motors:
     # Horizontal mirror:
-    TRANSLATION_H = PV(pvname='28idb:m23')
-    PITCH_H       = PV(pvname='28idb:m24')
-    BENDER_H_1    = PV(pvname='28idb:xxx')
-    BENDER_H_2    = PV(pvname='28idb:xxx')
+    TRANSLATION_H    = PV(pvname='28idb:m23')
+    PITCH_H          = PV(pvname='28idb:m24')
+    BENDER_H_1       = PV(pvname='zoomkb:pid1')
+    BENDER_H_2       = PV(pvname='zoomkb:pid2')
+    BENDER_H_1_RB    = PV(pvname='zoomkb:pid1.CVAL')
+    BENDER_H_2_RB    = PV(pvname='zoomkb:pid2.CVAL')
+    BENDER_H_1_FB    = PV(pvname='zoomkb:pid1.FBON')
+    BENDER_H_2_FB    = PV(pvname='zoomkb:pid2.FBON')
+    BENDER_THRESHOLD = 0.05
 
     TRANSLATION_VO = PV(pvname='1bmopt:m13')
     TRANSLATION_DI = PV(pvname='1bmopt:m12')
@@ -94,20 +81,7 @@ class Motors:
     LATERAL_V      = PV(pvname='1bmopt:m15')
     BENDER_V       = PV(pvname='simJTEC:E4')
 
-class ImageProcessor(ImageProcessorCommon):
-    def __init__(self, data_collection_directory):
-        super(ImageProcessor, self).__init__(data_collection_directory=data_collection_directory,
-                         energy=ENERGY,
-                         source_distance=[SOURCE_DISTANCE_H, SOURCE_DISTANCE_V],
-                         image_transfer_matrix=IMAGE_TRANSFER_MATRIX)
 
-
-    def generate_simulated_mask(self, image_index_for_mask=1, verbose=False):
-        image_transfer_matrix = super(ImageProcessor, self).generate_simulated_mask(image_index_for_mask, verbose)
-
-        ini_file = get_registered_ini_instance(APPLICATION_NAME)
-        ini_file.set_list_at_ini(section="Execution", key="Image-Transfer-Matrix", values_list=image_transfer_matrix)
-        ini_file.push()
 
 class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
 
@@ -206,17 +180,19 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
     # H-KB -----------------------
 
     def move_h_bendable_mirror_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE):
-        if movement == Movement.ABSOLUTE:   Motors.BENDER_H_1.put(pos_upstream)
-        elif movement == Movement.RELATIVE: Motors.BENDER_H_1.put(Motors.BENDER_H_1.get() + pos_upstream)
-        else: raise ValueError("Movement not recognized")
+        self.__move_h_bendable_mirror_motor_bender(motor=Motors.BENDER_H_1,
+                                                   feeback=Motors.BENDER_H_1_FB,
+                                                   readback=Motors.BENDER_H_1_RB,
+                                                   pos=pos_upstream, movement=movement)
 
-    def get_h_bendable_mirror_motor_1_bender(self): 
+    def get_h_bendable_mirror_motor_1_bender(self):
         return Motors.BENDER_H_1.get()
 
     def move_h_bendable_mirror_motor_2_bender(self, pos_downstream, movement=Movement.ABSOLUTE):
-        if movement == Movement.ABSOLUTE:   Motors.BENDER_H_2.put(pos_downstream)
-        elif movement == Movement.RELATIVE: Motors.BENDER_H_2.put(Motors.BENDER_H_2.get() + pos_downstream)
-        else: raise ValueError("Movement not recognized")
+        self.__move_h_bendable_mirror_motor_bender(motor=Motors.BENDER_H_2,
+                                                   feeback=Motors.BENDER_H_2_FB,
+                                                   readback=Motors.BENDER_H_2_RB,
+                                                   pos=pos_downstream, movement=movement)
     
     def get_h_bendable_mirror_motor_2_bender(self): 
         return Motors.BENDER_H_2.get()
@@ -232,3 +208,14 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
 
     def get_h_bendable_mirror_motor_translation(self, units=DistanceUnits.MILLIMETERS):
         return self._get_translational_motor_position(Motors.TRANSLATION_H, units)
+
+    def __move_h_bendable_mirror_motor_bender(self, motor, feeback, readback, pos, movement=Movement.ABSOLUTE):
+        if movement == Movement.ABSOLUTE:   desired_position = pos
+        elif movement == Movement.RELATIVE: desired_position = motor.get() + pos
+        else: raise ValueError("Movement not recognized")
+
+        feeback.put(1)  # set feedback on
+        motor.put(desired_position)
+
+        # cycle until the readback is close enough to the desired position
+        while (numpy.abs(readback.get() - desired_position) > Motors.BENDER_THRESHOLD): time.sleep(0.2)

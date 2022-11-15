@@ -70,8 +70,8 @@ def save_beam(beam, file_name, implementor=Implementors.SHADOW, **kwargs):
             else:                                save_shadow_beam(shadow_beam=beam, file_name=file_name)
         except: save_shadow_beam(shadow_beam=beam, file_name=file_name)
 
-def get_distribution_info(implementor, beam, xrange=None, yrange=None, title="X,Z", do_gaussian_fit=False, **kwargs):
-    if implementor == Implementors.SRW: return get_srw_wavefront_distribution_info(beam, title, xrange, yrange, do_gaussian_fit)
+def get_distribution_info(implementor, beam, xrange=None, yrange=None, do_gaussian_fit=False, **kwargs):
+    if implementor == Implementors.SRW: return get_srw_wavefront_distribution_info(beam, xrange, yrange, do_gaussian_fit)
     elif implementor == Implementors.SHADOW:
         try:    nbins_h = kwargs["nbins_h"]
         except: nbins_h = 201

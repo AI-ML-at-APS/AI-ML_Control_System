@@ -44,6 +44,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os.path
 import time
 
 from aps.common.scripts.abstract_script import AbstractScript
@@ -53,14 +54,17 @@ from aps.ai.autoalignment.beamline28IDB.scripts.beamline import AA_28ID_BEAMLINE
 
 class GenericScript(AbstractScript):
 
-    def __init__(self, root_directory, energy, period, n_cycles, mocking_mode):
-        self._root_directory = root_directory
-        self._energy         = energy
-        self.__mocking_mode   = mocking_mode
-        self.__period        = period * 60.0 # in seconds
-        self.__n_cycles      = n_cycles
+    def __init__(self, root_directory, energy, period, n_cycles, mocking_mode, simulation_mode):
+        self._root_directory   = root_directory
+        self._data_directory   = os.path.join(self._root_directory, "autoalignment")
+        self._energy           = energy
+        self._simulation_mode  = simulation_mode
 
-        self.__initialize_traffic_light()
+        self.__mocking_mode    = mocking_mode
+        self.__period          = period * 60.0 # in seconds
+        self.__n_cycles        = n_cycles
+
+        self.__traffic_light  = get_registered_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS)
 
     def execute_script(self, **kwargs):
         cycles = 0
@@ -95,9 +99,6 @@ class GenericScript(AbstractScript):
 
         try:    self.__traffic_light.set_green_light()
         except: pass
-
-    def __initialize_traffic_light(self):
-        self.__traffic_light = get_registered_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS)
 
     def _execute_script_inner(self, **kwargs): raise NotImplementedError()
     def _get_script_name(self): raise NotImplementedError()

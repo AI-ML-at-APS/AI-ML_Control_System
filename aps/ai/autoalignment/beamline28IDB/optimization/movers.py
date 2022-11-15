@@ -102,6 +102,7 @@ def move_motors(
             )
         else:
             motor_move_fn(value, movement=movement, units=unit)
+
     return focusing_system
 
 
@@ -124,8 +125,7 @@ def get_motor_absolute_position_fn(focusing_system: AbstractFocusingOptics, moto
 
 def get_absolute_positions(focusing_system, motors):
 
-    if np.ndim(motors) == 0:
-        motors = [motors]
+    if np.ndim(motors) == 0: motors = [motors]
 
     positions = []
     for motor in motors:

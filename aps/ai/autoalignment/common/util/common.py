@@ -134,7 +134,7 @@ class ColorMap:
 
 def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
             int_um="$ph/s/0.1\%BW$", peak_um="$ph/s/mm^2/0.1\%BW$",
-            flip=Flip.VERTICAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
+            flip=Flip.NO, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
     if xrange is None: xrange = [x_array[0], x_array[-1]]
     if yrange is None: yrange = [y_array[0], y_array[-1]]
 

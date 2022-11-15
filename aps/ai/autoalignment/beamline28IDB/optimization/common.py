@@ -50,35 +50,46 @@ from typing import Dict, List, NamedTuple, NoReturn, Tuple, Union
 
 import numpy as np
 
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import (
-    ExecutionMode, focusing_optics_factory_method)
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import  ExecutionMode, focusing_optics_factory_method
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 from aps.ai.autoalignment.beamline28IDB.optimization import configs, movers
-from aps.ai.autoalignment.common.simulation.facade.parameters import \
-    Implementors
-from aps.ai.autoalignment.common.simulation.shadow.focusing_optics import \
-    ShadowFocusingOptics
+from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 from aps.ai.autoalignment.common.util import clean_up
-from aps.ai.autoalignment.common.util.common import (DictionaryWrapper,
-                                                     Histogram)
-from aps.ai.autoalignment.common.util.shadow.common import (
-    EmptyBeamException, HybridFailureException, PreProcessorFiles,
-    get_shadow_beam_spatial_distribution, load_shadow_beam)
-from aps.ai.autoalignment.common.util.wrappers import \
-    plot_distribution  # , get_distribution_info
+from aps.ai.autoalignment.common.util.common import DictionaryWrapper, Histogram, get_info
+from aps.ai.autoalignment.common.util.wrappers import get_distribution_info as get_simulated_distribution_info
+
+from aps.ai.autoalignment.common.util.shadow.common import EmptyBeamException, HybridFailureException, PreProcessorFiles, load_shadow_beam
 
 
-def get_distribution_info(**kwargs):
-    shadow_kwargs = {}
-    for k, v in kwargs.items():
-        k_new = k
-        if k == "implementor":
-            continue
-        if k == "beam":
-            k_new = "shadow_beam"
-        shadow_kwargs[k_new] = v
-
-    return get_shadow_beam_spatial_distribution(**shadow_kwargs)
-
+def get_distribution_info(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW,
+                          beam=None, xrange=None, yrange=None, nbins_h=201, nbins_v=201, do_gaussian_fit=False):
+    if execution_mode==ExecutionMode.SIMULATION:
+        return get_simulated_distribution_info(implementor=implementor,
+                                               beam=beam,
+                                               xrange=xrange,
+                                               yrange=yrange,
+                                               nbins_h=nbins_h,
+                                               nbins_v=nbins_v,
+                                               do_gaussian_fit=do_gaussian_fit)
+    elif execution_mode==ExecutionMode.HARDWARE:
+        if len(beam.keys()) > 3:
+            return Histogram(hh=beam["h_coord"], vv=beam["v_coord"], data_2D=beam["image"]), \
+                   DictionaryWrapper(
+                       h_sigma=beam["width"],
+                       h_fwhm=beam["width"],
+                       h_centroid=beam["centroid_h"],
+                       v_sigma=beam["height"],
+                       v_fwhm=beam["height"],
+                       v_centroid=beam["centroid_v"],
+                       integral_intensity=np.sum(beam["image"]),
+                       peak_intensity=np.max(beam["image"]),
+                       gaussian_fit=None
+                   )
+        else:
+            return get_info(x_array=beam["h_coord"],
+                            y_array=beam["v_coord"],
+                            z_array=beam["image"],
+                            do_gaussian_fit=do_gaussian_fit)
 
 class BeamState(NamedTuple):
     photon_beam: object
@@ -98,46 +109,47 @@ def reinitialize(
     layout: int,
     input_features: DictionaryWrapper,
     bender: bool = True,
-    implementor: int = Implementors.SHADOW,
     execution_mode: int = ExecutionMode.SIMULATION,
-) -> ShadowFocusingOptics:
-    clean_up()
-    input_beam = load_shadow_beam(input_beam_path)
+    implementor: int = Implementors.SHADOW
+) -> AbstractFocusingOptics:
+    if execution_mode == ExecutionMode.SIMULATION:
+        clean_up()
+        input_beam = load_shadow_beam(input_beam_path)
 
-    focusing_system = focusing_optics_factory_method(
-        execution_mode=execution_mode,
-        implementor=implementor,
-        bender=bender,
-    )
+        focusing_system = focusing_optics_factory_method(
+            execution_mode=execution_mode,
+            implementor=implementor,
+            bender=bender,
+        )
 
-    focusing_system.initialize(
-        input_photon_beam=input_beam,
-        rewrite_preprocessor_files=PreProcessorFiles.NO,
-        layout=layout,
-        input_features=input_features,
-    )
+        focusing_system.initialize(
+            input_photon_beam=input_beam,
+            rewrite_preprocessor_files=PreProcessorFiles.NO,
+            layout=layout,
+            input_features=input_features,
+        )
+    else:
+        focusing_system = focusing_optics_factory_method(
+            execution_mode=execution_mode,
+            implementor=implementor)
+        focusing_system.initialize()
 
     return focusing_system
 
+def get_beam(focusing_system: AbstractFocusingOptics, **kwargs):
+    return focusing_system.get_photon_beam(**kwargs)
 
-def get_beam(focusing_system: ShadowFocusingOptics, random_seed: float = None, remove_lost_rays: bool = True) -> object:
-    photon_beam = focusing_system.get_photon_beam(random_seed=random_seed, remove_lost_rays=remove_lost_rays)
-    return photon_beam
-
-
-def check_input_for_beam(focusing_system: ShadowFocusingOptics, photon_beam: object, random_seed: float) -> object:
+def check_input_for_beam(focusing_system: AbstractFocusingOptics, photon_beam: object, **kwargs) :
     if photon_beam is None:
         if focusing_system is None:
             raise ValueError("Need to supply at least one of photon_beam or focusing_system.")
-        photon_beam = get_beam(focusing_system=focusing_system, random_seed=random_seed)
+        photon_beam = get_beam(focusing_system=focusing_system, **kwargs)
+
     return photon_beam
 
-
-def check_beam_out_of_bounds(focusing_system: ShadowFocusingOptics, photon_beam: object, random_seed: float) -> object:
+def check_beam_out_of_bounds(focusing_system: AbstractFocusingOptics, photon_beam, **kwargs) -> object:
     try:
-        photon_beam = check_input_for_beam(
-            focusing_system=focusing_system, photon_beam=photon_beam, random_seed=random_seed
-        )
+        photon_beam = check_input_for_beam(focusing_system=focusing_system, photon_beam=photon_beam, **kwargs)
     except Exception as exc:
         if (
             isinstance(exc, EmptyBeamException)
@@ -150,48 +162,46 @@ def check_beam_out_of_bounds(focusing_system: ShadowFocusingOptics, photon_beam:
             photon_beam = None
         else:
             raise exc
+
     return photon_beam
 
 
 def get_beam_hist_dw(
-    focusing_system: ShadowFocusingOptics = None,
+    focusing_system: AbstractFocusingOptics = None,
     photon_beam: object = None,
-    random_seed: float = None,
     xrange: List[float] = None,
     yrange: List[float] = None,
     nbins_h: int = 256,
     nbins_v: int = 256,
     do_gaussian_fit: bool = False,
+    execution_mode = ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
+    **kwargs
 ) -> BeamState:
-    photon_beam = check_beam_out_of_bounds(
-        focusing_system=focusing_system, photon_beam=photon_beam, random_seed=random_seed
-    )
-    if photon_beam is None:
-        return BeamState(None, None, None)
+    if execution_mode==ExecutionMode.SIMULATION:
+        photon_beam = check_beam_out_of_bounds(focusing_system=focusing_system,
+                                               photon_beam=photon_beam, **kwargs)
+    else:
+        photon_beam = check_input_for_beam(focusing_system=focusing_system, **kwargs)
+
+    if photon_beam is None: return BeamState(None, None, None)
 
     hist, dw = get_distribution_info(
+        execution_mode=execution_mode,
         implementor=implementor,
         beam=photon_beam,
         xrange=xrange,
         yrange=yrange,
         nbins_h=nbins_h,
         nbins_v=nbins_v,
-        do_gaussian_fit=do_gaussian_fit,
+        do_gaussian_fit=do_gaussian_fit
     )
-    # hist, dw = get_shadow_beam_spatial_distribution(
-    #     shadow_beam=photon_beam,
-    #     xrange=xrange,
-    #     yrange=yrange,
-    #     nbins_h=nbins_h,
-    #     nbins_v=nbins_v,
-    #     do_gaussian_fit=do_gaussian_fit,
-    # )
+
     return BeamState(photon_beam, hist, dw)
 
 
 def get_peak_intensity(
-    focusing_system: ShadowFocusingOptics = None,
+    focusing_system: AbstractFocusingOptics = None,
     photon_beam: object = None,
     random_seed: float = None,
     no_beam_value: float = 0,
@@ -200,9 +210,11 @@ def get_peak_intensity(
     nbins_h: int = 256,
     nbins_v: int = 256,
     do_gaussian_fit: bool = False,
+    execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
+        execution_mode=execution_mode,
         focusing_system=focusing_system,
         photon_beam=photon_beam,
         random_seed=random_seed,
@@ -235,7 +247,7 @@ def _get_peak_intensity_from_dw(
 
 
 def get_sum_intensity(
-    focusing_system: ShadowFocusingOptics = None,
+    focusing_system: AbstractFocusingOptics = None,
     photon_beam: object = None,
     random_seed: float = None,
     no_beam_value: float = 0,
@@ -244,11 +256,13 @@ def get_sum_intensity(
     nbins_h: int = 256,
     nbins_v: int = 256,
     do_gaussian_fit: bool = False,
-    implementor: int = Implementors,
+    execution_mode=ExecutionMode.SIMULATION,
+    implementor: int = Implementors.SHADOW,
 ) -> BeamParameterOutput:
     if do_gaussian_fit:
         raise NotImplementedError
     photon_beam, hist, dw = get_beam_hist_dw(
+        execution_mode=execution_mode,
         implementor=implementor,
         focusing_system=focusing_system,
         photon_beam=photon_beam,
@@ -289,7 +303,7 @@ def _get_centroid_distance_from_dw(
 
 
 def get_centroid_distance(
-    focusing_system: ShadowFocusingOptics = None,
+    focusing_system: AbstractFocusingOptics = None,
     photon_beam: object = None,
     random_seed: float = None,
     no_beam_value: float = 1e4,
@@ -298,9 +312,11 @@ def get_centroid_distance(
     nbins_h: int = 256,
     nbins_v: int = 256,
     do_gaussian_fit: bool = False,
+    execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
+        execution_mode=execution_mode,
         implementor=implementor,
         focusing_system=focusing_system,
         photon_beam=photon_beam,
@@ -348,7 +364,7 @@ def _get_sigma_from_dw(dw: DictionaryWrapper, do_gaussian_fit: bool = False, no_
 
 
 def get_fwhm(
-    focusing_system: ShadowFocusingOptics = None,
+    focusing_system: AbstractFocusingOptics = None,
     photon_beam: object = None,
     random_seed: float = None,
     no_beam_value: float = 1e4,
@@ -357,6 +373,7 @@ def get_fwhm(
     nbins_h: int = 256,
     nbins_v: int = 256,
     do_gaussian_fit: bool = False,
+    execution_mode = ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
@@ -368,6 +385,7 @@ def get_fwhm(
         nbins_h=nbins_h,
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
+        execution_mode=execution_mode,
         implementor=implementor,
     )
     fwhm = _get_fwhm_from_dw(dw, do_gaussian_fit, no_beam_value)
@@ -375,7 +393,7 @@ def get_fwhm(
 
 
 def get_sigma(
-    focusing_system: ShadowFocusingOptics = None,
+    focusing_system: AbstractFocusingOptics = None,
     photon_beam: object = None,
     random_seed: float = None,
     no_beam_value: float = 1e4,
@@ -384,6 +402,7 @@ def get_sigma(
     nbins_h: int = 256,
     nbins_v: int = 256,
     do_gaussian_fit: bool = False,
+    execution_mode = ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
@@ -395,6 +414,7 @@ def get_sigma(
         nbins_h=nbins_h,
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
+        execution_mode=execution_mode,
         implementor=implementor,
     )
     sigma = _get_sigma_from_dw(dw, do_gaussian_fit, no_beam_value)
@@ -408,6 +428,7 @@ def get_random_init(
     verbose=True,
     intensity_sum_threshold: float = None,
     random_seed: int = None,
+    execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **hist_kwargs,
 ):
@@ -423,8 +444,7 @@ def get_random_init(
         raise ValueError(error_msg)
 
     for r in init_range:
-        if len(r) != 2:
-            raise ValueError("Need to supply min and max value for the range.")
+        if len(r) != 2: raise ValueError("Need to supply min and max value for the range.")
 
     initial_motor_positions = movers.get_absolute_positions(focusing_system, motor_types)
     regenerate = True
@@ -432,25 +452,24 @@ def get_random_init(
     while regenerate:
         initial_guess = [np.random.uniform(m1, m2) for (m1, m2) in init_range]
         focusing_system = movers.move_motors(focusing_system, motor_types, initial_guess, movement="relative")
-        centroid, photon_beam, hist, dw = get_centroid_distance(
-            focusing_system=focusing_system, random_seed=random_seed, implementor=implementor, **hist_kwargs
-        )
+        centroid, photon_beam, hist, dw = get_centroid_distance(focusing_system=focusing_system,
+                                                                random_seed=random_seed,
+                                                                execution_mode=execution_mode,
+                                                                implementor=implementor,
+                                                                **hist_kwargs)
         if not (centroid < 1e4):
-            if verbose:
-                print("Random guess", initial_guess, "produces beam out of bounds. Trying another guess.")
-            focusing_system = movers.move_motors(
-                focusing_system, motor_types, initial_motor_positions, movement="absolute"
-            )
+            if verbose: print("Random guess", initial_guess, "produces beam out of bounds. Trying another guess.")
+            focusing_system = movers.move_motors(focusing_system, motor_types, initial_motor_positions, movement="absolute")
             continue
 
         if intensity_sum_threshold is not None:
             if hist.data_2D.sum() <= intensity_sum_threshold:
-                focusing_system = movers.move_motors(
-                    focusing_system, motor_types, initial_motor_positions, movement="absolute"
-                )
+                focusing_system = movers.move_motors(focusing_system, motor_types, initial_motor_positions, movement="absolute")
                 continue
         regenerate = False
+
     print("Random initialization is", motor_types, initial_guess)
+
     return initial_guess, focusing_system, BeamState(photon_beam, hist, dw)
 
 
@@ -490,7 +509,7 @@ class OptimizationCommon(abc.ABC):
 
     def __init__(
         self,
-        focusing_system: ShadowFocusingOptics,
+        focusing_system: AbstractFocusingOptics,
         motor_types: List[str],
         random_seed: int = None,
         loss_parameters: List[str] = "centroid",
@@ -503,6 +522,7 @@ class OptimizationCommon(abc.ABC):
         no_beam_loss: float = 1e4,
         intensity_no_beam_loss: float = 0,
         multi_objective_optimization: bool = False,
+        execution_mode : int = ExecutionMode.SIMULATION,
         implementor: int = Implementors.SHADOW,
     ) -> None:
         self.focusing_system = focusing_system
@@ -541,6 +561,7 @@ class OptimizationCommon(abc.ABC):
         self._nbins_h = nbins_h
         self._nbins_v = nbins_v
         self._do_gaussian_fit = do_gaussian_fit
+        self._execution_mode = execution_mode
         self._implementor = implementor
 
         cond1 = xrange is not None and np.size(xrange) != 2
@@ -562,6 +583,7 @@ class OptimizationCommon(abc.ABC):
             nbins_h=self._nbins_h,
             nbins_v=self._nbins_v,
             do_gaussian_fit=self._do_gaussian_fit,
+            execution_mode= self._execution_mode,
             implementor=self._implementor,
         )
 
@@ -573,9 +595,6 @@ class OptimizationCommon(abc.ABC):
             )
         self.beam_state = BeamState(current_beam, current_hist, current_dw)
         return True
-
-    def get_beam(self) -> object:
-        return get_beam(focusing_system=self.focusing_system, random_seed=self.random_seed, remove_lost_rays=True)
 
     def get_peak_intensity(self) -> float:
         return _get_peak_intensity_from_dw(self.beam_state.dw, self._do_gaussian_fit, self._intensity_no_beam_loss)
@@ -603,9 +622,7 @@ class OptimizationCommon(abc.ABC):
     def loss_function(self, translations: Union[List[float], "np.ndarray"], verbose: bool = True) -> float:
         """This mutates the state of the focusing system."""
 
-        self.focusing_system = movers.move_motors(
-            self.focusing_system, self.motor_types, translations, movement="relative"
-        )
+        self.focusing_system = movers.move_motors(self.focusing_system, self.motor_types, translations, movement="relative")
         self._update_beam_state()
 
         loss = np.array([lossfn() for lossfn in self._loss_function_list])
@@ -627,9 +644,8 @@ class OptimizationCommon(abc.ABC):
         print("Initial loss is", initial_loss)
 
     def reset(self) -> NoReturn:
-        self.focusing_system = movers.move_motors(
-            self.focusing_system, self.motor_types, self.initial_motor_positions, movement="absolute"
-        )
+        self.focusing_system = movers.move_motors(self.focusing_system, self.motor_types, self.initial_motor_positions, movement="absolute")
+
         self._update_beam_state()
 
     def _get_guess_ranges(self, guess_range: List[float] = None):

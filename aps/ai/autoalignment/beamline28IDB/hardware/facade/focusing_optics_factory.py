@@ -48,7 +48,6 @@
 from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors
 from aps.ai.autoalignment.beamline28IDB.hardware.epics.focusing_optics import epics_focusing_optics_factory_method
 
-
 #############################################################################
 # DESIGN PATTERN: FACTORY METHOD
 #
