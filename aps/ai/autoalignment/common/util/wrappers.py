@@ -81,9 +81,21 @@ def get_distribution_info(implementor, beam, xrange=None, yrange=None, title="X,
         except: nolost = 1
 
         try:
-            if kwargs["distribution"] == "spatial": return get_shadow_beam_spatial_distribution(beam, nbins_h, nbins_v, nolost, title, xrange, yrange)
-            elif kwargs["distribution"] == "divergence": return get_shadow_beam_divergence_distribution(beam, nbins_h, nbins_v, nolost, title, xrange, yrange)
-        except: return get_shadow_beam_spatial_distribution(beam, nbins_h, nbins_v, nolost, title, xrange, yrange)
+            if kwargs["distribution"] == "spatial": return get_shadow_beam_spatial_distribution(shadow_beam=beam,
+                                                                                                nbins_h=nbins_h, nbins_v=nbins_v,
+                                                                                                nolost=nolost,
+                                                                                                xrange=xrange, yrange=yrange,
+                                                                                                do_gaussian_fit=do_gaussian_fit)
+            elif kwargs["distribution"] == "divergence": return get_shadow_beam_divergence_distribution(shadow_beam=beam,
+                                                                                                        nbins_h=nbins_h, nbins_v=nbins_v,
+                                                                                                        nolost=nolost,
+                                                                                                        xrange=xrange, yrange=yrange,
+                                                                                                        do_gaussian_fit=do_gaussian_fit)
+        except: return get_shadow_beam_spatial_distribution(shadow_beam=beam,
+                                                            nbins_h=nbins_h, nbins_v=nbins_v,
+                                                            nolost=nolost,
+                                                            xrange=xrange, yrange=yrange,
+                                                            do_gaussian_fit=do_gaussian_fit)
 
 def plot_distribution(implementor, beam, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, **kwargs):
     if implementor == Implementors.SRW: plot_srw_wavefront_spatial_distribution(beam, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
@@ -96,6 +108,27 @@ def plot_distribution(implementor, beam, title="X,Z", xrange=None, yrange=None, 
         except: nolost = 1
 
         try:
-            if kwargs["distribution"] == "spatial":      plot_shadow_beam_spatial_distribution(beam, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
-            elif kwargs["distribution"] == "divergence": plot_shadow_beam_divergence_distribution(beam, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
-        except: plot_shadow_beam_spatial_distribution(beam, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
+            if kwargs["distribution"] == "spatial":      plot_shadow_beam_spatial_distribution(shadow_beam=beam,
+                                                                                               nbins_h=nbins_h, nbins_v=nbins_v,
+                                                                                               nolost=nolost,
+                                                                                               title=title,
+                                                                                               xrange=xrange, yrange=yrange,
+                                                                                               plot_mode=plot_mode,
+                                                                                               aspect_ratio=aspect_ratio,
+                                                                                               color_map=color_map)
+            elif kwargs["distribution"] == "divergence": plot_shadow_beam_divergence_distribution(shadow_beam=beam,
+                                                                                                  nbins_h=nbins_h, nbins_v=nbins_v,
+                                                                                                  nolost=nolost,
+                                                                                                  title=title,
+                                                                                                  xrange=xrange, yrange=yrange,
+                                                                                                  plot_mode=plot_mode,
+                                                                                                  aspect_ratio=aspect_ratio,
+                                                                                                  color_map=color_map)
+        except: plot_shadow_beam_spatial_distribution(shadow_beam=beam,
+                                                      nbins_h=nbins_h, nbins_v=nbins_v,
+                                                      nolost=nolost,
+                                                      title=title,
+                                                      xrange=xrange, yrange=yrange,
+                                                      plot_mode=plot_mode,
+                                                      aspect_ratio=aspect_ratio,
+                                                      color_map=color_map)
