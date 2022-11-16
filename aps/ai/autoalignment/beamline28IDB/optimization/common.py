@@ -636,16 +636,14 @@ class OptimizationCommon(abc.ABC):
         self._opt_trials_motor_positions.append(translations)
         self._opt_trials_losses.append(loss)
         self._opt_fn_call_counter += 1
-        if verbose:
-            print("motors", self.motor_types, "trans", translations, "current loss", loss)
+        if verbose: print("motors", self.motor_types, "trans", translations, "current loss", loss)
         return loss
 
     def _check_initial_loss(self, verbose=False) -> NoReturn:
         size = np.size(self.motor_types)
         lossfn_obj_this = self.TrialInstanceLossFunction(self, verbose=verbose)
         initial_loss = lossfn_obj_this.loss(np.atleast_1d(np.zeros(size)), verbose=False)
-        if initial_loss >= self._no_beam_loss:
-            raise EmptyBeamException("Initial beam is out of bounds.")
+        if initial_loss >= self._no_beam_loss: raise EmptyBeamException("Initial beam is out of bounds.")
         print("Initial loss is", initial_loss)
 
     def reset(self) -> NoReturn:
