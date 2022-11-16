@@ -59,7 +59,7 @@ from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptic
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics, DISTANCE_V_MOTORS
 
 def epics_focusing_optics_factory_method(**kwargs):
-    return __EpicsFocusingOptics(kwargs)
+    return __EpicsFocusingOptics(**kwargs)
 
 class Motors:
     # Horizontal mirror:
@@ -99,7 +99,8 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         try: from_raw_image    = kwargs["from_raw_image"]
         except: from_raw_image = False
 
-        self.__image_collector.restore_status()
+        try: self.__image_collector.restore_status()
+        except: pass
 
         try:
             self.__image_collector.collect_single_shot_image(index=1)
@@ -121,11 +122,13 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
                 output["v_coord"]    = numpy.linspace(crop_region[2], crop_region[3], cropped_image.shape[1])*PIXEL_SIZE*1e3
                 output["image"]      = cropped_image
 
-            self.__image_collector.save_status()
+            try: self.__image_collector.save_status()
+            except: pass
 
             return output
         except Exception as e:
-            self.__image_collector.save_status()
+            try: self.__image_collector.save_status()
+            except: pass
 
             raise e
     
@@ -147,21 +150,22 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         pos = 0.5*DISTANCE_V_MOTORS*numpy.sin(angle)
 
         if movement==Movement.ABSOLUTE:
-            zero_pos = 0.5 * (self._get_translational_motor_position(Motors.TRANSLATION_VO, units=units) +
-                              self._get_translational_motor_position(Motors.TRANSLATION_DO, units=units))
+            zero_pos = self.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)
 
-            self._move_translational_motor(Motors.TRANSLATION_VO, zero_pos+pos, movement=movement, units=DistanceUnits.MILLIMETERS)
-            self._move_translational_motor(Motors.TRANSLATION_DO, zero_pos-pos, movement=movement, units=DistanceUnits.MILLIMETERS)
-            self._move_translational_motor(Motors.TRANSLATION_DI, zero_pos-pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_VO, zero_pos-pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DO, zero_pos+pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DI, zero_pos+pos, movement=movement, units=DistanceUnits.MILLIMETERS)
         elif movement==Movement.RELATIVE:
-            self._move_translational_motor(Motors.TRANSLATION_VO,  pos, movement=movement, units=DistanceUnits.MILLIMETERS)
-            self._move_translational_motor(Motors.TRANSLATION_DO, -pos, movement=movement, units=DistanceUnits.MILLIMETERS)
-            self._move_translational_motor(Motors.TRANSLATION_DI, -pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_VO, -pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DO,  pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DI,  pos, movement=movement, units=DistanceUnits.MILLIMETERS)
 
     def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.DEGREES):
-        pos = (self._get_translational_motor_position(Motors.TRANSLATION_VO, units=DistanceUnits.MILLIMETERS) -
-               self._get_translational_motor_position(Motors.TRANSLATION_DO, units=DistanceUnits.MILLIMETERS))
-        angle = numpy.arcsin(pos/DISTANCE_V_MOTORS)
+        zero_pos = self.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)
+
+        pos = self._get_translational_motor_position(Motors.TRANSLATION_DO, units=DistanceUnits.MILLIMETERS) - zero_pos
+
+        angle = numpy.arcsin(pos/(0.5*DISTANCE_V_MOTORS))
 
         if units == AngularUnits.MILLIRADIANS: angle *= 1e3
         elif units == AngularUnits.RADIANS: pass
@@ -170,9 +174,18 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         return angle
 
     def move_v_bimorph_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS):
-        self._move_translational_motor(Motors.TRANSLATION_VO, translation, movement=movement, units=units)
-        self._move_translational_motor(Motors.TRANSLATION_DO, translation, movement=movement, units=units)
-        self._move_translational_motor(Motors.TRANSLATION_DI, translation, movement=movement, units=units)        
+        if movement == Movement.RELATIVE:
+            self._move_translational_motor(Motors.TRANSLATION_VO, translation, movement=movement, units=units)
+            self._move_translational_motor(Motors.TRANSLATION_DO, translation, movement=movement, units=units)
+            self._move_translational_motor(Motors.TRANSLATION_DI, translation, movement=movement, units=units)
+        elif movement == Movement.ABSOLUTE:
+            zero_pos = self.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)
+
+            difference = translation - zero_pos
+
+            self._move_translational_motor(Motors.TRANSLATION_VO, difference, movement=Movement.RELATIVE, units=units)
+            self._move_translational_motor(Motors.TRANSLATION_DO, difference, movement=Movement.RELATIVE, units=units)
+            self._move_translational_motor(Motors.TRANSLATION_DI, difference, movement=Movement.RELATIVE, units=units)
         
     def get_v_bimorph_mirror_motor_translation(self, units=DistanceUnits.MILLIMETERS):
         return 0.5*(self._get_translational_motor_position(Motors.TRANSLATION_VO, units=units) +
@@ -205,7 +218,7 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         return self._get_rotational_motor_angle(Motors.PITCH_H, units)
 
     def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS):
-        self._move_rotational_motor(Motors.TRANSLATION_H, translation, movement, units)
+        self._move_translational_motor(Motors.TRANSLATION_H, translation, movement, units)
 
     def get_h_bendable_mirror_motor_translation(self, units=DistanceUnits.MILLIMETERS):
         return self._get_translational_motor_position(Motors.TRANSLATION_H, units)
