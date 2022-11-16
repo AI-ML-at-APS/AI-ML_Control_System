@@ -135,18 +135,15 @@ class OptunaOptimizer(common.OptimizationCommon):
         botorch_model_mean_module: Optional[object] = None,
         botorch_model_covar_module: Optional[object] = None,
     ):
-
         self.motor_ranges = self._get_guess_ranges(motor_ranges)
 
         directions_list = self._check_directions(directions)
         # Creating the acquisition function
         if acquisition_function is None:
             if self._multi_objective_optimization:
-
                 def acquisition_function(*args, **kwargs):
                     thresholds_list = self._check_thresholds(moo_thresholds, directions_list)
                     return self.acquisition_functions["qnehvi"](*args, ref_point=thresholds_list, **kwargs)
-
             else:
                 acquisition_function = self.acquisition_functions["qnei"]
 
@@ -183,7 +180,6 @@ class OptunaOptimizer(common.OptimizationCommon):
         self.best_params = {k: 0.0 for k in self.motor_types}
 
     def _check_directions(self, directions: Dict) -> List:
-
         if directions is None:
             return ["minimize" for k in self.loss_parameters]
         directions_list = []
@@ -251,7 +247,6 @@ class OptunaOptimizer(common.OptimizationCommon):
         raise optuna.TrialPruned
 
     def _objective(self, trial: Trial, step_scale: float = 1):
-
         current_params = []
         for mot, r in zip(self.motor_types, self.motor_ranges):
             if self._use_discrete_space:

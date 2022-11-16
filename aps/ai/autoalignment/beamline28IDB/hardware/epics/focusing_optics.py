@@ -79,8 +79,6 @@ class Motors:
     LATERAL_V      = PV(pvname='1bmopt:m15')
     BENDER_V       = PV(pvname='simJTEC:E4')
 
-
-
 class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
 
     def __init__(self, **kwargs):
@@ -88,6 +86,11 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         
         try:    measurement_directory = kwargs["measurement_directory"]
         except: measurement_directory = os.curdir
+
+        try:    self.__physical_boundaries = kwargs["physical_boundaries"]
+        except: self.__physical_boundaries = None
+
+        #TODO: ADD CHECK OF PHYSICAL BOuNDARIES
 
         self.__image_collector = ImageCollector(measurement_directory=measurement_directory)
         self.__image_processor = ImageProcessor(data_collection_directory=measurement_directory)
