@@ -80,7 +80,7 @@ def __get_input_parameters(sys_argv):
             elif "-sim"  == sys_argv[i][:4]: simulation_mode = True
             elif "-mock" == sys_argv[i][:5]: mocking_mode = True
             elif "--h"   == sys_argv[i][:3]:
-                print("Run Autofocusing\n\npython -m aps.ai.autolignment BLE AF <options>\n\n" +
+                print("Run Autofocusing\n\npython -m aps.ai.autolignment 28ID AF <options>\n\n" +
                       "Options: -pd <period in minutes (int)>\n" +
                       "         -nc <number of cycles>\n" +
                       "         -sim (run optimizer on simulation)\n" +

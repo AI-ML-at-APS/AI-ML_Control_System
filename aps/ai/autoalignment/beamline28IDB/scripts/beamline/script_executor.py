@@ -48,6 +48,7 @@ from aps.common.scripts.script_registry import get_registered_running_script_ins
 
 from aps.ai.autoalignment.beamline28IDB.scripts.beamline.run_autoalignment import run_script as aa_run_script
 from aps.ai.autoalignment.beamline28IDB.scripts.beamline.run_autofocusing  import run_script as af_run_script
+from aps.ai.autoalignment.beamline28IDB.scripts.beamline.test_hardware     import run_script as th_run_script
 
 def run_script(sys_argv):
     def show_help(error=False):
@@ -66,13 +67,15 @@ def run_script(sys_argv):
         print("To show this help:          python -m aps.ai.autoalignment 28ID --h")
         print("* Available scripts:\n" +
               "    1) Auto-alignment, id: AA\n" +
-              "    2) Auto-focusing,  id: AF\n")
+              "    2) Auto-focusing,  id: AF\n" +
+              "    3) Test Hardware,  id: TH\n")
 
     if len(sys_argv) == 2 or sys_argv[2] == "--h":
         show_help()
     else:
         if sys_argv[2]   == "AA": aa_run_script(sys_argv)
         elif sys_argv[2] == "AF": af_run_script(sys_argv)
+        elif sys_argv[2] == "TH": th_run_script(sys_argv)
         else: show_help(error=True)
 
 # ===================================================================================================
