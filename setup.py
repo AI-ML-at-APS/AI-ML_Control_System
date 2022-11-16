@@ -89,6 +89,9 @@ INSTALL_REQUIRES = (
     'OASYS1-ShadowOui>=1.5.131',
     'OASYS1-ShadowOui-Advanced-Tools>=1.0.82',
     'oasys-srwpy',
+    'torch',
+    'optuna',
+    'botorch',
     'pyepics'
 )
 
