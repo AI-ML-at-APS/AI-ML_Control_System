@@ -44,12 +44,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os
 from copy import deepcopy
 from typing import Callable, Dict, List, NoReturn, Optional, Union
 
 import numpy as np
 import optuna
 from optuna.trial import Trial
+import joblib
 
 from aps.ai.autoalignment.beamline28IDB.optimization import common, configs
 
@@ -92,6 +94,8 @@ class OptunaOptimizer(common.OptimizationCommon):
                  multi_objective_optimization: bool = False,
                  execution_mode              : int = ExecutionMode.SIMULATION,
                  implementor                 : int = Implementors.SHADOW,
+                 save_images                 : bool = False,
+                 every_n_images              : int = 5,
                  **kwargs):
         super().__init__(focusing_system,
                          motor_types,
@@ -118,6 +122,10 @@ class OptunaOptimizer(common.OptimizationCommon):
         self._sum_intensity_threshold = None
         self._loss_fn_this = None
         self._use_discrete_space = None
+        self._save_images = save_images
+        self._every_n_images = every_n_images
+        self._dump_directory = os.path.join(os.curdir, "dump")
+        if not os.path.exists(self._dump_directory): os.mkdir(self._dump_directory)
 
     def set_optimizer_options(
         self,
@@ -259,6 +267,10 @@ class OptunaOptimizer(common.OptimizationCommon):
 
         loss = self._loss_fn_this(current_params)
 
+        if self._save_images:
+            if trial.number % self._every_n_images == 0:
+                joblib.dump(value=self.beam_state.hist, filename=os.path.join(self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".pkl"))
+
         self._set_trial_constraints(trial)
         if self._multi_objective_optimization:
             if np.nan in np.atleast_1d(loss):
@@ -305,7 +317,6 @@ class OptunaOptimizer(common.OptimizationCommon):
         return loss
 
     def trials(self, n_trials: int, trial_motor_types: list = None, step_scale: float = 1):
-
         obj_this = lambda t: self._objective(t, step_scale=step_scale)
 
         if trial_motor_types is None:
@@ -316,7 +327,6 @@ class OptunaOptimizer(common.OptimizationCommon):
 
             self.study.sampler = partial_sampler
             self.study.optimize(obj_this, n_trials=n_trials)
-
             self.study.sampler = self._base_sampler
 
         self.best_params.update(self.study.best_trials[0].params)
