@@ -62,7 +62,7 @@ from aps.ai.autoalignment.common.util.shadow.common import EmptyBeamException, H
 
 
 def get_distribution_info(execution_mode=ExecutionMode.SIMULATION, implementor=Implementors.SHADOW,
-                          beam=None, xrange=None, yrange=None, nbins_h=201, nbins_v=201, do_gaussian_fit=False):
+                          beam=None, xrange=None, yrange=None, nbins_h=201, nbins_v=201, do_gaussian_fit=False, **kwargs):
     if execution_mode==ExecutionMode.SIMULATION:
         return get_simulated_distribution_info(implementor=implementor,
                                                beam=beam,
@@ -90,7 +90,8 @@ def get_distribution_info(execution_mode=ExecutionMode.SIMULATION, implementor=I
                             y_array=beam["v_coord"],
                             z_array=beam["image"],
                             do_gaussian_fit=do_gaussian_fit)
-
+    else:
+        raise ValueError("Executione Mode not valid")
 class BeamState(NamedTuple):
     photon_beam: object
     hist: Histogram
@@ -110,7 +111,8 @@ def reinitialize(
     input_features: DictionaryWrapper,
     bender: bool = True,
     execution_mode: int = ExecutionMode.SIMULATION,
-    implementor: int = Implementors.SHADOW
+    implementor: int = Implementors.SHADOW,
+    **kwargs
 ) -> AbstractFocusingOptics:
     if execution_mode == ExecutionMode.SIMULATION:
         clean_up()
@@ -178,11 +180,8 @@ def get_beam_hist_dw(
     implementor: int = Implementors.SHADOW,
     **kwargs
 ) -> BeamState:
-    if execution_mode==ExecutionMode.SIMULATION:
-        photon_beam = check_beam_out_of_bounds(focusing_system=focusing_system,
-                                               photon_beam=photon_beam, **kwargs)
-    else:
-        photon_beam = check_input_for_beam(focusing_system=focusing_system, **kwargs)
+    if execution_mode==ExecutionMode.SIMULATION: photon_beam = check_beam_out_of_bounds(focusing_system=focusing_system, photon_beam=photon_beam, **kwargs)
+    else:                                        photon_beam = check_input_for_beam(focusing_system=focusing_system, photon_beam=photon_beam, **kwargs)
 
     if photon_beam is None: return BeamState(None, None, None)
 
@@ -212,6 +211,7 @@ def get_peak_intensity(
     do_gaussian_fit: bool = False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
+    **kwargs
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
         execution_mode=execution_mode,
@@ -258,6 +258,7 @@ def get_sum_intensity(
     do_gaussian_fit: bool = False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
+    **kwargs
 ) -> BeamParameterOutput:
     if do_gaussian_fit:
         raise NotImplementedError
@@ -314,6 +315,7 @@ def get_centroid_distance(
     do_gaussian_fit: bool = False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
+    **kwargs
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
         execution_mode=execution_mode,
@@ -375,6 +377,7 @@ def get_fwhm(
     do_gaussian_fit: bool = False,
     execution_mode = ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
+    **kwargs
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
         focusing_system=focusing_system,
@@ -404,6 +407,7 @@ def get_sigma(
     do_gaussian_fit: bool = False,
     execution_mode = ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
+    **kwargs
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
         focusing_system=focusing_system,
@@ -524,7 +528,8 @@ class OptimizationCommon(abc.ABC):
         multi_objective_optimization: bool = False,
         execution_mode : int = ExecutionMode.SIMULATION,
         implementor: int = Implementors.SHADOW,
-    ) -> None:
+        **kwargs
+    ):
         self.focusing_system = focusing_system
         self.motor_types = motor_types if np.ndim(motor_types) > 0 else [motor_types]
         self.random_seed = random_seed

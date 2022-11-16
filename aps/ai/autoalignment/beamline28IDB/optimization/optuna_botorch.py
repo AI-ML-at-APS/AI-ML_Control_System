@@ -53,6 +53,10 @@ from optuna.trial import Trial
 
 from aps.ai.autoalignment.beamline28IDB.optimization import common, configs
 
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import  ExecutionMode
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
+from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
+
 # from matplotlib import pyplot as plt
 from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration import (
     BoTorchSampler,
@@ -72,8 +76,39 @@ class OptunaOptimizer(common.OptimizationCommon):
         "qnehvi": qnehvi_candidates_func,
     }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self,
+                 focusing_system             : AbstractFocusingOptics,
+                 motor_types                 : List[str],
+                 random_seed                 : int = None,
+                 loss_parameters             : List[str] = "centroid",
+                 loss_min_value              : float = None,
+                 xrange                      : List[float] = None,
+                 yrange                      : List[float] = None,
+                 nbins_h                     : int = 256,
+                 nbins_v                     : int = 256,
+                 do_gaussian_fit             : bool = False,
+                 no_beam_loss                : float = 1e4,
+                 intensity_no_beam_loss      : float = 0,
+                 multi_objective_optimization: bool = False,
+                 execution_mode              : int = ExecutionMode.SIMULATION,
+                 implementor                 : int = Implementors.SHADOW,
+                 **kwargs):
+        super().__init__(focusing_system,
+                         motor_types,
+                         random_seed,
+                         loss_parameters,
+                         loss_min_value,
+                         xrange,
+                         yrange,
+                         nbins_h,
+                         nbins_v,
+                         do_gaussian_fit,
+                         no_beam_loss,
+                         intensity_no_beam_loss,
+                         multi_objective_optimization,
+                         execution_mode,
+                         implementor,
+                         **kwargs)
         self.best_params = None
         self.motor_ranges = None
         self.study = None

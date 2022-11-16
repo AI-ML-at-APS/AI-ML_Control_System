@@ -52,17 +52,17 @@ try:
 except AttributeError:
     from setuptools import find_packages, setup
 
-NAME = 'ML-Control-System-34-ID-C'
-VERSION = '0.0.2'
+NAME = 'APS_AI_Autoalignment'
+VERSION = '1.0.0'
 ISRELEASED = False
 
-DESCRIPTION = 'ML Control System for the Beamline 34-ID-C @ APS'
+DESCRIPTION = 'AI Control System for the Beamlines 34-ID-C & 28-ID-B @ APS'
 README_FILE = os.path.join(os.path.dirname(__file__), 'README.md')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Luca Rebuffi'
 AUTHOR_EMAIL = 'lrebuffi@anl.gov'
-URL = 'https://github.com/APS-34-ID-C/ML_Control_System'
-DOWNLOAD_URL = 'https://github.com/APS-34-ID-C/ML_Control_System'
+URL = 'https://github.com/AI-ML-at-APS/AI-ML_Control_System'
+DOWNLOAD_URL = 'https://github.com/AI-ML-at-APS/AI-ML_Control_System'
 LICENSE = 'GPLv3'
 
 KEYWORDS = (

@@ -53,8 +53,6 @@ class AutoalignmentScript(GenericScript):
     def __init__(self, root_directory, energy, period, n_cycles, mocking_mode, simulation_mode):
         super(AutoalignmentScript, self).__init__(root_directory, energy, period, n_cycles, mocking_mode, simulation_mode)
 
-
-
     def _get_script_name(self):
         return "Autoalignment"
 

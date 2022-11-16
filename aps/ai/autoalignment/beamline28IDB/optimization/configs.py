@@ -47,14 +47,14 @@
 
 import numpy as np
 
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import (
-    AngularUnits, DistanceUnits, MotorResolutionRegistry)
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AngularUnits, DistanceUnits, MotorResolutionRegistry
+from aps.common.measurment.beamline.image_processor import PIXEL_SIZE, IMAGE_SIZE_PIXEL_HxV
 
 motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("28-ID-B")
 
 
-DEFAULT_DISTANCE_UNIT = DistanceUnits.MICRON
-DEFAULT_ANGLE_UNIT = AngularUnits.MILLIRADIANS
+DEFAULT_DISTANCE_UNIT = DistanceUnits.MILLIMETERS
+DEFAULT_ANGLE_UNIT    = AngularUnits.DEGREES
 DEFAULT_ACTUATOR_UNIT = DistanceUnits.OTHER  # This should be volts
 
 # not sure about the movement ranges for hkb4 and vkb4
@@ -70,13 +70,13 @@ UNITS_PER_MOTOR = {
 
 # not sure about the movement ranges for hkb4 and vkb4
 DEFAULT_MOVEMENT_RANGES = {
-    "hb_1": [-50, 50],
-    "hb_2": [-50, 50],
-    "hb_pitch": [-0.5, 0.5],  # in mrad
-    "hb_trans": [-50, 50],  # in mrad
-    "vb_bender": [-30, 30],
-    "vb_pitch": [-10, 10],
-    "vb_trans": [-30, 30],
+    "hb_1":      [-25.0, 25.0],
+    "hb_2":      [-25.0, 25.0],
+    "hb_pitch":  [-0.002, 0.002],
+    "hb_trans":  [-0.03, 0.03],
+    "vb_bender": [-20.0, 20.0],
+    "vb_pitch":  [-0.002, 0.002],
+    "vb_trans":  [-0.03, 0.03],
 }
 # These are shorthands for the longer names in the focusing system interface.
 # The units for the bender motors are Volts.
@@ -93,12 +93,11 @@ DEFAULT_MOTOR_RESOLUTIONS = {
 DEFAULT_MOTOR_TOLERANCES = DEFAULT_MOTOR_RESOLUTIONS
 
 # These values only apply for the simulation with 50k simulated beams
-DEFAULT_LOSS_TOLERANCES = {"centroid": 2e-4, "fwhm": 2e-4, "peak_intensity": -np.inf, "sigma": 2e-4}
-
+DEFAULT_LOSS_TOLERANCES    = {"centroid": 2e-4, "fwhm": 2e-4, "peak_intensity": -np.inf, "sigma": 2e-4}
 DEFAULT_CONSTRAINT_OPTIONS = {"centroid", "fwhm", "sigma", "peak_intensity", "sum_intensity"}
 
-DETECTOR_X = 2160 * 0.65 * 1e-3
-DETECTOR_Y = 2560 * 0.65 * 1e-3
+DETECTOR_X = IMAGE_SIZE_PIXEL_HxV[0] * PIXEL_SIZE * 1e3
+DETECTOR_Y = IMAGE_SIZE_PIXEL_HxV[1] * PIXEL_SIZE * 1e3
 
 X_RANGE = [-DETECTOR_X / 2, DETECTOR_X / 2]
 Y_RANGE = [-DETECTOR_Y / 2, DETECTOR_Y / 2]

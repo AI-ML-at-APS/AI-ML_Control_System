@@ -46,8 +46,9 @@
 # ----------------------------------------------------------------------- #
 import os
 import numpy
-import datetime
+from datetime import datetime
 import joblib
+import warnings
 
 from aps.common.measurment.beamline.image_processor import IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
 
@@ -55,6 +56,7 @@ from aps.ai.autoalignment.beamline28IDB.scripts.beamline.executors.generic_execu
 
 import aps.ai.autoalignment.beamline28IDB.optimization.common as opt_common
 import aps.ai.autoalignment.beamline28IDB.optimization.movers as movers
+import aps.ai.autoalignment.beamline28IDB.optimization.configs as configs
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import ExecutionMode, focusing_optics_factory_method
 from aps.ai.autoalignment.beamline28IDB.optimization.optuna_botorch import OptunaOptimizer
 from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import Layout, get_default_input_features
@@ -83,20 +85,20 @@ register_ini_instance(IniMode.LOCAL_FILE,
                       verbose=False)
 ini_file = get_registered_ini_instance(APPLICATION_NAME)
 
-hb_1      = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-1",    default=[-25.0, 25.0],   type=float)
-hb_2      = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-2",    default=[-25.0, 25.0],   type=float)
-hb_pitch  = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Pitch",       default=[-0.002, 0.002], type=float),  # in degrees
-hb_trans  = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Translation", default=[-0.03, 0.03],   type=float),  # in mm
-vb_bender = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Bender",      default=[-20.0, 20.0],   type=float),  # in volt
-vb_pitch  = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Pitch",       default=[-0.002, 0.002], type=float),  # in degrees
-vb_trans  = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Translation", default=[-0.03, 0.03],   type=float),  # in mm
+hb_1      = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-1",    default=configs.DEFAULT_MOVEMENT_RANGES["hb_1"],      type=float)
+hb_2      = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-2",    default=configs.DEFAULT_MOVEMENT_RANGES["hb_2"],      type=float)
+hb_pitch  = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Pitch",       default=configs.DEFAULT_MOVEMENT_RANGES["hb_pitch"],  type=float)  # in degrees
+hb_trans  = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Translation", default=configs.DEFAULT_MOVEMENT_RANGES["hb_trans"],  type=float)  # in mm
+vb_bender = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Bender",      default=configs.DEFAULT_MOVEMENT_RANGES["vb_bender"], type=float)  # in volt
+vb_pitch  = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Pitch",       default=configs.DEFAULT_MOVEMENT_RANGES["vb_pitch"],  type=float)  # in degrees
+vb_trans  = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Translation", default=configs.DEFAULT_MOVEMENT_RANGES["vb_trans"],  type=float)  # in mm
 
-sum_intensity_soft_constraint        =  ini_file.get_float_from_ini(section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint",        default=7e3),
+sum_intensity_soft_constraint        =  ini_file.get_float_from_ini(section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint",        default=7e3)
 sum_intensity_hard_constraint        =  ini_file.get_float_from_ini(section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint",        default=6.5e3)
 centroid_sigma_threshold_dependency  =  ini_file.get_int_from_ini(  section="Optimization-Parameters", key="Centroid-Sigma-Threshold-Dependency",  default=CentroidSigmaThresholdDependency.INITIAL_STRUCTURE)
 centroid_sigma_hard_thresholds_tuple =  ini_file.get_list_from_ini( section="Optimization-Parameters", key="Centroid-Sigma-Hard-Thresholds-Tuple", default=[0.01, 0.03], type=float)
 n_pitch_trans_motor_trials           =  ini_file.get_int_from_ini(  section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",           default=50)
-n_all_motor_trials                   =  ini_file.get_int_from_ini(  section="Optimization-Parameters", key="N-All-Motor-Trials ",                  default=100)
+n_all_motor_trials                   =  ini_file.get_int_from_ini(  section="Optimization-Parameters", key="N-All-Motor-Trials",                  default=100)
 
 ini_file.set_list_at_ini( section="Motor-Ranges",   key="HKB-Bender-1",    values_list=hb_1     )
 ini_file.set_list_at_ini( section="Motor-Ranges",   key="HKB-Bender-2",    values_list=hb_2     )
@@ -111,7 +113,7 @@ ini_file.set_value_at_ini(section="Optimization-Parameters",   key="Sum-Intensit
 ini_file.set_value_at_ini(section="Optimization-Parameters",   key="Centroid-Sigma-Threshold-Dependency",  value=centroid_sigma_threshold_dependency )
 ini_file.set_list_at_ini( section="Optimization-Parameters",   key="Centroid-Sigma-Hard-Thresholds-Tuple", values_list=centroid_sigma_hard_thresholds_tuple)
 ini_file.set_value_at_ini(section="Optimization-Parameters",   key="N-Pitch-Trans-Motor-Trials",           value=n_pitch_trans_motor_trials          )
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="N-All-Motor-Trials ",                  value=n_all_motor_trials                  )
+ini_file.set_value_at_ini(section="Optimization-Parameters",   key="N-All-Motor-Trials",                   value=n_all_motor_trials                  )
 
 ini_file.push()
 
@@ -163,7 +165,7 @@ class PlotParameters(object):
 class SimulationParameters(PlotParameters):
     def __init__(self):
         super(SimulationParameters, self).__init__()
-        self.params["execution_mode"] = ExecutionMode.SIMULATION,
+        self.params["execution_mode"] = ExecutionMode.SIMULATION
         self.params["implementor"]    = Sim_Implementors.SHADOW
         self.params["random_seed"]    = DEFAULT_RANDOM_SEED
 
@@ -179,7 +181,7 @@ class SimulationParameters(PlotParameters):
 class HardwareParameters(PlotParameters):
     def __init__(self):
         super(HardwareParameters, self).__init__()
-        self.params["execution_mode"] = ExecutionMode.HARDWARE,
+        self.params["execution_mode"] = ExecutionMode.HARDWARE
         self.params["implementor"]    = HW_Implementors.EPICS
         self.params["from_raw_image"] = True
 
@@ -213,7 +215,7 @@ class AutofocusingScript(GenericScript):
 
             # Initializing the focused beam from simulation
             self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION,
-                                                                    implementor=self.__sim_params["implementor"],
+                                                                    implementor=self.__sim_params.params["implementor"],
                                                                     bender=True)
 
             self.__focusing_system.initialize(input_photon_beam=load_shadow_beam(input_beam_path),
@@ -259,6 +261,8 @@ class AutofocusingScript(GenericScript):
             )
 
         if self._simulation_mode:
+            warnings.filterwarnings("ignore")
+
             beam, hist, dw = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system, photon_beam=None, **self.__sim_params.params)
             plot_distribution(
                 beam=beam,
@@ -303,7 +307,6 @@ class AutofocusingScript(GenericScript):
                 motor_types=list(self.__opt_params.move_motors_ranges.keys()),
                 loss_parameters=["centroid", "sigma"],
                 multi_objective_optimization=True,
-                execution_mode=ExecutionMode.SIMULATION,
                 **self.__sim_params.params,
             )
 
@@ -332,7 +335,6 @@ class AutofocusingScript(GenericScript):
             print(values)
     
             print("Moving motor to optimal position")
-
             opt_trial._loss_fn_this(list(optimal_params.values()))
 
             plot_distribution(
@@ -423,6 +425,6 @@ class AutofocusingScript(GenericScript):
             print(f"Saving all trials in {chkpt_name}")
 
     def __setup_work_dir(self):
-        os.chdir(os.path.join(self._root_directory, "simulation", "28-ID"))
+        os.chdir(os.path.join(self._root_directory, "simulation"))
 
 

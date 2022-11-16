@@ -94,6 +94,8 @@ class GenericScript(AbstractScript):
 
             print("Script interrupted by the following exception:\n" + str(e))
 
+            raise e
+
     def manage_keyboard_interrupt(self):
         print("\n" + self._get_script_name() + " interrupted by user")
 
