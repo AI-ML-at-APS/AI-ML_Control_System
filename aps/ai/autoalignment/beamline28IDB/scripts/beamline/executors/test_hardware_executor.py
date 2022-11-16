@@ -50,9 +50,11 @@ import numpy
 from aps.common.measurment.beamline.image_processor import IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
 from aps.common.scripts.abstract_script import AbstractScript
 
+from aps.ai.autoalignment.common.util.common import AspectRatio, ColorMap, get_info, plot_2D
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import ExecutionMode, focusing_optics_factory_method
 from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors
+
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import ExecutionMode, focusing_optics_factory_method
 
 class HardwareTestParameters:
     test_h_pitch = True
@@ -76,6 +78,7 @@ class HardwareTestParameters:
     test_v_bender = True
     v_bender_absolute_move = 445
     v_bender_relative_move = -20
+    test_detector = True
 
 class PlotParameters(object):
     def __init__(self):
@@ -210,6 +213,24 @@ class TestHardwareScript(AbstractScript):
             self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=initial_value, movement=Movement.ABSOLUTE)
             print("Final Bender Value: " + str(self.__focusing_system.get_v_bimorph_mirror_motor_bender()))
 
+        if self.__hardware_test_parameters.test_detector:
+            print("\nTEST OF THE DETECTOR")
+            photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=True)
+
+            plot_2D(x_array=photon_beam["h_coord"],
+                    y_array=photon_beam["v_coord"],
+                    z_array=photon_beam["image"],
+                    title="Raw Image from detector",
+                    color_map=ColorMap.RAINBOW,
+                    aspect_ratio=AspectRatio.AUTO)
+
+            _, dictionary = get_info(x_array=photon_beam["h_coord"],
+                                     y_array=photon_beam["v_coord"],
+                                     z_array=photon_beam["image"],
+                                     do_gaussian_fit=False)
+
+            print("Beam Infos:")
+            print(dictionary)
 
     def manage_keyboard_interrupt(self):
         print("\nTest Motors script interrupted by user")

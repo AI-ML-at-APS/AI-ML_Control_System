@@ -135,14 +135,15 @@ def __get_input_parameters(sys_argv):
     h_bender_2_absolute_move    = ini_file.get_float_from_ini(  section="Tests",   key="h-bender-2-absolute-move",    default=hardware_test_parameters.h_bender_2_absolute_move   )
     h_bender_2_relative_move    = ini_file.get_float_from_ini(  section="Tests",   key="h-bender-2-relative-move",    default=hardware_test_parameters.h_bender_2_relative_move   )
     test_v_pitch                = ini_file.get_boolean_from_ini(section="Tests",   key="test-v-pitch",                default=hardware_test_parameters.test_v_pitch               )
-    v_pitcv_absolute_move       = ini_file.get_float_from_ini(section="Tests", key="v-pitcv-absolute-move", default=hardware_test_parameters.v_pitch_absolute_move)
-    v_pitcv_relative_move       = ini_file.get_float_from_ini(section="Tests", key="v-pitcv-relative-move", default=hardware_test_parameters.v_pitch_relative_move)
+    v_pitch_absolute_move       = ini_file.get_float_from_ini(  section="Tests",   key="v-pitch-absolute-move", default=hardware_test_parameters.v_pitch_absolute_move)
+    v_pitch_relative_move       = ini_file.get_float_from_ini(  section="Tests",   key="v-pitch-relative-move", default=hardware_test_parameters.v_pitch_relative_move)
     test_v_translation          = ini_file.get_boolean_from_ini(section="Tests",   key="test-v-translation",          default=hardware_test_parameters.test_v_translation         )
     v_translation_absolute_move = ini_file.get_float_from_ini(  section="Tests",   key="v-translation-absolute-move", default=hardware_test_parameters.v_translation_absolute_move)
     v_translation_relative_move = ini_file.get_float_from_ini(  section="Tests",   key="v-translation-relative-move", default=hardware_test_parameters.v_translation_relative_move)
     test_v_bender               = ini_file.get_boolean_from_ini(section="Tests",   key="test-v-bender",               default=hardware_test_parameters.test_v_bender              )
     v_bender_absolute_move      = ini_file.get_float_from_ini(  section="Tests",   key="v-bender-absolute-move",      default=hardware_test_parameters.v_bender_absolute_move     )
     v_bender_relative_move      = ini_file.get_float_from_ini(  section="Tests",   key="v-bender-relative-move",      default=hardware_test_parameters.v_bender_relative_move     )
+    test_detector               = ini_file.get_boolean_from_ini(section="Tests",   key="test-detector",               default=hardware_test_parameters.test_detector              )
 
     regenerate_ini                 = False
     exit_script                    = False
@@ -161,28 +162,29 @@ def __get_input_parameters(sys_argv):
         ini_file.set_value_at_ini(section="Directories", key="Root-Directory",  value=DefaultValues.ROOT_DIRECTORY)
         ini_file.set_value_at_ini(section="Execution",   key="Energy",          value=DefaultValues.ENERGY)
         
-        ini_file.set_value_at_ini(section="Tests", key="test-h-pitch",                default=hardware_test_parameters.test_h_pitch               )
-        ini_file.set_value_at_ini(section="Tests", key="h-pitch-absolute-move",       default=hardware_test_parameters.h_pitch_absolute_move      )
-        ini_file.set_value_at_ini(section="Tests", key="h-pitch-relative-move",       default=hardware_test_parameters.h_pitch_relative_move      )
-        ini_file.set_value_at_ini(section="Tests", key="test-h-translation",          default=hardware_test_parameters.test_h_translation         )
-        ini_file.set_value_at_ini(section="Tests", key="h-translation-absolute-move", default=hardware_test_parameters.h_translation_absolute_move)
-        ini_file.set_value_at_ini(section="Tests", key="h-translation-relative-move", default=hardware_test_parameters.h_translation_relative_move)
-        ini_file.set_value_at_ini(section="Tests", key="test-h-bender-1",             default=hardware_test_parameters.test_h_bender_1            )
-        ini_file.set_value_at_ini(section="Tests", key="h-bender-1-absolute-move",    default=hardware_test_parameters.h_bender_1_absolute_move   )
-        ini_file.set_value_at_ini(section="Tests", key="h-bender-1-relative-move",    default=hardware_test_parameters.h_bender_1_relative_move   )
-        ini_file.set_value_at_ini(section="Tests", key="test-h-bender-2",             default=hardware_test_parameters.test_h_bender_2            )
-        ini_file.set_value_at_ini(section="Tests", key="h-bender-2-absolute-move",    default=hardware_test_parameters.h_bender_2_absolute_move   )
-        ini_file.set_value_at_ini(section="Tests", key="h-bender-2-relative-move",    default=hardware_test_parameters.h_bender_2_relative_move   )
-        ini_file.set_value_at_ini(section="Tests", key="test-v-pitch",                default=hardware_test_parameters.test_v_pitch               )
-        ini_file.set_value_at_ini(section="Tests", key="v-pitcv-absolute-move", default=hardware_test_parameters.v_pitch_absolute_move)
-        ini_file.set_value_at_ini(section="Tests", key="v-pitcv-relative-move", default=hardware_test_parameters.v_pitch_relative_move)
-        ini_file.set_value_at_ini(section="Tests", key="test-v-translation",          default=hardware_test_parameters.test_v_translation         )
-        ini_file.set_value_at_ini(section="Tests", key="v-translation-absolute-move", default=hardware_test_parameters.v_translation_absolute_move)
-        ini_file.set_value_at_ini(section="Tests", key="v-translation-relative-move", default=hardware_test_parameters.v_translation_relative_move)
-        ini_file.set_value_at_ini(section="Tests", key="test-v-bender",               default=hardware_test_parameters.test_v_bender              )
-        ini_file.set_value_at_ini(section="Tests", key="v-bender-absolute-move",      default=hardware_test_parameters.v_bender_absolute_move     )
-        ini_file.set_value_at_ini(section="Tests", key="v-bender-relative-move",      default=hardware_test_parameters.v_bender_relative_move     )
-        
+        ini_file.set_value_at_ini(section="Tests", key="test-h-pitch",                value=hardware_test_parameters.test_h_pitch               )
+        ini_file.set_value_at_ini(section="Tests", key="h-pitch-absolute-move",       value=hardware_test_parameters.h_pitch_absolute_move      )
+        ini_file.set_value_at_ini(section="Tests", key="h-pitch-relative-move",       value=hardware_test_parameters.h_pitch_relative_move      )
+        ini_file.set_value_at_ini(section="Tests", key="test-h-translation",          value=hardware_test_parameters.test_h_translation         )
+        ini_file.set_value_at_ini(section="Tests", key="h-translation-absolute-move", value=hardware_test_parameters.h_translation_absolute_move)
+        ini_file.set_value_at_ini(section="Tests", key="h-translation-relative-move", value=hardware_test_parameters.h_translation_relative_move)
+        ini_file.set_value_at_ini(section="Tests", key="test-h-bender-1",             value=hardware_test_parameters.test_h_bender_1            )
+        ini_file.set_value_at_ini(section="Tests", key="h-bender-1-absolute-move",    value=hardware_test_parameters.h_bender_1_absolute_move   )
+        ini_file.set_value_at_ini(section="Tests", key="h-bender-1-relative-move",    value=hardware_test_parameters.h_bender_1_relative_move   )
+        ini_file.set_value_at_ini(section="Tests", key="test-h-bender-2",             value=hardware_test_parameters.test_h_bender_2            )
+        ini_file.set_value_at_ini(section="Tests", key="h-bender-2-absolute-move",    value=hardware_test_parameters.h_bender_2_absolute_move   )
+        ini_file.set_value_at_ini(section="Tests", key="h-bender-2-relative-move",    value=hardware_test_parameters.h_bender_2_relative_move   )
+        ini_file.set_value_at_ini(section="Tests", key="test-v-pitch",                value=hardware_test_parameters.test_v_pitch               )
+        ini_file.set_value_at_ini(section="Tests", key="v-pitch-absolute-move",       value=hardware_test_parameters.v_pitch_absolute_move)
+        ini_file.set_value_at_ini(section="Tests", key="v-pitch-relative-move",       value=hardware_test_parameters.v_pitch_relative_move)
+        ini_file.set_value_at_ini(section="Tests", key="test-v-translation",          value=hardware_test_parameters.test_v_translation         )
+        ini_file.set_value_at_ini(section="Tests", key="v-translation-absolute-move", value=hardware_test_parameters.v_translation_absolute_move)
+        ini_file.set_value_at_ini(section="Tests", key="v-translation-relative-move", value=hardware_test_parameters.v_translation_relative_move)
+        ini_file.set_value_at_ini(section="Tests", key="test-v-bender",               value=hardware_test_parameters.test_v_bender              )
+        ini_file.set_value_at_ini(section="Tests", key="v-bender-absolute-move",      value=hardware_test_parameters.v_bender_absolute_move     )
+        ini_file.set_value_at_ini(section="Tests", key="v-bender-relative-move",      value=hardware_test_parameters.v_bender_relative_move     )
+        ini_file.set_value_at_ini(section="Tests", key="test-detector",               value=hardware_test_parameters.test_detector              )
+
         print("File ini regenerated with default values in\n" + os.path.abspath(os.curdir))
     else:
         ini_file.set_value_at_ini(section="Directories", key="Root-Directory",                 value=root_directory)
@@ -201,14 +203,15 @@ def __get_input_parameters(sys_argv):
         ini_file.set_value_at_ini(section="Tests", key="h-bender-2-absolute-move",    value=h_bender_2_absolute_move   )
         ini_file.set_value_at_ini(section="Tests", key="h-bender-2-relative-move",    value=h_bender_2_relative_move   )
         ini_file.set_value_at_ini(section="Tests", key="test-v-pitch",                value=test_v_pitch               )
-        ini_file.set_value_at_ini(section="Tests", key="v-pitcv-absolute-move",       value=v_pitcv_absolute_move      )
-        ini_file.set_value_at_ini(section="Tests", key="v-pitcv-relative-move",       value=v_pitcv_relative_move      )
+        ini_file.set_value_at_ini(section="Tests", key="v-pitch-absolute-move",       value=v_pitch_absolute_move      )
+        ini_file.set_value_at_ini(section="Tests", key="v-pitch-relative-move",       value=v_pitch_relative_move      )
         ini_file.set_value_at_ini(section="Tests", key="test-v-translation",          value=test_v_translation         )
         ini_file.set_value_at_ini(section="Tests", key="v-translation-absolute-move", value=v_translation_absolute_move)
         ini_file.set_value_at_ini(section="Tests", key="v-translation-relative-move", value=v_translation_relative_move)
         ini_file.set_value_at_ini(section="Tests", key="test-v-bender",               value=test_v_bender              )
         ini_file.set_value_at_ini(section="Tests", key="v-bender-absolute-move",      value=v_bender_absolute_move     )
         ini_file.set_value_at_ini(section="Tests", key="v-bender-relative-move",      value=v_bender_relative_move     )
+        ini_file.set_value_at_ini(section="Tests", key="test-detector",               value=test_detector              )
 
     ini_file.push()
 
@@ -230,14 +233,15 @@ def __get_input_parameters(sys_argv):
     hardware_test_parameters.h_bender_2_absolute_move    = h_bender_2_absolute_move
     hardware_test_parameters.h_bender_2_relative_move    = h_bender_2_relative_move
     hardware_test_parameters.test_v_pitch                = test_v_pitch
-    hardware_test_parameters.v_pitch_absolute_move       = v_pitcv_absolute_move
-    hardware_test_parameters.v_pitch_relative_move       = v_pitcv_relative_move
+    hardware_test_parameters.v_pitch_absolute_move       = v_pitch_absolute_move
+    hardware_test_parameters.v_pitch_relative_move       = v_pitch_relative_move
     hardware_test_parameters.test_v_translation          = test_v_translation
     hardware_test_parameters.v_translation_absolute_move = v_translation_absolute_move
     hardware_test_parameters.v_translation_relative_move = v_translation_relative_move
     hardware_test_parameters.test_v_bender               = test_v_bender
     hardware_test_parameters.v_bender_absolute_move      = v_bender_absolute_move
     hardware_test_parameters.v_bender_relative_move      = v_bender_relative_move
+    hardware_test_parameters.test_detector               = test_detector
 
     return root_directory, energy, hardware_test_parameters
 
