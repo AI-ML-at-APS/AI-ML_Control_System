@@ -57,8 +57,6 @@ from aps.ai.autoalignment.common.measurement.image_processor import ImageProcess
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
 from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptics
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics, DISTANCE_V_MOTORS
-from aps.ai.autoalignment.beamline28IDB.hardware.facade.parameters import HWPhotonBeam
-
 
 def epics_focusing_optics_factory_method(**kwargs):
     return __EpicsFocusingOptics(kwargs)
