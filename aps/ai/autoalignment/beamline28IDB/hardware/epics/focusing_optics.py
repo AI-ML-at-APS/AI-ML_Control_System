@@ -86,9 +86,10 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         
         try:    measurement_directory = kwargs["measurement_directory"]
         except: measurement_directory = os.curdir
-
         try:    self.__physical_boundaries = kwargs["physical_boundaries"]
         except: self.__physical_boundaries = None
+        try:    self.__bender_threshold = kwargs["bender_threshold"]
+        except: self.__bender_threshold    = Motors.BENDER_THRESHOLD
 
         #TODO: ADD CHECK OF PHYSICAL BOuNDARIES
 
@@ -97,7 +98,7 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
 
     def get_photon_beam(self, **kwargs):
         try: from_raw_image    = kwargs["from_raw_image"]
-        except: from_raw_image = False
+        except: from_raw_image = True
 
         try: self.__image_collector.restore_status()
         except: pass
@@ -105,14 +106,14 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         try:
             self.__image_collector.collect_single_shot_image(index=1)
 
-            raw_image, crop_region, cropped_image = self.__image_processor.get_image_data(image_index=1)
+            raw_image, crop_region, cropped_image = self.__image_processor.get_image_data(image_index=1, raw_only=from_raw_image)
 
             output = {}
 
             if from_raw_image:
                 output["h_coord"] = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[0]/2, IMAGE_SIZE_PIXEL_HxV[0]/2, IMAGE_SIZE_PIXEL_HxV[0])*PIXEL_SIZE*1e3
                 output["v_coord"] = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[1]/2, IMAGE_SIZE_PIXEL_HxV[1]/2, IMAGE_SIZE_PIXEL_HxV[1])*PIXEL_SIZE*1e3
-                output["image"]   = raw_image
+                output["image"]   = raw_image - 100
 
                 print(raw_image.shape)
             else:
@@ -126,11 +127,15 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
 
                 print(cropped_image.shape)
 
+            try: self.__image_collector.end_collection()
+            except: pass
             try: self.__image_collector.save_status()
             except: pass
 
             return output
         except Exception as e:
+            try: self.__image_collector.end_collection()
+            except: pass
             try: self.__image_collector.save_status()
             except: pass
 
@@ -142,7 +147,8 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         if movement == Movement.ABSOLUTE:   Motors.BENDER_V.put(actuator_value)
         elif movement == Movement.RELATIVE: Motors.BENDER_V.put(Motors.BENDER_V.get() + actuator_value)
         else: raise ValueError("Movement not recognized")
-        
+        time.sleep(2)
+
     def get_v_bimorph_mirror_motor_bender(self): 
         return Motors.BENDER_V.get()
     
@@ -236,4 +242,4 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         motor.put(desired_position)
 
         # cycle until the readback is close enough to the desired position
-        while (numpy.abs(readback.get() - desired_position) > Motors.BENDER_THRESHOLD): time.sleep(0.2)
+        while (numpy.abs(readback.get() - desired_position) > self.__bender_threshold): time.sleep(0.1)

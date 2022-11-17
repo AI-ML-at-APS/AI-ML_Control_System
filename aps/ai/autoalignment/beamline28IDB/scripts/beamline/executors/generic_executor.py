@@ -84,10 +84,11 @@ class GenericScript(AbstractScript):
 
                 self.__traffic_light.set_green_light()
 
-                print(self._get_script_name() + " #" + str(cycles) + " completed.\n"
-                      "Pausing for " + str(self.__period) + " seconds.")
+                print(self._get_script_name() + " #" + str(cycles) + " completed.")
 
-                time.sleep(self.__period)
+                if self.__n_cycles > 1:
+                    print("Pausing for " + str(self.__period) + " seconds.")
+                    time.sleep(self.__period)
         except Exception as e:
             try:    self.__traffic_light.set_green_light()
             except: pass

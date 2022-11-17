@@ -68,8 +68,8 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
     pixel_area = (x_array[1] - x_array[0]) * (y_array[1] - y_array[0])
 
     hh = z_array
-    hh_h = hh.sum(axis=0)
-    hh_v = hh.sum(axis=1)
+    hh_h = hh.sum(axis=1)
+    hh_v = hh.sum(axis=0)
     xx = x_array
     yy = y_array
 
