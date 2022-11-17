@@ -74,8 +74,8 @@ UNITS_PER_MOTOR = {
 
 # not sure about the movement ranges for hkb4 and vkb4
 DEFAULT_MOVEMENT_RANGES = {
-    "hb_1": [-0.025, 0.025],
-    "hb_2": [-0.025, 0.025],
+    "hb_1": [-25, 25],
+    "hb_2": [-25, 25],
     "hb_pitch": [-0.002, 0.002],
     "hb_trans": [-0.03, 0.03],
     "vb_bender": [-20.0, 20.0],
