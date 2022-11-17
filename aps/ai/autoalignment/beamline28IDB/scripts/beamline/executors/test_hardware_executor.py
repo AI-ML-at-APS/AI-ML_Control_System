@@ -113,7 +113,8 @@ class TestHardwareScript(AbstractScript):
         self.__energy                   = energy
         self.__hardware_test_parameters = hardware_test_parameters
 
-        self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=Implementors.EPICS,
+        self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
+                                                                implementor=Implementors.EPICS,
                                                                 measurement_directory=os.path.join(self.__root_directory, "Tests"))
         self.__focusing_system.initialize()
 
