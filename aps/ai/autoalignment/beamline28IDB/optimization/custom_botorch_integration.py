@@ -52,23 +52,20 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import botorch.utils.multi_objective.pareto
 import numpy
 import torch
-from botorch.acquisition.monte_carlo import (qExpectedImprovement,
-                                             qNoisyExpectedImprovement)
+from botorch.acquisition.monte_carlo import qExpectedImprovement, qNoisyExpectedImprovement
 from botorch.acquisition.multi_objective.monte_carlo import (
-    qExpectedHypervolumeImprovement, qNoisyExpectedHypervolumeImprovement)
-from botorch.acquisition.multi_objective.objective import \
-    IdentityMCMultiOutputObjective
-from botorch.acquisition.objective import (ConstrainedMCObjective,
-                                           GenericMCObjective)
+    qExpectedHypervolumeImprovement,
+    qNoisyExpectedHypervolumeImprovement,
+)
+from botorch.acquisition.multi_objective.objective import IdentityMCMultiOutputObjective
+from botorch.acquisition.objective import ConstrainedMCObjective, GenericMCObjective
 from botorch.fit import fit_gpytorch_mll
 from botorch.models import SingleTaskGP
 from botorch.models.transforms.outcome import Standardize
 from botorch.optim import optimize_acqf
 from botorch.sampling.samplers import SobolQMCNormalSampler
-from botorch.utils.multi_objective.box_decompositions import \
-    NondominatedPartitioning
-from botorch.utils.multi_objective.scalarization import \
-    get_chebyshev_scalarization
+from botorch.utils.multi_objective.box_decompositions import NondominatedPartitioning
+from botorch.utils.multi_objective.scalarization import get_chebyshev_scalarization
 from botorch.utils.sampling import manual_seed, sample_simplex
 from botorch.utils.transforms import normalize, unnormalize
 from gpytorch.mlls import ExactMarginalLogLikelihood
@@ -76,8 +73,7 @@ from optuna import logging
 from optuna._transform import _SearchSpaceTransform
 from optuna.distributions import BaseDistribution
 from optuna.samplers import BaseSampler, IntersectionSearchSpace, RandomSampler
-from optuna.samplers._base import (_CONSTRAINTS_KEY,
-                                   _process_constraints_after_trial)
+from optuna.samplers._base import _CONSTRAINTS_KEY, _process_constraints_after_trial
 from optuna.study import Study, StudyDirection
 from optuna.trial import FrozenTrial, TrialState
 
@@ -252,10 +248,12 @@ def qnehvi_candidates_func(
 
     if ref_point is None:
         ref_point = train_obj.min(dim=0).values - 1e-8
+    else:
+        ref_point = torch.tensor(ref_point)
     #    ref_point_list = list(ref_point)
     # else:
     #    ref_point_list = list(ref_point)
-    ref_point = torch.maximum(ref_points_inferred[:2], torch.tensor(ref_point))
+    ref_point = torch.maximum(ref_points_inferred[:2], ref_point)
     ref_point_list = list(ref_point)
 
     acqf = qNoisyExpectedHypervolumeImprovement(
