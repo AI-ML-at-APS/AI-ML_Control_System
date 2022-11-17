@@ -312,6 +312,7 @@ class AutofocusingScript(GenericScript):
             warnings.filterwarnings("ignore")
 
             beam, hist, dw = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system, photon_beam=None, **self.__sim_params.params)
+
             plot_distribution(
                 beam=beam,
                 title="Initial Beam",
