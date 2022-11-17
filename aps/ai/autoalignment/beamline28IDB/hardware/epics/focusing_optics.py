@@ -105,7 +105,7 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         try:
             self.__image_collector.collect_single_shot_image(index=1)
 
-            raw_image, crop_region, cropped_image = self.__image_processor.get_image_data(image_index=1)
+            raw_image, crop_region, cropped_image = self.__image_processor.get_image_data(image_index=1, raw_only=from_raw_image)
 
             output = {}
 
@@ -126,11 +126,15 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
 
                 print(cropped_image.shape)
 
+            try: self.__image_collector.end_collection()
+            except: pass
             try: self.__image_collector.save_status()
             except: pass
 
             return output
         except Exception as e:
+            try: self.__image_collector.end_collection()
+            except: pass
             try: self.__image_collector.save_status()
             except: pass
 
