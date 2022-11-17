@@ -163,7 +163,7 @@ class BendableFocusingOptics(FocusingOpticsCommon):
         v_bimorph_mirror.FCYL = 1
         v_bimorph_mirror.FHIT_C = 1
         v_bimorph_mirror.FILE_REFL = reflectivity_file.encode()
-        v_bimorph_mirror.FMIRR = 2
+        v_bimorph_mirror.FMIRR = 1 #2 to spherical for coma  aberration
         v_bimorph_mirror.FWRITE = 1
         v_bimorph_mirror.F_DEFAULT = 0
         v_bimorph_mirror.F_REFLEC = 1
