@@ -77,13 +77,13 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
     hh_h = hh.sum(axis=1)
     hh_v = hh.sum(axis=0)
 
-    fwhm_h, _, _ = get_fwhm(hh_h, xx)
+    fwhm_h, fwhm_quote_h, fwhm_coordinates_h = get_fwhm(hh_h, xx)
     sigma_h = get_sigma(hh_h, xx)
-    fwhm_v, _, _ = get_fwhm(hh_v, yy)
+    fwhm_v, fwhm_quote_v, fwhm_coordinates_v = get_fwhm(hh_v, yy)
     sigma_v = get_sigma(hh_v, yy)
     centroid_h = get_average(hh_h, xx)
     centroid_v = get_average(hh_v, yy)
-    peak_h, peak_v = get_peak_location_2D(xx, yy.T, hh)
+    peak_h, peak_v = get_peak_location_2D(xx, yy, hh)
 
     ticket['xrange'] = xrange
     ticket['yrange'] = yrange
@@ -95,10 +95,14 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
     ticket['total'] = numpy.sum(z_array) * pixel_area
     ticket['peak']  = numpy.average(hh[numpy.where(hh >= numpy.max(hh) * 0.95)])
 
-    ticket['fwhm_h'], ticket['fwhm_quote_h'], ticket['fwhm_coordinates_h'] = fwhm_h
+    ticket['fwhm_h'] = fwhm_h
+    ticket['fwhm_quote_h'] = fwhm_quote_h
+    ticket['fwhm_coordinates_h'] = fwhm_coordinates_h
     ticket['sigma_h'] = sigma_h
 
-    ticket['fwhm_v'], ticket['fwhm_quote_v'], ticket['fwhm_coordinates_v'] = fwhm_v
+    ticket['fwhm_v'] = fwhm_v
+    ticket['fwhm_quote_v'] = fwhm_quote_v
+    ticket['fwhm_coordinates_v'] = fwhm_coordinates_v
     ticket['sigma_v'] = sigma_v
 
     ticket['centroid_h'] = centroid_h
@@ -119,7 +123,7 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
                h_sigma=ticket['sigma_h'],
                h_fwhm=ticket['fwhm_h'],
                h_centroid=ticket['centroid_h'],
-               h_peak=ticket['peak_v'],
+               h_peak=ticket['peak_h'],
                v_sigma=ticket['sigma_v'],
                v_fwhm=ticket['fwhm_v'],
                v_centroid=ticket['centroid_v'],
@@ -171,7 +175,7 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
     sigma_v = get_sigma(hh_v, yy)
     centroid_h = get_average(hh_h, xx)
     centroid_v = get_average(hh_v, yy)
-    peak_h, peak_v = get_peak_location_2D(xx, yy.T, hh)
+    peak_h, peak_v = get_peak_location_2D(xx, yy, hh, smooth=True)
 
     integral_intensity = numpy.sum(hh) * (1 if int_um=="" else (xx[1] - xx[0]) * (yy[1] - yy[0]))
     peak_intensity     = numpy.average(hh[numpy.where(hh >= numpy.max(hh) * 0.90)]),

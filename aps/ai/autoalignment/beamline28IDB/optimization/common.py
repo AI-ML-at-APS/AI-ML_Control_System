@@ -309,6 +309,63 @@ def _get_centroid_distance_from_dw(
     return centroid_distance
 
 
+def _get_peak_distance_from_dw(
+        dw: DictionaryWrapper,
+        reference_h: float = 0,
+        reference_v: float = 0,
+        do_gaussian_fit: bool = False,
+        no_beam_value: float = 1e4,
+) -> float:
+    if dw is None:
+        return no_beam_value
+
+    if do_gaussian_fit:
+        gf = dw.get_parameter("gaussian_fit")
+        if not gf:
+            return no_beam_value
+        h_peak = gf["center_x"]
+        v_peak = gf["center_y"]
+    else:
+        h_peak = dw.get_parameter("h_peak")
+        v_peak = dw.get_parameter("v_peak")
+
+    peak_distance = ((h_peak - reference_h) ** 2 + (v_peak - reference_v) ** 2) ** 0.5
+
+    return peak_distance
+
+
+def get_peak_distance(
+        focusing_system: AbstractFocusingOptics = None,
+        photon_beam: object = None,
+        random_seed: float = None,
+        no_beam_value: float = 1e4,
+        xrange: List[float] = None,
+        yrange: List[float] = None,
+        nbins_h: int = 256,
+        nbins_v: int = 256,
+        reference_h: float = 0,
+        reference_v: float = 0,
+        do_gaussian_fit: bool = False,
+        execution_mode=ExecutionMode.SIMULATION,
+        implementor: int = Implementors.SHADOW,
+        **kwargs
+) -> BeamParameterOutput:
+    photon_beam, hist, dw = get_beam_hist_dw(
+        execution_mode=execution_mode,
+        implementor=implementor,
+        focusing_system=focusing_system,
+        photon_beam=photon_beam,
+        random_seed=random_seed,
+        xrange=xrange,
+        yrange=yrange,
+        nbins_h=nbins_h,
+        nbins_v=nbins_v,
+        do_gaussian_fit=do_gaussian_fit,
+    )
+    peak_distance = _get_peak_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
+
+    return BeamParameterOutput(peak_distance, photon_beam, hist, dw)
+
 def get_centroid_distance(
     focusing_system: AbstractFocusingOptics = None,
     photon_beam: object = None,
@@ -576,6 +633,8 @@ class OptimizationCommon(abc.ABC):
         for loss_type in self.loss_parameters:
             if loss_type == "centroid":
                 self._loss_function_list.append(self.get_centroid_distance)
+            elif loss_type == "peak":
+                    self._loss_function_list.append(self.get_peak_distance)
             elif loss_type == "peak_intensity":
                 print("Warning: Stopping condition for the peak intensity case is not supported.")
                 self._loss_function_list.append(self.get_negative_log_peak_intensity)
@@ -649,6 +708,14 @@ class OptimizationCommon(abc.ABC):
     def get_sum_intensity(self) -> float:
         return _get_sum_intensity_from_hist(self.beam_state.hist, self._intensity_no_beam_loss)
 
+    def get_peak_distance(self) -> float:
+        return _get_peak_distance_from_dw(
+            self.beam_state.dw,
+            self.reference_parameter_h_v["peak"][0],
+            self.reference_parameter_h_v["peak"][1],
+            self._do_gaussian_fit,
+            self._no_beam_loss,
+        )
     def get_centroid_distance(self) -> float:
         return _get_centroid_distance_from_dw(
             self.beam_state.dw,
