@@ -12,6 +12,7 @@ from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import (
     ExecutionMode,
     focusing_optics_factory_method,
 )
+from aps.ai.autoalignment.beamline28IDB.optimization import configs
 from aps.ai.autoalignment.beamline28IDB.optimization.optuna_botorch import OptunaOptimizer
 from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import (
     Layout,
@@ -20,37 +21,30 @@ from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interf
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 from aps.ai.autoalignment.common.util import clean_up
 from aps.ai.autoalignment.common.util.common import AspectRatio, ColorMap, PlotMode
-from aps.ai.autoalignment.common.util.shadow.common import (
-    PreProcessorFiles,
-    load_shadow_beam,
-)
+from aps.ai.autoalignment.common.util.shadow.common import PreProcessorFiles, load_shadow_beam
 from aps.ai.autoalignment.common.util.wrappers import plot_distribution
 
 DEFAULT_RANDOM_SEED = np.random.randint(100000)
 
 
-class CentroidSigmaThresholdDependency:
+class CentroidSigmaLossThresholdDependency:
     STATIC = 0
     INITIAL_STRUCTURE = 1
+    FULLY_DYNAMIC = 2
 
 
 class OptimizationParameters:
     def __init__(self):
-        self.move_motors_ranges = {
-            "hb_1": [-100, 100],  # in V
-            "hb_2": [-100, 100],  # in V
-            "hb_pitch": [-0.02, 0.02],  # in mrad
-            "hb_trans": [-30, 30],  # in microns
-            "vb_bender": [-600, 600],  # in volt
-            "vb_pitch": [-0.02, 0.02],  # in mrad
-            "vb_trans": [-30, 30],  # in microns
-        }
+        self.move_motors_ranges = configs.DEFAULT_MOVEMENT_RANGES
 
         self.params = {
             "sum_intensity_soft_constraint": 7e3,
             "sum_intensity_hard_constraint": 6.5e3,
-            "centroid_sigma_threshold_dependency": CentroidSigmaThresholdDependency.INITIAL_STRUCTURE,
-            "centroid_sigma_hard_thresholds_tuple": [0.01, 0.03],
+            "reference_parameters_h_v": {"centroid": (-0.01, 0.01), "sigma": (0.00, 0.0)},
+            #            "centroid_sigma_loss_threshold_dependency": CentroidSigmaLossThresholdDependency.FULLY_DYNAMIC,
+            #            "centroid_sigma_loss_hard_thresholds": [0.01, 0.03],
+            "loss_parameters": ["centroid", "sigma"],
+            "multi_objective_optimization": True,
             "n_pitch_trans_motor_trials": 50,
             "n_all_motor_trials": 100,
         }
@@ -165,23 +159,36 @@ if __name__ == "__main__":
     opt_trial = OptunaOptimizer(
         focusing_system,
         motor_types=list(opt_params.move_motors_ranges.keys()),
-        loss_parameters=["centroid", "sigma"],
-        multi_objective_optimization=True,
+        loss_parameters=opt_params.params["loss_parameters"],
+        reference_parameters_h_v=opt_params.params["reference_parameters_h_v"],
+        multi_objective_optimization=opt_params.params["multi_objective_optimization"],
         **sim_params.params,
     )
 
     # Setting up the optimizer
     constraints = {"sum_intensity": opt_params.params["sum_intensity_soft_constraint"]}
 
-    if opt_params.params["centroid_sigma_threshold_dependency"] == CentroidSigmaThresholdDependency.STATIC:
-        moo_thresholds = {
-            "centroid": opt_params.params["centroid_sigma_hard_thresholds_tuple"][0],
-            "sigma": opt_params.params["centroid_sigma_hard_thresholds_tuple"][1],
-        }
-    elif opt_params.params["centroid_sigma_threshold_dependency"] == CentroidSigmaThresholdDependency.INITIAL_STRUCTURE:
-        moo_thresholds = {"centroid": centroid_init, "sigma": sigma_init}
-    else:
-        raise ValueError
+    # loss_threshold_dependency = opt_params.params["centroid_sigma_loss_threshold_dependency"]
+    # if loss_threshold_dependency == CentroidSigmaLossThresholdDependency.STATIC:
+    #    moo_thresholds = {
+    #        "centroid": opt_params.params["centroid_sigma_loss_hard_thresholds"][0],
+    #        "sigma": opt_params.params["centroid_sigma_loss_hard_thresholds"][1],
+    #    }
+    # else:
+    #    print(
+    #        "Warning: If the centroid_sigma_loss_threshold_dependency is not static, "
+    #        + "then any supplied values are ignored."
+    #    )
+    #    if loss_threshold_dependency == CentroidSigmaLossThresholdDependency.INITIAL_STRUCTURE:
+    #        print(
+    #            "Warning: if using initial structure values for centroid_sigma_loss_threshold_dependency "
+    #            + "then the reference value should all be 0."
+    #        )
+    #        moo_thresholds = {"centroid": centroid_init, "sigma": sigma_init}
+    #    elif loss_threshold_dependency == CentroidSigmaLossThresholdDependency.FULLY_DYNAMIC:
+    #        moo_thresholds = None
+    #    else:
+    #        raise ValueError
 
     opt_trial.set_optimizer_options(
         motor_ranges=list(opt_params.move_motors_ranges.values()),
@@ -189,18 +196,13 @@ if __name__ == "__main__":
         use_discrete_space=True,
         sum_intensity_threshold=opt_params.params["sum_intensity_hard_constraint"],
         constraints=constraints,
-        moo_thresholds=moo_thresholds,
+        # moo_thresholds=moo_thresholds,
     )
 
     n1 = opt_params.params["n_pitch_trans_motor_trials"]
     print(f"First optimizing only the pitch and translation motors for {n1} trials.")
 
     opt_trial.trials(n1, trial_motor_types=["hb_pitch", "hb_trans", "vb_pitch", "vb_trans"])
-
-    datetime_str = datetime.strftime(datetime.now(), "%Y:%m:%d:%H:%M")
-    chkpt_name = f"optimization_checkpoint_{n1}_{datetime_str}.pkl"
-    joblib.dump(opt_trial.study.trials, chkpt_name)
-    print(f"Saving a checkpoint in {chkpt_name}")
 
     n2 = opt_params.params["n_all_motor_trials"]
     print(f"Optimizing all motors together for {n2} trials.")
@@ -215,7 +217,8 @@ if __name__ == "__main__":
     print(values)
 
     print("Moving motor to optimal position")
-    opt_trial._loss_fn_this(list(optimal_params.values()))
+    opt_trial.study.enqueue_trial(optimal_params)
+    opt_trial.trials(1)
     plot_distribution(
         beam=opt_trial.beam_state.photon_beam,
         title="Optimized beam",
@@ -226,7 +229,7 @@ if __name__ == "__main__":
     )
 
     datetime_str = datetime.strftime(datetime.now(), "%Y:%m:%d:%H:%M")
-    chkpt_name = f"optimization_final_{n1+n2}_{datetime_str}.pkl"
+    chkpt_name = f"optimization_final_{n1+n2}_{datetime_str}.gz"
     joblib.dump(opt_trial.study.trials, chkpt_name)
     print(f"Saving all trials in {chkpt_name}")
 

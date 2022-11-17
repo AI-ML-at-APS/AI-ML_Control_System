@@ -57,7 +57,6 @@ from aps.ai.autoalignment.common.simulation.facade.parameters import Implementor
 from aps.ai.autoalignment.common.util import clean_up
 from aps.ai.autoalignment.common.util.common import DictionaryWrapper, Histogram, get_info
 from aps.ai.autoalignment.common.util.wrappers import get_distribution_info as get_simulated_distribution_info
-
 from aps.ai.autoalignment.common.util.shadow.common import EmptyBeamException, HybridFailureException, PreProcessorFiles, load_shadow_beam
 
 
@@ -284,8 +283,13 @@ def _get_sum_intensity_from_hist(hist: Histogram, no_beam_value: float = 0) -> f
     return hist.data_2D.sum()
 
 
+
 def _get_centroid_distance_from_dw(
-    dw: DictionaryWrapper, do_gaussian_fit: bool = False, no_beam_value: float = 1e4
+    dw: DictionaryWrapper,
+    reference_h: float = 0,
+    reference_v: float = 0,
+    do_gaussian_fit: bool = False,
+    no_beam_value: float = 1e4,
 ) -> float:
     if dw is None:
         return no_beam_value
@@ -299,7 +303,9 @@ def _get_centroid_distance_from_dw(
     else:
         h_centroid = dw.get_parameter("h_centroid")
         v_centroid = dw.get_parameter("v_centroid")
-    centroid_distance = (h_centroid**2 + v_centroid**2) ** 0.5
+
+    centroid_distance = ((h_centroid - reference_h) ** 2 + (v_centroid - reference_v) ** 2) ** 0.5
+
     return centroid_distance
 
 
@@ -312,6 +318,8 @@ def get_centroid_distance(
     yrange: List[float] = None,
     nbins_h: int = 256,
     nbins_v: int = 256,
+    reference_h: float = 0,
+    reference_v: float = 0,
     do_gaussian_fit: bool = False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
@@ -329,11 +337,17 @@ def get_centroid_distance(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
     )
-    centroid_distance = _get_centroid_distance_from_dw(dw, do_gaussian_fit, no_beam_value)
+    centroid_distance = _get_centroid_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
+    
     return BeamParameterOutput(centroid_distance, photon_beam, hist, dw)
 
-
-def _get_fwhm_from_dw(dw: DictionaryWrapper, do_gaussian_fit: bool = False, no_beam_value: float = 1e4) -> float:
+def _get_fwhm_from_dw(
+    dw: DictionaryWrapper,
+    reference_h: float = 0,
+    reference_v: float = 0,
+    do_gaussian_fit: bool = False,
+    no_beam_value: float = 1e4,
+) -> float:
     if dw is None:
         return no_beam_value
     if do_gaussian_fit:
@@ -345,11 +359,17 @@ def _get_fwhm_from_dw(dw: DictionaryWrapper, do_gaussian_fit: bool = False, no_b
     else:
         h_fwhm = dw.get_parameter("h_fwhm")
         v_fwhm = dw.get_parameter("v_fwhm")
-    fwhm = (h_fwhm**2 + v_fwhm**2) ** 0.5
+    fwhm = ((h_fwhm - reference_h) ** 2 + (v_fwhm - reference_v) ** 2) ** 0.5
+
     return fwhm
 
-
-def _get_sigma_from_dw(dw: DictionaryWrapper, do_gaussian_fit: bool = False, no_beam_value: float = 1e4) -> float:
+def _get_sigma_from_dw(
+    dw: DictionaryWrapper,
+    reference_h: float = 0,
+    reference_v: float = 0,
+    do_gaussian_fit: bool = False,
+    no_beam_value: float = 1e4,
+) -> float:
     if dw is None:
         return no_beam_value
     if do_gaussian_fit:
@@ -361,9 +381,8 @@ def _get_sigma_from_dw(dw: DictionaryWrapper, do_gaussian_fit: bool = False, no_
     else:
         h_sigma = dw.get_parameter("h_sigma")
         v_sigma = dw.get_parameter("v_sigma")
-    sigma = (h_sigma**2 + v_sigma**2) ** 0.5
+    sigma = ((h_sigma - reference_h) ** 2 + (v_sigma - reference_v) ** 2) ** 0.5
     return sigma
-
 
 def get_fwhm(
     focusing_system: AbstractFocusingOptics = None,
@@ -374,8 +393,10 @@ def get_fwhm(
     yrange: List[float] = None,
     nbins_h: int = 256,
     nbins_v: int = 256,
+    reference_h: float = 0,
+    reference_v: float = 0,
     do_gaussian_fit: bool = False,
-    execution_mode = ExecutionMode.SIMULATION,
+    execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs
 ) -> BeamParameterOutput:
@@ -391,9 +412,9 @@ def get_fwhm(
         execution_mode=execution_mode,
         implementor=implementor,
     )
-    fwhm = _get_fwhm_from_dw(dw, do_gaussian_fit, no_beam_value)
+    fwhm = _get_fwhm_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
+    
     return BeamParameterOutput(fwhm, photon_beam, hist, dw)
-
 
 def get_sigma(
     focusing_system: AbstractFocusingOptics = None,
@@ -404,8 +425,10 @@ def get_sigma(
     yrange: List[float] = None,
     nbins_h: int = 256,
     nbins_v: int = 256,
+    reference_h: float = 0,
+    reference_v: float = 0,
     do_gaussian_fit: bool = False,
-    execution_mode = ExecutionMode.SIMULATION,
+    execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs
 ) -> BeamParameterOutput:
@@ -421,9 +444,9 @@ def get_sigma(
         execution_mode=execution_mode,
         implementor=implementor,
     )
-    sigma = _get_sigma_from_dw(dw, do_gaussian_fit, no_beam_value)
+    sigma = _get_sigma_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
+    
     return BeamParameterOutput(sigma, photon_beam, hist, dw)
-
 
 def get_random_init(
     focusing_system,
@@ -517,6 +540,7 @@ class OptimizationCommon(abc.ABC):
         motor_types: List[str],
         random_seed: int = None,
         loss_parameters: List[str] = "centroid",
+        reference_parameters_h_v: Dict[str, Tuple] = None,
         loss_min_value: float = None,
         xrange: List[float] = None,
         yrange: List[float] = None,
@@ -536,6 +560,15 @@ class OptimizationCommon(abc.ABC):
 
         self.initial_motor_positions = movers.get_absolute_positions(focusing_system, self.motor_types)
         self.loss_parameters = list(np.atleast_1d(loss_parameters))
+        self.reference_parameter_h_v = configs.DEFAULT_LOSS_REFERENCE_VALUES
+
+        if reference_parameters_h_v is not None:
+            for k in reference_parameters_h_v:
+                if k not in configs.DEFAULT_LOSS_REFERENCE_VALUES:
+                    raise NotImplementedError(f"Reference value not implemented for {k}")
+                if np.ndim(reference_parameters_h_v[k]) != 1:
+                    raise ValueError("For now, reference parameters should be in the format (h, v). ")
+                self.reference_parameter_h_v[k] = reference_parameters_h_v[k]
 
         self._loss_function_list = []
         temp_loss_min_value = 0
@@ -588,7 +621,7 @@ class OptimizationCommon(abc.ABC):
             nbins_h=self._nbins_h,
             nbins_v=self._nbins_v,
             do_gaussian_fit=self._do_gaussian_fit,
-            execution_mode= self._execution_mode,
+            execution_mode=self._execution_mode,
             implementor=self._implementor,
         )
 
@@ -616,13 +649,31 @@ class OptimizationCommon(abc.ABC):
         return _get_sum_intensity_from_hist(self.beam_state.hist, self._intensity_no_beam_loss)
 
     def get_centroid_distance(self) -> float:
-        return _get_centroid_distance_from_dw(self.beam_state.dw, self._do_gaussian_fit, self._no_beam_loss)
+        return _get_centroid_distance_from_dw(
+            self.beam_state.dw,
+            self.reference_parameter_h_v["centroid"][0],
+            self.reference_parameter_h_v["centroid"][1],
+            self._do_gaussian_fit,
+            self._no_beam_loss,
+        )
 
     def get_fwhm(self) -> float:
-        return _get_fwhm_from_dw(self.beam_state.dw, self._do_gaussian_fit, self._no_beam_loss)
+        return _get_fwhm_from_dw(
+            self.beam_state.dw,
+            self.reference_parameter_h_v["fwhm"][0],
+            self.reference_parameter_h_v["fwhm"][1],
+            self._do_gaussian_fit,
+            self._no_beam_loss,
+        )
 
     def get_sigma(self) -> float:
-        return _get_sigma_from_dw(self.beam_state.dw, self._do_gaussian_fit, self._no_beam_loss)
+        return _get_sigma_from_dw(
+            self.beam_state.dw,
+            self.reference_parameter_h_v["sigma"][0],
+            self.reference_parameter_h_v["sigma"][1],
+            self._do_gaussian_fit,
+            self._no_beam_loss,
+        )
 
     def loss_function(self, translations: Union[List[float], "np.ndarray"], verbose: bool = True) -> float:
         """This mutates the state of the focusing system."""

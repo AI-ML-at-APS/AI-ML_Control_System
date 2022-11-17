@@ -43,7 +43,10 @@ class OptimizationParameters:
         self.params = {
             "sum_intensity_soft_constraint": 7e3,
             "sum_intensity_hard_constraint": 6.5e3,
-            "n_trials": 50,
+            "n_trials": 20,
+            "loss_parameters": ["centroid", "sigma"],
+            "multi_objective_optimization": True,
+            "reference_parameters_h_v": {"centroid": (-0.1, 0.1), "sigma": (0.29, 0.29)},
         }
 
 
@@ -121,7 +124,10 @@ if __name__ == "__main__":
         color_map=color_map,
         **sim_params.params,
     )
-
+    sigma_h_ground = dw.get_parameter("h_sigma")
+    sigma_v_ground = dw.get_parameter("v_sigma")
+    centroid_h_ground = dw.get_parameter("h_centroid")
+    centroid_v_ground = dw.get_parameter("v_centroid")
     centroid_ground, *_ = opt_common.get_centroid_distance(photon_beam=beam, **sim_params.params)
     sigma_ground, *_ = opt_common.get_sigma(photon_beam=beam, **sim_params.params)
 
@@ -156,7 +162,9 @@ if __name__ == "__main__":
     opt_trial = OptunaOptimizer(
         focusing_system,
         motor_types=list(opt_params.move_motors_ranges.keys()),
-        loss_parameters=["centroid"],
+        loss_parameters=opt_params.params["loss_parameters"],
+        reference_parameters_h_v=opt_params.params["reference_parameters_h_v"],
+        multi_objective_optimization=opt_params.params["multi_objective_optimization"],
         **sim_params.params,
     )
 
@@ -176,12 +184,13 @@ if __name__ == "__main__":
 
     opt_trial.trials(n1)
 
-    optimal_params, value = opt_trial.study.best_trial.params, opt_trial.study.best_trial.value
+    print("Selecting the optimal parameters")
+    optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials)
 
     print("Optimal parameters")
     print(optimal_params)
     print("Optimal vaue: (centroid))")
-    print(value)
+    print(values)
 
     print("Moving motor to optimal position")
     opt_trial.study.enqueue_trial(optimal_params)
@@ -197,11 +206,20 @@ if __name__ == "__main__":
     )
 
     datetime_str = datetime.strftime(datetime.now(), "%Y:%m:%d:%H:%M")
-    chkpt_name = f"autofocus_final_{n1}_{datetime_str}.pkl"
+    chkpt_name = f"autofocus_final_{n1}_{datetime_str}.gz"
     joblib.dump(opt_trial.study.trials, chkpt_name)
     print(f"Saving all trials in {chkpt_name}")
 
-    optuna.visualization.matplotlib.plot_optimization_history(opt_trial.study, target_name="centroid")
+    print(opt_trial.study.trials[0].values)
+    optuna.visualization.matplotlib.plot_optimization_history(
+        opt_trial.study, target_name="centroid", target=lambda t: t.values[0]
+    )
+    plt.tight_layout()
+    plt.show()
+
+    optuna.visualization.matplotlib.plot_optimization_history(
+        opt_trial.study, target_name="sigma", target=lambda t: t.values[1]
+    )
     plt.tight_layout()
     plt.show()
 

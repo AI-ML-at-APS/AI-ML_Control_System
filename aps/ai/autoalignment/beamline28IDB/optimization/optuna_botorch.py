@@ -46,7 +46,7 @@
 # ----------------------------------------------------------------------- #
 import os
 from copy import deepcopy
-from typing import Callable, Dict, List, NoReturn, Optional, Union
+from typing import Callable, Dict, List, NoReturn, Optional, Union, Tuple
 
 import numpy as np
 import optuna
@@ -83,6 +83,7 @@ class OptunaOptimizer(common.OptimizationCommon):
                  motor_types                 : List[str],
                  random_seed                 : int = None,
                  loss_parameters             : List[str] = "centroid",
+                 reference_parameters_h_v    : Dict[str, Tuple] = None,
                  loss_min_value              : float = None,
                  xrange                      : List[float] = None,
                  yrange                      : List[float] = None,
@@ -101,6 +102,7 @@ class OptunaOptimizer(common.OptimizationCommon):
                          motor_types,
                          random_seed,
                          loss_parameters,
+                         reference_parameters_h_v,
                          loss_min_value,
                          xrange,
                          yrange,
