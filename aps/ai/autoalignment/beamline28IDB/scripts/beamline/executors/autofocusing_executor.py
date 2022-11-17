@@ -247,9 +247,10 @@ class AutofocusingScript(GenericScript):
     def __init__(self, root_directory, energy, period, n_cycles, mocking_mode, simulation_mode):
         super(AutofocusingScript, self).__init__(root_directory, energy, period, n_cycles, mocking_mode, simulation_mode)
 
-        self.__plot_mode    = PlotMode.INTERNAL
-        self.__aspect_ratio = AspectRatio.AUTO
-        self.__color_map    = ColorMap.GRAY
+        self.__data_directory = os.path.join(self._root_directory, "AI", "autoalignment")
+        self.__plot_mode      = PlotMode.INTERNAL
+        self.__aspect_ratio   = AspectRatio.AUTO
+        self.__color_map      = ColorMap.GRAY
 
         if self._simulation_mode:
             self.__sim_params = SimulationParameters()
@@ -296,7 +297,16 @@ class AutofocusingScript(GenericScript):
         return "Autofocusing"
 
     def _execute_script_inner(self, **kwargs):
-        def set_optimizer_constraints(opt_trial):
+        def get_optimizer(params):
+            opt_trial = OptunaOptimizer(
+                self.__focusing_system,
+                motor_types=list(self.__opt_params.move_motors_ranges.keys()),
+                loss_parameters=self.__opt_params.params["loss_parameters"],
+                reference_parameters_h_v=self.__opt_params.params["reference_parameters_h_v"],
+                multi_objective_optimization=self.__opt_params.params["multi_objective_optimization"],
+                **params,
+            )
+
             # Setting up the optimizer
             constraints = {"sum_intensity": self.__opt_params.params["sum_intensity_soft_constraint"]}
 
@@ -307,6 +317,8 @@ class AutofocusingScript(GenericScript):
                 sum_intensity_threshold=self.__opt_params.params["sum_intensity_hard_constraint"],
                 constraints=constraints,
             )
+
+            return opt_trial
 
         if self._simulation_mode:
             warnings.filterwarnings("ignore")
@@ -338,7 +350,7 @@ class AutofocusingScript(GenericScript):
             )
     
             centroid_init = opt_common._get_centroid_distance_from_dw(dw_init)
-            sigma_init = opt_common._get_sigma_from_dw(dw_init)
+            sigma_init    = opt_common._get_sigma_from_dw(dw_init)
             print(f"Perturbed system centroid: {centroid_init:4.3e}, sigma: {sigma_init:4.3e}")
     
             plot_distribution(
@@ -351,62 +363,9 @@ class AutofocusingScript(GenericScript):
             )
     
             # Now the optimization
-            opt_trial = OptunaOptimizer(
-                self.__focusing_system,
-                motor_types=list(self.__opt_params.move_motors_ranges.keys()),
-                loss_parameters=self.__opt_params.params["loss_parameters"],
-                reference_parameters_h_v=self.__opt_params.params["reference_parameters_h_v"],
-                multi_objective_optimization=True,
-                **self.__sim_params.params,
-            )
-            set_optimizer_constraints(opt_trial)
-
-            n1 = self.__opt_params.params["n_pitch_trans_motor_trials"]
-            print(f"First optimizing only the pitch and translation motors for {n1} trials.")
-    
-            opt_trial.trials(n1, trial_motor_types=["hb_pitch", "hb_trans", "vb_pitch", "vb_trans"])
-
-            n2 = self.__opt_params.params["n_all_motor_trials"]
-            print(f"Optimizing all motors together for {n2} trials.")
-            opt_trial.trials(n2)
-    
-            print("Selecting the optimal parameters")
-            optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials)
-    
-            print("Optimal parameters")
-            print(optimal_params)
-            print("Optimal values: " + str(self.__opt_params.params["loss_parameters"]))
-            print(values)
-    
-            print("Moving motor to optimal position")
-            opt_trial.study.enqueue_trial(optimal_params)
-            opt_trial.trials(1)
-
-            plot_distribution(
-                beam=opt_trial.beam_state.photon_beam,
-                title="Optimized beam",
-                plot_mode=self.__plot_mode,
-                aspect_ratio=self.__aspect_ratio,
-                color_map=self.__color_map,
-                **self.__sim_params.params,
-            )
-    
-            datetime_str = datetime.strftime(datetime.now(), "%Y:%m:%d:%H:%M")
-            chkpt_name = f"optimization_final_{n1 + n2}_{datetime_str}.pkl"
-            joblib.dump(opt_trial.study.trials, chkpt_name)
-            print(f"Saving all trials in {chkpt_name}")
-    
-            clean_up()
+            opt_trial = get_optimizer(self.__sim_params.params)
         else:
             self.__hw_params = HardwareParameters()
-
-            def plot(photon_beam, title):
-                plot_2D(x_array=photon_beam["h_coord"],
-                        y_array=photon_beam["v_coord"],
-                        z_array=photon_beam["image"],
-                        title=title,
-                        color_map=self.__color_map,
-                        aspect_ratio=self.__aspect_ratio)
 
             motors = list(self.__opt_params.move_motors_ranges.keys())
             initial_absolute_positions = {k: movers.get_absolute_positions(self.__focusing_system, k)[0] for k in motors}
@@ -424,50 +383,63 @@ class AutofocusingScript(GenericScript):
 
             print(f"Initial system centroid: {centroid_init:4.3e}, sigma: {sigma_init:4.3e}")
 
-            plot(beam, "Initial Beam")
+            plot_2D(x_array=beam["h_coord"],
+                    y_array=beam["v_coord"],
+                    z_array=beam["image"],
+                    title="Initial beam",
+                    color_map=self.__color_map,
+                    aspect_ratio=self.__aspect_ratio)
 
-            # Now the optimization
-            opt_trial = OptunaOptimizer(
-                self.__focusing_system,
-                motor_types=list(self.__opt_params.move_motors_ranges.keys()),
-                loss_parameters=self.__opt_params.params["loss_parameters"],
-                reference_parameters_h_v=self.__opt_params.params["reference_parameters_h_v"],
-                multi_objective_optimization=True,
+            opt_trial = get_optimizer(self.__hw_params.params)
+
+        n1 = self.__opt_params.params["n_pitch_trans_motor_trials"]
+        print(f"First optimizing only the pitch and translation motors for {n1} trials.")
+
+        opt_trial.trials(n1, trial_motor_types=["hb_pitch", "hb_trans", "vb_pitch", "vb_trans"])
+
+        n2 = self.__opt_params.params["n_all_motor_trials"]
+        print(f"Optimizing all motors together for {n2} trials.")
+        opt_trial.trials(n2)
+
+        print("Selecting the optimal parameters")
+        optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials)
+
+        print("Optimal parameters")
+        print(optimal_params)
+        print("Optimal values: (centroid, sigma)")
+        print(values)
+
+        print("Moving motor to optimal position")
+
+        print("Moving motor to optimal position")
+        opt_trial.study.enqueue_trial(optimal_params)
+        opt_trial.trials(1)
+
+        if self._simulation_mode:
+            plot_distribution(
+                beam=opt_trial.beam_state.photon_beam,
+                title="Optimized beam",
+                plot_mode=self.__plot_mode,
+                aspect_ratio=self.__aspect_ratio,
+                color_map=self.__color_map,
                 **self.__sim_params.params,
             )
-            set_optimizer_constraints(opt_trial)
 
-            n1 = self.__opt_params.params["n_pitch_trans_motor_trials"]
-            print(f"First optimizing only the pitch and translation motors for {n1} trials.")
+            clean_up()
+        else:
+            plot_2D(x_array=opt_trial.beam_state.photon_beam["h_coord"],
+                    y_array=opt_trial.beam_state.photon_beam["v_coord"],
+                    z_array=opt_trial.beam_state.photon_beam["image"],
+                    title="Optimized beam",
+                    color_map=self.__color_map,
+                    aspect_ratio=self.__aspect_ratio)
 
-            opt_trial.trials(n1, trial_motor_types=["hb_pitch", "hb_trans", "vb_pitch", "vb_trans"])
-
-            n2 = self.__opt_params.params["n_all_motor_trials"]
-            print(f"Optimizing all motors together for {n2} trials.")
-            opt_trial.trials(n2)
-
-            print("Selecting the optimal parameters")
-            optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials)
-
-            print("Optimal parameters")
-            print(optimal_params)
-            print("Optimal values: (centroid, sigma)")
-            print(values)
-
-            print("Moving motor to optimal position")
-
-            print("Moving motor to optimal position")
-            opt_trial.study.enqueue_trial(optimal_params)
-            opt_trial.trials(1)
-
-            plot(photon_beam=opt_trial.beam_state.photon_beam, title="Optimized beam")
-
-            datetime_str = datetime.strftime(datetime.now(), "%Y:%m:%d:%H:%M")
-            chkpt_name = f"optimization_final_{n1 + n2}_{datetime_str}.pkl"
-            joblib.dump(opt_trial.study.trials, chkpt_name)
-            print(f"Saving all trials in {chkpt_name}")
+        datetime_str = datetime.strftime(datetime.now(), "%Y-%m-%d_%H:%M")
+        chkpt_name = f"optimization_final_{n1 + n2}_{datetime_str}.pkl"
+        joblib.dump(opt_trial.study.trials, chkpt_name)
+        print(f"Saving all trials in {chkpt_name}")
 
     def __setup_work_dir(self):
-        os.chdir(os.path.join(self._root_directory, "simulation"))
+        os.chdir(os.path.join(self.__data_directory, "simulation"))
 
 
