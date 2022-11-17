@@ -130,10 +130,10 @@ def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins
            DictionaryWrapper(
                h_sigma=get_sigma(hh_h, xx),
                h_fwhm=ticket['fwhm_h'],
-               h_centroid=get_average(hh_v, yy),
+               h_centroid=get_average(hh_h, xx),
                v_sigma=get_sigma(hh_v, yy),
                v_fwhm=ticket['fwhm_v'],
-               v_centroid=get_average(hh_h, xx),
+               v_centroid=get_average(hh_v, yy),
                integral_intensity=ticket['intensity'],
                peak_intensity=numpy.average(hh[numpy.where(hh >= numpy.max(hh) * 0.95)]),
                gaussian_fit=gaussian_fit
