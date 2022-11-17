@@ -77,7 +77,7 @@ def __get_input_parameters(sys_argv):
             elif "-ri"   == sys_argv[i][:3]: exit_script = regenerate_ini   = True
             elif "-mock" == sys_argv[i][:5]: mocking_mode = True
             elif "--h"   == sys_argv[i][:3]:
-                print("Run Autolignment\n\npython -m aps.ai.autolignment BLE AA <options>\n\n" +
+                print("Run Autolignment\n\npython -m aps.ai.autolignment 28ID AA <options>\n\n" +
                       "Options: -pd <period in minutes (int)>\n" +
                       "         -nc <number of cycles>\n" +
                       "         -mock (fake execution, for test purposes)\n" +

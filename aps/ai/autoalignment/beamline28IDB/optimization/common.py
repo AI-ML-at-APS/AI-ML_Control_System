@@ -66,7 +66,7 @@ from aps.ai.autoalignment.common.util.shadow.common import (
     load_shadow_beam,
 )
 from aps.ai.autoalignment.common.util.wrappers import get_distribution_info as get_simulated_distribution_info
-
+from aps.ai.autoalignment.common.util.shadow.common import EmptyBeamException, HybridFailureException, PreProcessorFiles, load_shadow_beam
 
 def get_distribution_info(
     execution_mode=ExecutionMode.SIMULATION,
@@ -306,6 +306,7 @@ def _get_sum_intensity_from_hist(hist: Histogram, no_beam_value: float = 0) -> f
     return hist.data_2D.sum()
 
 
+
 def _get_centroid_distance_from_dw(
     dw: DictionaryWrapper,
     reference_h: float = 0,
@@ -325,7 +326,9 @@ def _get_centroid_distance_from_dw(
     else:
         h_centroid = dw.get_parameter("h_centroid")
         v_centroid = dw.get_parameter("v_centroid")
+
     centroid_distance = ((h_centroid - reference_h) ** 2 + (v_centroid - reference_v) ** 2) ** 0.5
+
     return centroid_distance
 
 
@@ -358,8 +361,8 @@ def get_centroid_distance(
         do_gaussian_fit=do_gaussian_fit,
     )
     centroid_distance = _get_centroid_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
+    
     return BeamParameterOutput(centroid_distance, photon_beam, hist, dw)
-
 
 def _get_fwhm_from_dw(
     dw: DictionaryWrapper,
@@ -380,8 +383,8 @@ def _get_fwhm_from_dw(
         h_fwhm = dw.get_parameter("h_fwhm")
         v_fwhm = dw.get_parameter("v_fwhm")
     fwhm = ((h_fwhm - reference_h) ** 2 + (v_fwhm - reference_v) ** 2) ** 0.5
-    return fwhm
 
+    return fwhm
 
 def _get_sigma_from_dw(
     dw: DictionaryWrapper,
@@ -403,7 +406,6 @@ def _get_sigma_from_dw(
         v_sigma = dw.get_parameter("v_sigma")
     sigma = ((h_sigma - reference_h) ** 2 + (v_sigma - reference_v) ** 2) ** 0.5
     return sigma
-
 
 def get_fwhm(
     focusing_system: AbstractFocusingOptics = None,
@@ -434,8 +436,8 @@ def get_fwhm(
         implementor=implementor,
     )
     fwhm = _get_fwhm_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
+    
     return BeamParameterOutput(fwhm, photon_beam, hist, dw)
-
 
 def get_sigma(
     focusing_system: AbstractFocusingOptics = None,
@@ -466,8 +468,8 @@ def get_sigma(
         implementor=implementor,
     )
     sigma = _get_sigma_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
+    
     return BeamParameterOutput(sigma, photon_beam, hist, dw)
-
 
 def get_random_init(
     focusing_system,
@@ -589,7 +591,6 @@ class OptimizationCommon(abc.ABC):
 
         self.initial_motor_positions = movers.get_absolute_positions(focusing_system, self.motor_types)
         self.loss_parameters = list(np.atleast_1d(loss_parameters))
-        # self.reference_parameter_values = reference_parameter_values
         self.reference_parameter_h_v = configs.DEFAULT_LOSS_REFERENCE_VALUES
 
         if reference_parameters_h_v is not None:
@@ -719,16 +720,14 @@ class OptimizationCommon(abc.ABC):
         self._opt_trials_motor_positions.append(translations)
         self._opt_trials_losses.append(loss)
         self._opt_fn_call_counter += 1
-        if verbose:
-            print("motors", self.motor_types, "trans", translations, "current loss", loss)
+        if verbose: print("motors", self.motor_types, "trans", translations, "current loss", loss)
         return loss
 
     def _check_initial_loss(self, verbose=False) -> NoReturn:
         size = np.size(self.motor_types)
         lossfn_obj_this = self.TrialInstanceLossFunction(self, verbose=verbose)
         initial_loss = lossfn_obj_this.loss(np.atleast_1d(np.zeros(size)), verbose=False)
-        if initial_loss >= self._no_beam_loss:
-            raise EmptyBeamException("Initial beam is out of bounds.")
+        if initial_loss >= self._no_beam_loss: raise EmptyBeamException("Initial beam is out of bounds.")
         print("Initial loss is", initial_loss)
 
     def reset(self) -> NoReturn:

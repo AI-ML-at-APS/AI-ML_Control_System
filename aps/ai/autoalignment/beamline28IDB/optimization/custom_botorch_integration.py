@@ -246,13 +246,9 @@ def qnehvi_candidates_func(
 
     ref_points_inferred = botorch.utils.multi_objective.hypervolume.infer_reference_point(pareto_front)
 
-    if ref_point is None:
-        ref_point = train_obj.min(dim=0).values - 1e-8
-    else:
-        ref_point = torch.tensor(ref_point)
-    #    ref_point_list = list(ref_point)
-    # else:
-    #    ref_point_list = list(ref_point)
+    if ref_point is None: ref_point = train_obj.min(dim=0).values - 1e-8
+    else:                 ref_point = torch.tensor(ref_point)
+
     ref_point = torch.maximum(ref_points_inferred[:2], ref_point)
     ref_point_list = list(ref_point)
 

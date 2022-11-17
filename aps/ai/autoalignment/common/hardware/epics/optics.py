@@ -59,8 +59,12 @@ class AbstractEpicsOptics():
     # PRIVATE METHODS
 
     def _move_translational_motor(self, pv : PV, pos, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON, wait=True):
-        if units == DistanceUnits.MILLIMETERS: pos *= 1e3
-        elif units == DistanceUnits.MICRON: pass
+        if units == DistanceUnits.MILLIMETERS:
+            if self.__translational_units == DistanceUnits.MILLIMETERS: pass
+            elif self.__translational_units == DistanceUnits.MICRON: pos *= 1e3
+        elif units == DistanceUnits.MICRON:
+            if self.__translational_units == DistanceUnits.MILLIMETERS: pos *= 1e-3
+            elif self.__translational_units == DistanceUnits.MICRON: pass
         else: raise ValueError("Distance units not recognized")
 
         if movement == Movement.ABSOLUTE:   pv.put(pos, wait=wait)
@@ -87,12 +91,25 @@ class AbstractEpicsOptics():
         else: raise ValueError("Movement not recognized")
 
     def _get_translational_motor_position(self, pv : PV, units=DistanceUnits.MICRON):
-        if units == DistanceUnits.MICRON:        return pv.get()
-        elif units == DistanceUnits.MILLIMETERS: return 1e-3 * pv.get()
+        if units == DistanceUnits.MILLIMETERS:
+            if self.__translational_units == DistanceUnits.MILLIMETERS: return pv.get()
+            elif self.__translational_units == DistanceUnits.MICRON: return 1e-3 * pv.get()
+        elif units == DistanceUnits.MICRON:
+            if self.__translational_units == DistanceUnits.MILLIMETERS: return 1e3 * pv.get()
+            elif self.__translational_units == DistanceUnits.MICRON: return pv.get()
         else: raise ValueError("Distance units not recognized")
 
     def _get_rotational_motor_angle(self, pv : PV, units=AngularUnits.MILLIRADIANS):
-        if units == AngularUnits.MILLIRADIANS: return pv.get()
-        elif units == AngularUnits.DEGREES:    return numpy.degrees(pv.get() * 1e-3)
-        elif units == AngularUnits.RADIANS:    return pv.get() * 1e-3
-        else: raise ValueError("Angular units not recognized")
+        if units == AngularUnits.MILLIRADIANS:
+            if self.__angular_units   == AngularUnits.MILLIRADIANS: return pv.get()
+            elif self.__angular_units == AngularUnits.DEGREES:      return 1e3 * numpy.radians(pv.get())
+            elif self.__angular_units == AngularUnits.RADIANS:      return 1e3 * pv.get()
+        elif units == AngularUnits.DEGREES:
+            if self.__angular_units   == AngularUnits.MILLIRADIANS: return numpy.degrees(1e-3 * pv.get())
+            elif self.__angular_units == AngularUnits.DEGREES:      return pv.get()
+            elif self.__angular_units == AngularUnits.RADIANS:      return numpy.degrees(pv.get())
+        elif units == AngularUnits.RADIANS:
+            if self.__angular_units   == AngularUnits.MILLIRADIANS: return 1e-3 * pv.get()
+            elif self.__angular_units == AngularUnits.DEGREES:      return numpy.radians(pv.get())
+            elif self.__angular_units == AngularUnits.RADIANS:      return pv.get()
+        else:  raise ValueError("Angular units not recognized")

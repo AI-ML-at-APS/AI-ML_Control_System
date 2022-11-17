@@ -68,9 +68,8 @@ def __get_input_parameters(sys_argv):
     n_cycles        = ini_file.get_float_from_ini(  section="Execution",   key="N-Cycles",       default=DefaultValues.N_CYCLES)
     simulation_mode = False
     mocking_mode    = False
-
-    regenerate_ini                 = False
-    exit_script                    = False
+    regenerate_ini  = False
+    exit_script     = False
 
     if len(sys_argv) > 2:
         for i in range(2, len(sys_argv)):
@@ -80,7 +79,7 @@ def __get_input_parameters(sys_argv):
             elif "-sim"  == sys_argv[i][:4]: simulation_mode = True
             elif "-mock" == sys_argv[i][:5]: mocking_mode = True
             elif "--h"   == sys_argv[i][:3]:
-                print("Run Autofocusing\n\npython -m aps.ai.autolignment BLE AF <options>\n\n" +
+                print("Run Autofocusing\n\npython -m aps.ai.autolignment 28ID AF <options>\n\n" +
                       "Options: -pd <period in minutes (int)>\n" +
                       "         -nc <number of cycles>\n" +
                       "         -sim (run optimizer on simulation)\n" +
@@ -97,8 +96,8 @@ def __get_input_parameters(sys_argv):
 
         print("File ini regenerated with default values in\n" + os.path.abspath(os.curdir))
     else:
-        ini_file.set_value_at_ini(section="Directories", key="Root-Directory",                 value=root_directory)
-        ini_file.set_value_at_ini(section="Execution",   key="Energy",                         value=energy)
+        ini_file.set_value_at_ini(section="Directories", key="Root-Directory", value=root_directory)
+        ini_file.set_value_at_ini(section="Execution",   key="Energy",         value=energy)
         ini_file.set_value_at_ini(section="Execution",   key="Period",         value=period)
         ini_file.set_value_at_ini(section="Execution",   key="N-Cycles",       value=n_cycles)
 
