@@ -147,7 +147,8 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         if movement == Movement.ABSOLUTE:   Motors.BENDER_V.put(actuator_value)
         elif movement == Movement.RELATIVE: Motors.BENDER_V.put(Motors.BENDER_V.get() + actuator_value)
         else: raise ValueError("Movement not recognized")
-        
+        time.sleep(2)
+
     def get_v_bimorph_mirror_motor_bender(self): 
         return Motors.BENDER_V.get()
     
@@ -241,4 +242,4 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         motor.put(desired_position)
 
         # cycle until the readback is close enough to the desired position
-        while (numpy.abs(readback.get() - desired_position) > self.__bender_threshold): time.sleep(0.2)
+        while (numpy.abs(readback.get() - desired_position) > self.__bender_threshold): time.sleep(0.1)
