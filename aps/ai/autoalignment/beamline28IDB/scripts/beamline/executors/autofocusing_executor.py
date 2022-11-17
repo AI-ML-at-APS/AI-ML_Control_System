@@ -268,7 +268,8 @@ class AutofocusingScript(GenericScript):
                                               layout=Layout.AUTO_FOCUSING,
                                               input_features=get_default_input_features(layout=Layout.AUTO_FOCUSING))
         else:
-            self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=HW_Implementors.EPICS)
+            self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE, implementor=HW_Implementors.EPICS,
+                                                                    measurement_directory=os.path.join(self._root_directory, "AI", "autoalignment"))
             self.__focusing_system.initialize()
 
         self.__opt_params = OptimizationParameters()
