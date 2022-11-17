@@ -143,7 +143,7 @@ def __plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbin
     if plot_mode in [PlotMode.INTERNAL, PlotMode.BOTH]:
         x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins_h, nbins_v, nolost, xrange, yrange)
 
-        plot_2D(x_array, y_array, z_array, title, None, None, int_um="", peak_um="", flip=Flip.BOTH, aspect_ratio=aspect_ratio, color_map=color_map)
+        plot_2D(x_array, y_array, z_array, title, None, None, int_um="", peak_um="", flip=Flip.VERTICAL, aspect_ratio=aspect_ratio, color_map=color_map)
 
     if plot_mode in [PlotMode.NATIVE, PlotMode.BOTH]:
         Shadow.ShadowTools.plotxy(shadow_beam._beam, var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, title=title, xrange=xrange, yrange=yrange)

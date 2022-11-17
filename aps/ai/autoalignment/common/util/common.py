@@ -47,7 +47,7 @@
 import numpy
 from matplotlib import pyplot as plt
 from matplotlib import cm
-from aps.common.plot.image import get_sigma, get_fwhm, get_average
+from aps.common.plot.image import get_sigma, get_fwhm, get_average, get_peak_location_2D
 from aps.common.ml.data_structures import DictionaryWrapper
 
 from aps.ai.autoalignment.common.util.gaussian_fit import calculate_2D_gaussian_fit
@@ -67,11 +67,23 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
     if yrange is None: yrange = [y_array.min(), y_array.max()]
     pixel_area = (x_array[1] - x_array[0]) * (y_array[1] - y_array[0])
 
-    hh = z_array
+    cursor_x = numpy.where(numpy.logical_and(x_array >= xrange[0], x_array <= xrange[1]))
+    cursor_y = numpy.where(numpy.logical_and(y_array >= yrange[0], y_array <= yrange[1]))
+
+    xx = x_array[cursor_x]
+    yy = y_array[cursor_y]
+
+    hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))].T
     hh_h = hh.sum(axis=1)
     hh_v = hh.sum(axis=0)
-    xx = x_array
-    yy = y_array
+
+    fwhm_h, _, _ = get_fwhm(hh_h, xx)
+    sigma_h = get_sigma(hh_h, xx)
+    fwhm_v, _, _ = get_fwhm(hh_v, yy)
+    sigma_v = get_sigma(hh_v, yy)
+    centroid_h = get_average(hh_h, xx)
+    centroid_v = get_average(hh_v, yy)
+    peak_h, peak_v = get_peak_location_2D(xx, yy.T, hh)
 
     ticket['xrange'] = xrange
     ticket['yrange'] = yrange
@@ -83,14 +95,17 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
     ticket['total'] = numpy.sum(z_array) * pixel_area
     ticket['peak']  = numpy.average(hh[numpy.where(hh >= numpy.max(hh) * 0.95)])
 
-    ticket['fwhm_h'], ticket['fwhm_quote_h'], ticket['fwhm_coordinates_h'] = get_fwhm(hh_h, xx)
-    ticket['sigma_h'] = get_sigma(hh_h, xx)
+    ticket['fwhm_h'], ticket['fwhm_quote_h'], ticket['fwhm_coordinates_h'] = fwhm_h
+    ticket['sigma_h'] = sigma_h
 
-    ticket['fwhm_v'], ticket['fwhm_quote_v'], ticket['fwhm_coordinates_v'] = get_fwhm(hh_v, yy)
-    ticket['sigma_v'] = get_sigma(hh_v, yy)
+    ticket['fwhm_v'], ticket['fwhm_quote_v'], ticket['fwhm_coordinates_v'] = fwhm_v
+    ticket['sigma_v'] = sigma_v
 
-    ticket['centroid_h'] = get_average(ticket['histogram_h'], -ticket['bin_h'])
-    ticket['centroid_v'] = get_average(ticket['histogram_v'], -ticket['bin_v'])
+    ticket['centroid_h'] = centroid_h
+    ticket['centroid_v'] = centroid_v
+
+    ticket['peak_h'] = peak_h
+    ticket['peak_v'] = peak_v
 
     if do_gaussian_fit:
         try:    gaussian_fit = calculate_2D_gaussian_fit(data_2D=hh, x=xx, y=yy)
@@ -104,9 +119,11 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
                h_sigma=ticket['sigma_h'],
                h_fwhm=ticket['fwhm_h'],
                h_centroid=ticket['centroid_h'],
+               h_peak=ticket['peak_v'],
                v_sigma=ticket['sigma_v'],
                v_fwhm=ticket['fwhm_v'],
                v_centroid=ticket['centroid_v'],
+               v_peak=ticket['peak_v'],
                integral_intensity=ticket['total'],
                peak_intensity=ticket['peak'],
                gaussian_fit=gaussian_fit
@@ -143,10 +160,10 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
 
     xx = x_array[cursor_x]
     yy = y_array[cursor_y]
-    hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))]
+    hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))].T
 
-    hh_h = hh.sum(axis=0)
-    hh_v = hh.sum(axis=1)
+    hh_h = hh.sum(axis=1)
+    hh_v = hh.sum(axis=0)
 
     fwhm_h, _, _ = get_fwhm(hh_h, xx)
     sigma_h = get_sigma(hh_h, xx)
@@ -154,6 +171,7 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
     sigma_v = get_sigma(hh_v, yy)
     centroid_h = get_average(hh_h, xx)
     centroid_v = get_average(hh_v, yy)
+    peak_h, peak_v = get_peak_location_2D(xx, yy.T, hh)
 
     integral_intensity = numpy.sum(hh) * (1 if int_um=="" else (xx[1] - xx[0]) * (yy[1] - yy[0]))
     peak_intensity     = numpy.average(hh[numpy.where(hh >= numpy.max(hh) * 0.90)]),
@@ -162,9 +180,10 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
     fig.set_size_inches(9, 5)
 
     data_2D = hh
-    if flip==Flip.VERTICAL:     data_2D = numpy.flip(data_2D, axis=0)
-    elif flip==Flip.HORIZONTAL: data_2D = numpy.flip(data_2D, axis=1)
+    if flip==Flip.VERTICAL:     data_2D = numpy.flip(data_2D, axis=1)
+    elif flip==Flip.HORIZONTAL: data_2D = numpy.flip(data_2D, axis=0)
     elif flip==Flip.BOTH:       data_2D = numpy.flip(numpy.flip(data_2D), axis=1)
+    data_2D = data_2D.T # imshow inverts
 
     if   aspect_ratio == AspectRatio.AUTO:      aspect = 'auto'
     elif aspect_ratio == AspectRatio.CARTESIAN: aspect = 'equal'
@@ -195,6 +214,9 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
         r'',
         r'$centroid(H)=%.3f$ $\mu$m' % (centroid_h * 1e3,),
         r'$centroid(V)=%.3f$ $\mu$m' % (centroid_v * 1e3,),
+        r'',
+        r'$peak(H)=%.3f$ $\mu$m' % (peak_h * 1e3,),
+        r'$peak(V)=%.3f$ $\mu$m' % (peak_v * 1e3,),
         r'',
         r'$Integral={0:s}$'.format(as_si(integral_intensity[0] if isinstance(integral_intensity, tuple) else integral_intensity,2)) + ' ' + int_um,
         r'$Peak={0:s}$'.format(as_si(peak_intensity[0] if isinstance(peak_intensity, tuple) else peak_intensity, 2)) + ' ' + peak_um

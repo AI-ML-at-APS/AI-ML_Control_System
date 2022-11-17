@@ -56,8 +56,6 @@ from aps.common.initializer import register_ini_instance, IniMode
 #
 
 def simulated_focusing_optics_factory_method(implementor=Implementors.SHADOW, **kwargs):
-    try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="motors configuration", ini_file_name="motors_configuration.ini")
-    except AlreadyInitializedError: pass
     try: register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name="benders calibration", ini_file_name="benders_calibration.ini")
     except AlreadyInitializedError: pass
 
