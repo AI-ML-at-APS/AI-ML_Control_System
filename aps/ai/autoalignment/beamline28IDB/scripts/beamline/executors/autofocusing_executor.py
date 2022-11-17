@@ -244,14 +244,12 @@ input_beam_path = "primary_optics_system_beam.dat"
 
 class AutofocusingScript(GenericScript):
 
-    def __init__(self, root_directory, energy, period, n_cycles, n_trials_1, n_trials_2, mocking_mode, simulation_mode):
+    def __init__(self, root_directory, energy, period, n_cycles, mocking_mode, simulation_mode):
         super(AutofocusingScript, self).__init__(root_directory, energy, period, n_cycles, mocking_mode, simulation_mode)
 
         self.__plot_mode    = PlotMode.INTERNAL
         self.__aspect_ratio = AspectRatio.AUTO
         self.__color_map    = ColorMap.GRAY
-        self.__n_trials_1   = n_trials_1
-        self.__n_trials_2   = n_trials_2
 
         if self._simulation_mode:
             self.__sim_params = SimulationParameters()
