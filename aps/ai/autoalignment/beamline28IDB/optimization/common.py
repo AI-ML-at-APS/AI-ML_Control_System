@@ -495,7 +495,8 @@ def get_random_init(
                 continue
         regenerate = False
 
-    print("Random initialization is", motor_types, initial_guess)
+    print("Random initialization is (ABSOLUTE)", motor_types, movers.get_absolute_positions(focusing_system, motor_types))
+    print("Random initialization is (RELATIVE)", motor_types, initial_guess)
 
     return initial_guess, focusing_system, BeamState(photon_beam, hist, dw)
 
