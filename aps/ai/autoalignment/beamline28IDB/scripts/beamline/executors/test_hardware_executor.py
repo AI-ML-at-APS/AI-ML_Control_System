@@ -243,18 +243,18 @@ class TestHardwareScript(AbstractScript):
 
         if self.__hardware_test_parameters.test_detector:
             print("\nTEST OF THE DETECTOR")
-            photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
+            photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=True)
 
             plot_2D(x_array=photon_beam["h_coord"],
                     y_array=photon_beam["v_coord"],
-                    z_array=photon_beam["image"].T,
+                    z_array=photon_beam["image"],
                     title="Raw Image from detector",
                     color_map=ColorMap.GRAY,
                     aspect_ratio=AspectRatio.CARTESIAN)
 
             _, dictionary = get_info(x_array=photon_beam["h_coord"],
                                      y_array=photon_beam["v_coord"],
-                                     z_array=photon_beam["image"],
+                                     z_array=photon_beam["image"].T,
                                      do_gaussian_fit=False)
 
             print("Beam Infos:")
