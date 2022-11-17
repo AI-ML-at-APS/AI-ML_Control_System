@@ -14,7 +14,19 @@ def setup_work_dir():
 
 if __name__ == "__main__":
     setup_work_dir()
-    autofocus_trials = joblib.load("autofocus_final_20_2022:11:16:16:57.gz")
+    autofocus_trials = joblib.load("optimization_final_100_2022:11:15:02:55.pkl")
+
+    # Saugat Kandel 11/17/22:
+    # This part is a bit of a hack to work around optuna checks.
+    # Sometimes, during the optimization procedure, optuna seems to "suggest" values that are not exactly multiples of
+    # the step size. It only outputs a warning and keeps running the optimization.
+    # In the postprocessing, however, if we use "study.add_trials", then optuna tries to "validate" each trial,
+    # and raises an error if the current step is not a multiple of the step size.
+    # To work around this, I am just setting the "step" to None for the postprocessing.
+    for t in autofocus_trials:
+        for td, tdval in t.distributions.items():
+            tdval.step = None
+        # t._validate()
 
     # Example of a "trial"
     print(autofocus_trials[0])
