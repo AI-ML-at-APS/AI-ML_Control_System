@@ -247,6 +247,7 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         while (n_consecutive_positive_check < self.__n_bender_threshold_check):
             if (numpy.abs(readback.get() - desired_position) <= self.__bender_threshold):
                 n_consecutive_positive_check +=1
+                #print("H Bender ok:" + str(n_consecutive_positive_check))
             else:
                 n_consecutive_positive_check = 0
 

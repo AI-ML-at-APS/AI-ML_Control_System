@@ -413,8 +413,6 @@ class AutofocusingScript(GenericScript):
         print(values)
 
         print("Moving motor to optimal position")
-
-        print("Moving motor to optimal position")
         opt_trial.study.enqueue_trial(optimal_params)
         opt_trial.trials(1)
 
