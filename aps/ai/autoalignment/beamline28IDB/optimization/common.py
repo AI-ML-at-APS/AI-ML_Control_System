@@ -268,7 +268,7 @@ def _get_peak_intensity_from_dw(
     return peak
 
 
-def get_sum_intensity(
+def get_weighted_sum_intensity(
     focusing_system: AbstractFocusingOptics = None,
     photon_beam: object = None,
     random_seed: float = None,
@@ -277,6 +277,7 @@ def get_sum_intensity(
     yrange: List[float] = None,
     nbins_h: int = 256,
     nbins_v: int = 256,
+    radial_weight_power: float = 0,
     do_gaussian_fit: bool = False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
@@ -296,15 +297,18 @@ def get_sum_intensity(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
     )
-    sum_intensity = _get_sum_intensity_from_hist(hist, no_beam_value)
+    sum_intensity = _get_weighted_sum_intensity_from_hist(hist, radial_weight_power, no_beam_value)
     return BeamParameterOutput(sum_intensity, photon_beam, hist, dw)
 
 
-def _get_sum_intensity_from_hist(hist: Histogram, no_beam_value: float = 0) -> float:
+def _get_weighted_sum_intensity_from_hist(
+    hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0
+) -> float:
     if hist is None:
         return no_beam_value
-    return hist.data_2D.sum()
-
+    radius = (hist.hh**2 + hist.vv**2) ** 0.5
+    weights = radius**radial_weight_power
+    return (hist.data_2D * weights).sum()
 
 
 def _get_centroid_distance_from_dw(
@@ -364,6 +368,7 @@ def get_centroid_distance(
     
     return BeamParameterOutput(centroid_distance, photon_beam, hist, dw)
 
+
 def _get_fwhm_from_dw(
     dw: DictionaryWrapper,
     reference_h: float = 0,
@@ -385,6 +390,7 @@ def _get_fwhm_from_dw(
     fwhm = ((h_fwhm - reference_h) ** 2 + (v_fwhm - reference_v) ** 2) ** 0.5
 
     return fwhm
+
 
 def _get_sigma_from_dw(
     dw: DictionaryWrapper,
@@ -678,7 +684,10 @@ class OptimizationCommon(abc.ABC):
         return log_peak
 
     def get_sum_intensity(self) -> float:
-        return _get_sum_intensity_from_hist(self.beam_state.hist, self._intensity_no_beam_loss)
+        return _get_weighted_sum_intensity_from_hist(self.beam_state.hist, 0, self._intensity_no_beam_loss)
+
+    def get_weighted_sum_intensity(self) -> float:
+        return _get_weighted_sum_intensity_from_hist(self.beam_state.hist, 2, self._intensity_no_beam_loss)
 
     def get_centroid_distance(self) -> float:
         return _get_centroid_distance_from_dw(
