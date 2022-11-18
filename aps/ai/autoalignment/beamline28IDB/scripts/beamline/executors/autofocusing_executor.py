@@ -82,14 +82,15 @@ register_ini_instance(IniMode.LOCAL_FILE,
                       verbose=False)
 ini_file = get_registered_ini_instance(APPLICATION_NAME)
 
-hb_1           = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-1",         default=configs.DEFAULT_MOVEMENT_RANGES["hb_1"],      type=float)
-hb_2           = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-2",         default=configs.DEFAULT_MOVEMENT_RANGES["hb_2"],      type=float)
-hb_pitch       = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Pitch",            default=configs.DEFAULT_MOVEMENT_RANGES["hb_pitch"],  type=float)  # in degrees
-hb_trans       = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Translation",      default=configs.DEFAULT_MOVEMENT_RANGES["hb_trans"],  type=float)  # in mm
-vb_bender      = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Bender",           default=configs.DEFAULT_MOVEMENT_RANGES["vb_bender"], type=float)  # in volt
-vb_pitch       = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Pitch",            default=configs.DEFAULT_MOVEMENT_RANGES["vb_pitch"],  type=float)  # in degrees
-vb_trans       = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Translation",      default=configs.DEFAULT_MOVEMENT_RANGES["vb_trans"],  type=float)  # in mm
-hb_threshold   = ini_file.get_float_from_ini(section="Motor-Ranges", key="HKB-Bender-Threshold", default=0.2)
+hb_1                 = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-1",                  default=configs.DEFAULT_MOVEMENT_RANGES["hb_1"],      type=float)
+hb_2                 = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-2",                  default=configs.DEFAULT_MOVEMENT_RANGES["hb_2"],      type=float)
+hb_pitch             = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Pitch",                     default=configs.DEFAULT_MOVEMENT_RANGES["hb_pitch"],  type=float)  # in degrees
+hb_trans             = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Translation",               default=configs.DEFAULT_MOVEMENT_RANGES["hb_trans"],  type=float)  # in mm
+vb_bender            = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Bender",                    default=configs.DEFAULT_MOVEMENT_RANGES["vb_bender"], type=float)  # in volt
+vb_pitch             = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Pitch",                     default=configs.DEFAULT_MOVEMENT_RANGES["vb_pitch"],  type=float)  # in degrees
+vb_trans             = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Translation",               default=configs.DEFAULT_MOVEMENT_RANGES["vb_trans"],  type=float)  # in mm
+hb_threshold         = ini_file.get_float_from_ini(section="Motor-Ranges", key="HKB-Bender-Threshold",          default=0.2)
+hb_n_threshold_check = ini_file.get_int_from_ini(  section="Motor-Ranges", key="HKB-Bender-N-Threshold-Checks", default=1)
 
 bound_hb_1      = ini_file.get_list_from_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-1",    default=[-200, -50],  type=float)
 bound_hb_2      = ini_file.get_list_from_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-2",    default=[-180, -50],  type=float)
@@ -99,42 +100,43 @@ bound_vb_bender = ini_file.get_list_from_ini( section="Motor-Boundaries", key="B
 bound_vb_pitch  = ini_file.get_list_from_ini( section="Motor-Boundaries", key="Boundaries-VKB-Pitch",       default=[-0.2, 0.2],  type=float)  # in degrees
 bound_vb_trans  = ini_file.get_list_from_ini( section="Motor-Boundaries", key="Boundaries-VKB-Translation", default=[-5.0, 5.0],  type=float)  # in mm
 
-sum_intensity_soft_constraint        =  ini_file.get_float_from_ini( section="Optimization-Parameters",  key="Sum-Intensity-Soft-Constraint",        default=7e3)
-sum_intensity_hard_constraint        =  ini_file.get_float_from_ini( section="Optimization-Parameters",  key="Sum-Intensity-Hard-Constraint",        default=6.5e3)
-loss_parameters                      =  ini_file.get_list_from_ini(  section="Optimization-Parameters",  key="Loss-Parameters",                      default=["fwhm", "peak"], type=str)
-reference_position                   =  ini_file.get_list_from_ini(  section="Optimization-Parameters",  key="Reference-Position",                   default=[0.0, 0.0], type=float)
-reference_size                       =  ini_file.get_list_from_ini(  section="Optimization-Parameters",  key="Reference-Size",                       default=[0.0, 0.0], type=float)
-multi_objective_optimization         =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",         default=True)
-n_pitch_trans_motor_trials           =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",           default=50)
-n_all_motor_trials                   =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-All-Motor-Trials",                   default=100)
-save_images                          =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Save-Images",                          default=False)
+sum_intensity_soft_constraint        =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", default=7e3)
+sum_intensity_hard_constraint        =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", default=6.5e3)
+loss_parameters                      =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Loss-Parameters",               default=["fwhm", "peak"], type=str)
+reference_position                   =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Reference-Position",            default=[0.0, 0.0], type=float)
+reference_size                       =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Reference-Size",                default=[0.0, 0.0], type=float)
+multi_objective_optimization         =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  default=True)
+n_pitch_trans_motor_trials           =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    default=50)
+n_all_motor_trials                   =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-All-Motor-Trials",            default=100)
+save_images                          =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Save-Images",                   default=False)
 
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="HKB-Bender-1",         values_list=hb_1     )
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="HKB-Bender-2",         values_list=hb_2     )
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="HKB-Pitch",            values_list=hb_pitch )
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="HKB-Translation",      values_list=hb_trans )
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="VKB-Bender",           values_list=vb_bender)
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="VKB-Pitch",            values_list=vb_pitch )
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="VKB-Translation",      values_list=vb_trans )
-ini_file.set_value_at_ini(section="Motor-Ranges",   key="HKB-Bender-Threshold", value=hb_threshold)
+ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-1",                  values_list=hb_1     )
+ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-2",                  values_list=hb_2     )
+ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Pitch",                     values_list=hb_pitch )
+ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Translation",               values_list=hb_trans )
+ini_file.set_list_at_ini( section="Motor-Ranges", key="VKB-Bender",                    values_list=vb_bender)
+ini_file.set_list_at_ini( section="Motor-Ranges", key="VKB-Pitch",                     values_list=vb_pitch )
+ini_file.set_list_at_ini( section="Motor-Ranges", key="VKB-Translation",               values_list=vb_trans )
+ini_file.set_value_at_ini(section="Motor-Ranges", key="HKB-Bender-Threshold",          value=hb_threshold)
+ini_file.set_value_at_ini(section="Motor-Ranges", key="HKB-Bender-N-Threshold-Checks", value=hb_n_threshold_check)
 
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-HKB-Bender-1",    values_list=bound_hb_1     )
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-HKB-Bender-2",    values_list=bound_hb_2     )
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-HKB-Pitch",       values_list=bound_hb_pitch )
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-HKB-Translation", values_list=bound_hb_trans )
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-VKB-Bender",      values_list=bound_vb_bender)
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-VKB-Pitch",       values_list=bound_vb_pitch )
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-VKB-Translation", values_list=bound_vb_trans )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-1",    values_list=bound_hb_1     )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-2",    values_list=bound_hb_2     )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-HKB-Pitch",       values_list=bound_hb_pitch )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-HKB-Translation", values_list=bound_hb_trans )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-VKB-Bender",      values_list=bound_vb_bender)
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-VKB-Pitch",       values_list=bound_vb_pitch )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-VKB-Translation", values_list=bound_vb_trans )
 
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="Sum-Intensity-Soft-Constraint", value=sum_intensity_soft_constraint)
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="Sum-Intensity-Hard-Constraint", value=sum_intensity_hard_constraint)
-ini_file.set_list_at_ini( section="Optimization-Parameters",   key="Loss-Parameters",               values_list=loss_parameters        )
-ini_file.set_list_at_ini( section="Optimization-Parameters",   key="Reference-Position",            values_list=reference_position)
-ini_file.set_list_at_ini( section="Optimization-Parameters",   key="Reference-Size",                values_list=reference_size         )
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="Multi-Objective-Optimization",  value=multi_objective_optimization )
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="N-Pitch-Trans-Motor-Trials",    value=n_pitch_trans_motor_trials   )
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="N-All-Motor-Trials",            value=n_all_motor_trials           )
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="Save-Images",                   value=save_images                  )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", value=sum_intensity_soft_constraint)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", value=sum_intensity_hard_constraint)
+ini_file.set_list_at_ini( section="Optimization-Parameters", key="Loss-Parameters",               values_list=loss_parameters        )
+ini_file.set_list_at_ini( section="Optimization-Parameters", key="Reference-Position",            values_list=reference_position)
+ini_file.set_list_at_ini( section="Optimization-Parameters", key="Reference-Size",                values_list=reference_size         )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  value=multi_objective_optimization )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    value=n_pitch_trans_motor_trials   )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-All-Motor-Trials",            value=n_all_motor_trials           )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Save-Images",                   value=save_images                  )
 
 ini_file.push()
 
@@ -272,7 +274,8 @@ class AutofocusingScript(GenericScript):
             self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
                                                                     implementor=HW_Implementors.EPICS,
                                                                     measurement_directory=os.path.join(self._root_directory, "AI", "autoalignment"),
-                                                                    bender_threshold=hb_threshold)
+                                                                    bender_threshold=hb_threshold,
+                                                                    n_bender_threshold_check=hb_n_threshold_check)
             self.__focusing_system.initialize()
 
         self.__opt_params = OptimizationParameters()

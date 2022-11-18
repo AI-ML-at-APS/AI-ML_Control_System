@@ -86,12 +86,13 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         
         try:    measurement_directory = kwargs["measurement_directory"]
         except: measurement_directory = os.curdir
+        #TODO: ADD CHECK OF PHYSICAL BOuNDARIES
         try:    self.__physical_boundaries = kwargs["physical_boundaries"]
         except: self.__physical_boundaries = None
         try:    self.__bender_threshold = kwargs["bender_threshold"]
         except: self.__bender_threshold    = Motors.BENDER_THRESHOLD
-
-        #TODO: ADD CHECK OF PHYSICAL BOuNDARIES
+        try:    self.__n_bender_threshold_check = kwargs["n_bender_threshold_check"]
+        except: self.__n_bender_threshold_check = 1
 
         self.__image_collector = ImageCollector(measurement_directory=measurement_directory)
         self.__image_processor = ImageProcessor(data_collection_directory=measurement_directory)
@@ -241,5 +242,12 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         feeback.put(1)  # set feedback on
         motor.put(desired_position)
 
+        n_consecutive_positive_check = 0
         # cycle until the readback is close enough to the desired position
-        while (numpy.abs(readback.get() - desired_position) > self.__bender_threshold): time.sleep(0.1)
+        while (n_consecutive_positive_check < self.__n_bender_threshold_check):
+            if (numpy.abs(readback.get() - desired_position) <= self.__bender_threshold):
+                n_consecutive_positive_check +=1
+            else:
+                n_consecutive_positive_check = 0
+
+            time.sleep(0.1)
