@@ -48,7 +48,9 @@ import os
 import numpy
 from datetime import datetime
 import joblib
+import optuna
 import warnings
+from matplotlib import pyplot as plt
 
 from aps.common.measurment.beamline.image_processor import IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
 
@@ -76,25 +78,21 @@ DEFAULT_RANDOM_SEED = numpy.random.randint(100000)
 
 APPLICATION_NAME = "AUTOFOCUSING"
 
-
-class CentroidSigmaThresholdDependency:
-    STATIC = 0
-    INITIAL_STRUCTURE = 1
-
 register_ini_instance(IniMode.LOCAL_FILE,
                       ini_file_name="autofocusing.ini",
                       application_name=APPLICATION_NAME,
                       verbose=False)
 ini_file = get_registered_ini_instance(APPLICATION_NAME)
 
-hb_1           = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-1",         default=configs.DEFAULT_MOVEMENT_RANGES["hb_1"],      type=float)
-hb_2           = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-2",         default=configs.DEFAULT_MOVEMENT_RANGES["hb_2"],      type=float)
-hb_pitch       = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Pitch",            default=configs.DEFAULT_MOVEMENT_RANGES["hb_pitch"],  type=float)  # in degrees
-hb_trans       = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Translation",      default=configs.DEFAULT_MOVEMENT_RANGES["hb_trans"],  type=float)  # in mm
-vb_bender      = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Bender",           default=configs.DEFAULT_MOVEMENT_RANGES["vb_bender"], type=float)  # in volt
-vb_pitch       = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Pitch",            default=configs.DEFAULT_MOVEMENT_RANGES["vb_pitch"],  type=float)  # in degrees
-vb_trans       = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Translation",      default=configs.DEFAULT_MOVEMENT_RANGES["vb_trans"],  type=float)  # in mm
-hb_threshold   = ini_file.get_float_from_ini(section="Motor-Ranges", key="HKB-Bender-Threshold", default=0.2)
+hb_1                 = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-1",                  default=configs.DEFAULT_MOVEMENT_RANGES["hb_1"],      type=float)
+hb_2                 = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Bender-2",                  default=configs.DEFAULT_MOVEMENT_RANGES["hb_2"],      type=float)
+hb_pitch             = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Pitch",                     default=configs.DEFAULT_MOVEMENT_RANGES["hb_pitch"],  type=float)  # in degrees
+hb_trans             = ini_file.get_list_from_ini( section="Motor-Ranges", key="HKB-Translation",               default=configs.DEFAULT_MOVEMENT_RANGES["hb_trans"],  type=float)  # in mm
+vb_bender            = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Bender",                    default=configs.DEFAULT_MOVEMENT_RANGES["vb_bender"], type=float)  # in volt
+vb_pitch             = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Pitch",                     default=configs.DEFAULT_MOVEMENT_RANGES["vb_pitch"],  type=float)  # in degrees
+vb_trans             = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Translation",               default=configs.DEFAULT_MOVEMENT_RANGES["vb_trans"],  type=float)  # in mm
+hb_threshold         = ini_file.get_float_from_ini(section="Motor-Ranges", key="HKB-Bender-Threshold",          default=0.2)
+hb_n_threshold_check = ini_file.get_int_from_ini(  section="Motor-Ranges", key="HKB-Bender-N-Threshold-Checks", default=1)
 
 bound_hb_1      = ini_file.get_list_from_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-1",    default=[-200, -50],  type=float)
 bound_hb_2      = ini_file.get_list_from_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-2",    default=[-180, -50],  type=float)
@@ -104,42 +102,45 @@ bound_vb_bender = ini_file.get_list_from_ini( section="Motor-Boundaries", key="B
 bound_vb_pitch  = ini_file.get_list_from_ini( section="Motor-Boundaries", key="Boundaries-VKB-Pitch",       default=[-0.2, 0.2],  type=float)  # in degrees
 bound_vb_trans  = ini_file.get_list_from_ini( section="Motor-Boundaries", key="Boundaries-VKB-Translation", default=[-5.0, 5.0],  type=float)  # in mm
 
-sum_intensity_soft_constraint        =  ini_file.get_float_from_ini( section="Optimization-Parameters",  key="Sum-Intensity-Soft-Constraint",        default=7e3)
-sum_intensity_hard_constraint        =  ini_file.get_float_from_ini( section="Optimization-Parameters",  key="Sum-Intensity-Hard-Constraint",        default=6.5e3)
-loss_parameters                      =  ini_file.get_list_from_ini(  section="Optimization-Parameters",  key="Loss-Parameters",                      default=["sigma", "centroid"], type=str)
-reference_centroid                   =  ini_file.get_list_from_ini(  section="Optimization-Parameters",  key="Reference-Centroid",                   default=[0.0, 0.0], type=float)
-reference_size                       =  ini_file.get_list_from_ini(  section="Optimization-Parameters",  key="Reference-Size",                       default=[0.0, 0.0], type=float)
-multi_objective_optimization         =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",         default=True)
-n_pitch_trans_motor_trials           =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",           default=50)
-n_all_motor_trials                   =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-All-Motor-Trials",                   default=100)
-save_images                          =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Save-Images",                          default=False)
+sum_intensity_soft_constraint        =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", default=7e3)
+sum_intensity_hard_constraint        =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", default=6.5e3)
+loss_parameters                      =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Loss-Parameters",               default=["fwhm", "peak"], type=str)
+reference_position                   =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Reference-Position",            default=[0.0, 0.0], type=float)
+reference_size                       =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Reference-Size",                default=[0.0, 0.0], type=float)
+multi_objective_optimization         =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  default=True)
+n_pitch_trans_motor_trials           =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    default=50)
+n_all_motor_trials                   =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-All-Motor-Trials",            default=100)
+save_images                          =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Save-Images",                   default=False)
+every_n_images                       =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="Every-N-Images",                default=5)
 
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="HKB-Bender-1",         values_list=hb_1     )
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="HKB-Bender-2",         values_list=hb_2     )
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="HKB-Pitch",            values_list=hb_pitch )
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="HKB-Translation",      values_list=hb_trans )
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="VKB-Bender",           values_list=vb_bender)
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="VKB-Pitch",            values_list=vb_pitch )
-ini_file.set_list_at_ini( section="Motor-Ranges",   key="VKB-Translation",      values_list=vb_trans )
-ini_file.set_value_at_ini(section="Motor-Ranges",   key="HKB-Bender-Threshold", value=hb_threshold)
+ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-1",                  values_list=hb_1     )
+ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-2",                  values_list=hb_2     )
+ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Pitch",                     values_list=hb_pitch )
+ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Translation",               values_list=hb_trans )
+ini_file.set_list_at_ini( section="Motor-Ranges", key="VKB-Bender",                    values_list=vb_bender)
+ini_file.set_list_at_ini( section="Motor-Ranges", key="VKB-Pitch",                     values_list=vb_pitch )
+ini_file.set_list_at_ini( section="Motor-Ranges", key="VKB-Translation",               values_list=vb_trans )
+ini_file.set_value_at_ini(section="Motor-Ranges", key="HKB-Bender-Threshold",          value=hb_threshold)
+ini_file.set_value_at_ini(section="Motor-Ranges", key="HKB-Bender-N-Threshold-Checks", value=hb_n_threshold_check)
 
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-HKB-Bender-1",    values_list=bound_hb_1     )
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-HKB-Bender-2",    values_list=bound_hb_2     )
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-HKB-Pitch",       values_list=bound_hb_pitch )
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-HKB-Translation", values_list=bound_hb_trans )
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-VKB-Bender",      values_list=bound_vb_bender)
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-VKB-Pitch",       values_list=bound_vb_pitch )
-ini_file.set_list_at_ini( section="Motor-Boundaries",   key="Boundaries-VKB-Translation", values_list=bound_vb_trans )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-1",    values_list=bound_hb_1     )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-2",    values_list=bound_hb_2     )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-HKB-Pitch",       values_list=bound_hb_pitch )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-HKB-Translation", values_list=bound_hb_trans )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-VKB-Bender",      values_list=bound_vb_bender)
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-VKB-Pitch",       values_list=bound_vb_pitch )
+ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-VKB-Translation", values_list=bound_vb_trans )
 
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="Sum-Intensity-Soft-Constraint",        value=sum_intensity_soft_constraint)
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="Sum-Intensity-Hard-Constraint",        value=sum_intensity_hard_constraint)
-ini_file.set_list_at_ini( section="Optimization-Parameters",   key="Loss-Parameters",                      values_list=loss_parameters        )
-ini_file.set_list_at_ini( section="Optimization-Parameters",   key="Reference-Centroid",                   values_list=reference_centroid     )
-ini_file.set_list_at_ini( section="Optimization-Parameters",   key="Reference-Dimensions",                 values_list=reference_size         )
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="Multi-Objective-Optimization",         value=multi_objective_optimization )
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="N-Pitch-Trans-Motor-Trials",           value=n_pitch_trans_motor_trials   )
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="N-All-Motor-Trials",                   value=n_all_motor_trials           )
-ini_file.set_value_at_ini(section="Optimization-Parameters",   key="Save-Images",                          value=save_images                  )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", value=sum_intensity_soft_constraint)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", value=sum_intensity_hard_constraint)
+ini_file.set_list_at_ini( section="Optimization-Parameters", key="Loss-Parameters",               values_list=loss_parameters        )
+ini_file.set_list_at_ini( section="Optimization-Parameters", key="Reference-Position",            values_list=reference_position)
+ini_file.set_list_at_ini( section="Optimization-Parameters", key="Reference-Size",                values_list=reference_size         )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  value=multi_objective_optimization )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    value=n_pitch_trans_motor_trials   )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-All-Motor-Trials",            value=n_all_motor_trials           )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Save-Images",                   value=save_images                  )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Every-N-Images",                value=every_n_images               )
 
 ini_file.push()
 
@@ -168,7 +169,7 @@ class OptimizationParameters:
 
         reference_parameters_h_v = {}
         for loss_parameter in loss_parameters:
-            reference_parameters_h_v[loss_parameter] = reference_centroid if loss_parameter=="centroid" else reference_size
+            reference_parameters_h_v[loss_parameter] = reference_position if loss_parameter in ["centroid", "peak"]  else reference_size
 
         self.params = {
             "sum_intensity_soft_constraint":        sum_intensity_soft_constraint,
@@ -178,7 +179,6 @@ class OptimizationParameters:
             "multi_objective_optimization":         multi_objective_optimization,
             "n_pitch_trans_motor_trials":           n_pitch_trans_motor_trials,
             "n_all_motor_trials":                   n_all_motor_trials,
-            "save_images":                          save_images
         }
 
     def analyze_motor_ranges(self, initial_positions):
@@ -209,7 +209,9 @@ class PlotParameters(object):
             "ycoord" : ycoord,
             "nbins_h": nbins_h,
             "nbins_v": nbins_v,
-            "do_gaussian_fit": False
+            "do_gaussian_fit": False,
+            "save_images": save_images,
+            "every_n_images": every_n_images
         }
 
 class SimulationParameters(PlotParameters):
@@ -219,31 +221,12 @@ class SimulationParameters(PlotParameters):
         self.params["implementor"]    = Sim_Implementors.SHADOW
         self.params["random_seed"]    = DEFAULT_RANDOM_SEED
 
-    def get_plot_params(self):
-        return {
-            "xrange": self.params["xrange"],
-            "yrange": self.params["yrange"],
-            "nbins_h": self.params["nbins_h"],
-            "nbins_v": self.params["nbins_v"],
-            "do_gaussian_fit": self.params["do_gaussian_fit"]
-        }
-
 class HardwareParameters(PlotParameters):
     def __init__(self):
         super(HardwareParameters, self).__init__()
         self.params["execution_mode"] = ExecutionMode.HARDWARE
         self.params["implementor"]    = HW_Implementors.EPICS
         self.params["from_raw_image"] = True
-
-    def get_plot_params(self):
-        return {
-            "xrange": self.params["xrange"],
-            "yrange": self.params["yrange"],
-            "nbins_h": self.params["nbins_h"],
-            "nbins_v": self.params["nbins_v"],
-            "do_gaussian_fit": self.params["do_gaussian_fit"]
-        }
-
 
 input_beam_path = "primary_optics_system_beam.dat"
 
@@ -277,7 +260,8 @@ class AutofocusingScript(GenericScript):
             self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
                                                                     implementor=HW_Implementors.EPICS,
                                                                     measurement_directory=os.path.join(self._root_directory, "AI", "autoalignment"),
-                                                                    bender_threshold=hb_threshold)
+                                                                    bender_threshold=hb_threshold,
+                                                                    n_bender_threshold_check=hb_n_threshold_check)
             self.__focusing_system.initialize()
 
         self.__opt_params = OptimizationParameters()
@@ -326,6 +310,13 @@ class AutofocusingScript(GenericScript):
 
             return opt_trial
 
+        def print_beam_attributes(dw, title):
+            if "peak"     in self.__opt_params.params["loss_parameters"]: print(title + f" system peak:     {opt_common._get_peak_distance_from_dw(dw):4.3e}")
+            if "centroid" in self.__opt_params.params["loss_parameters"]: print(title + f" system centroid: {opt_common._get_centroid_distance_from_dw(dw):4.3e}")
+            if "sigma"    in self.__opt_params.params["loss_parameters"]: print(title + f" system sigma:    {opt_common._get_sigma_from_dw(dw):4.3e}")
+            if "fwhm"     in self.__opt_params.params["loss_parameters"]: print(title + f" system fwhm:     {opt_common._get_fwhm_from_dw(dw):4.3e}")
+
+
         warnings.filterwarnings("ignore")
 
         if self._simulation_mode:
@@ -340,9 +331,6 @@ class AutofocusingScript(GenericScript):
                 **self.__sim_params.params,
             )
 
-            centroid_ground, *_ = opt_common.get_centroid_distance(photon_beam=beam, **self.__sim_params.params)
-            sigma_ground, *_    = opt_common.get_sigma(photon_beam=beam, **self.__sim_params.params)
-
             motors = list(self.__opt_params.move_motors_ranges.keys())
             initial_absolute_positions = {k: movers.get_absolute_positions(self.__focusing_system, k)[0] for k in motors}
             print("Focused absolute position are", initial_absolute_positions)
@@ -354,11 +342,9 @@ class AutofocusingScript(GenericScript):
                 intensity_sum_threshold=self.__opt_params.params["sum_intensity_hard_constraint"],
                 **self.__sim_params.params,
             )
-    
-            centroid_init = opt_common._get_centroid_distance_from_dw(dw_init)
-            sigma_init    = opt_common._get_sigma_from_dw(dw_init)
-            print(f"Perturbed system centroid: {centroid_init:4.3e}, sigma: {sigma_init:4.3e}")
-    
+
+            print_beam_attributes(dw_init, "Perturbed")
+
             plot_distribution(
                 beam=beam_init,
                 title="Perturbed Beam",
@@ -384,10 +370,7 @@ class AutofocusingScript(GenericScript):
                                                               photon_beam=None,
                                                               **self.__hw_params.params)
 
-            centroid_init = opt_common._get_centroid_distance_from_dw(dw_init)
-            if "sigma" in self.__opt_params.params["loss_parameters"]:  print(f"Initial system centroid: {centroid_init:4.3e}, sigma: {opt_common._get_sigma_from_dw(dw_init):4.3e}")
-            elif "fwhm" in self.__opt_params.params["loss_parameters"]:  print(f"Initial system centroid: {centroid_init:4.3e}, fwhm: {opt_common._get_fwhm_from_dw(dw_init):4.3e}")
-            else:  print(f"Initial system centroid: {centroid_init:4.3e}")
+            print_beam_attributes(dw_init, "Initial")
 
             plot_2D(x_array=beam["h_coord"],
                     y_array=beam["v_coord"],
@@ -416,8 +399,6 @@ class AutofocusingScript(GenericScript):
         print(values)
 
         print("Moving motor to optimal position")
-
-        print("Moving motor to optimal position")
         opt_trial.study.enqueue_trial(optimal_params)
         opt_trial.trials(1)
 
@@ -444,6 +425,24 @@ class AutofocusingScript(GenericScript):
         chkpt_name = f"optimization_final_{n1 + n2}_{datetime_str}.pkl"
         joblib.dump(opt_trial.study.trials, chkpt_name)
         print(f"Saving all trials in {chkpt_name}")
+
+        study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]]) # For multiobjective optimization
+        # study = optuna.create_study(directions=["minimize"]) # For single objective
+
+        study.add_trials(opt_trial.study.trials)
+
+        # Generating the pareto front for the multiobjective optimization
+        optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
+        plt.tight_layout()
+        plt.show()
+
+        for i in range(len(self.__opt_params.params["loss_parameters"])):
+            optuna.visualization.matplotlib.plot_optimization_history(study,
+                                                                      target=lambda t: t.values[i],
+                                                                      target_name=self.__opt_params.params["loss_parameters"][i])
+            plt.tight_layout()
+            plt.show()
+
 
     def __setup_work_dir(self):
         os.chdir(os.path.join(self.__data_directory, "simulation"))

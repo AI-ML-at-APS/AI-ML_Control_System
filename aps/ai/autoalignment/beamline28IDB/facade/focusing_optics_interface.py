@@ -47,18 +47,40 @@
 import numpy
 from aps.ai.autoalignment.common.facade.focusing_optics_interface import AbstractFocusingOptics as CommonAbstractFocusingOptics
 from aps.ai.autoalignment.common.facade.parameters import MotorResolutionRegistry, MotorResolutionSet, MotorType, MotorResolution, DistanceUnits, Movement, AngularUnits
+from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
+
+APPLICATION_NAME = "motors configuration"
+register_ini_instance(ini_mode=IniMode.LOCAL_FILE, application_name=APPLICATION_NAME, ini_file_name="motors_configuration.ini")
+
+ini_file = get_registered_ini_instance(APPLICATION_NAME)
+
+res_v_bimorph_mirror_motor_bender       = ini_file.get_float_from_ini(section="Motor-Resolution",  key="VKB-Bender",      default=1.0)
+res_v_bimorph_mirror_motor_translation  = ini_file.get_float_from_ini(section="Motor-Resolution",  key="VKB-Translation", default=0.0001)
+res_h_bendable_mirror_motor_bender      = ini_file.get_float_from_ini(section="Motor-Resolution",  key="HKB-Bender",      default=1.0)
+res_h_bendable_mirror_motor_pitch       = ini_file.get_float_from_ini(section="Motor-Resolution",  key="HKB-Pitch",       default=0.0001)
+res_h_bendable_mirror_motor_translation = ini_file.get_float_from_ini(section="Motor-Resolution",  key="HKB-Translation", default=0.0001)
+
+ini_file.set_value_at_ini(section="Motor-Resolution",  key="VKB-Bender",      value=res_v_bimorph_mirror_motor_bender)
+ini_file.set_value_at_ini(section="Motor-Resolution",  key="VKB-Translation", value=res_v_bimorph_mirror_motor_translation)
+ini_file.set_value_at_ini(section="Motor-Resolution",  key="HKB-Bender",      value=res_h_bendable_mirror_motor_bender)
+ini_file.set_value_at_ini(section="Motor-Resolution",  key="HKB-Pitch",       value=res_h_bendable_mirror_motor_pitch)
+ini_file.set_value_at_ini(section="Motor-Resolution",  key="HKB-Translation", value=res_h_bendable_mirror_motor_translation)
+
+ini_file.push()
 
 DISTANCE_V_MOTORS = 360 # mm
 
-__v_bimorph_mirror_motor_pitch_resolution = numpy.round(numpy.degrees(numpy.arcsin(5e-4 / DISTANCE_V_MOTORS)), 5)
+res_v_bimorph_mirror_motor_pitch = numpy.round(numpy.degrees(numpy.arcsin(res_v_bimorph_mirror_motor_translation / DISTANCE_V_MOTORS)), 5)
+
+print("28-ID - VKB Pitch Motor Resolution: " + str(res_v_bimorph_mirror_motor_pitch) + " deg")
 
 motors = {}
-motors["v_bimorph_mirror_motor_bender"]       = MotorResolution(1.0,  MotorType.OTHER)         # Bimorph mirror: bender is an actuator, "position" is in Volt
-motors["v_bimorph_mirror_motor_pitch"]        = MotorResolution(__v_bimorph_mirror_motor_pitch_resolution, MotorType.ROTATIONAL)    # deg
-motors["v_bimorph_mirror_motor_translation"]  = MotorResolution(5e-4, MotorType.TRANSLATIONAL) # mm
-motors["h_bendable_mirror_motor_bender"]      = MotorResolution(1.0,  MotorType.OTHER)         # Deming's bender: motors are in Volt
-motors["h_bendable_mirror_motor_pitch"]       = MotorResolution(1e-5, MotorType.ROTATIONAL)    # deg
-motors["h_bendable_mirror_motor_translation"] = MotorResolution(5e-4, MotorType.TRANSLATIONAL) # mm
+motors["v_bimorph_mirror_motor_bender"]       = MotorResolution(res_v_bimorph_mirror_motor_bender,       MotorType.OTHER)         # Bimorph mirror: bender is an actuator, "position" is in Volt
+motors["v_bimorph_mirror_motor_pitch"]        = MotorResolution(res_v_bimorph_mirror_motor_pitch,        MotorType.ROTATIONAL)    # deg
+motors["v_bimorph_mirror_motor_translation"]  = MotorResolution(res_v_bimorph_mirror_motor_translation,  MotorType.TRANSLATIONAL) # mm
+motors["h_bendable_mirror_motor_bender"]      = MotorResolution(res_h_bendable_mirror_motor_bender,      MotorType.OTHER)         # Deming's bender: motors are micron
+motors["h_bendable_mirror_motor_pitch"]       = MotorResolution(res_h_bendable_mirror_motor_pitch,       MotorType.ROTATIONAL)    # deg
+motors["h_bendable_mirror_motor_translation"] = MotorResolution(res_h_bendable_mirror_motor_translation, MotorType.TRANSLATIONAL) # mm
 
 MotorResolutionRegistry.getInstance().register_motor_resolution_set(MotorResolutionSet(motors=motors), "28-ID-B")
 

@@ -59,7 +59,7 @@ from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 import scipy.constants as codata
 
-from aps.ai.autoalignment.common.util.common import get_info, plot_2D, Flip, PlotMode, AspectRatio, ColorMap, Histogram
+from aps.ai.autoalignment.common.util.common import get_peak_location_2D, plot_2D, Flip, PlotMode, AspectRatio, ColorMap, Histogram
 from aps.ai.autoalignment.common.util.gaussian_fit import calculate_2D_gaussian_fit
 from aps.common.ml.data_structures import DictionaryWrapper
 from aps.common.ml.mocks import MockWidget
@@ -117,6 +117,7 @@ def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins
     yy   = ticket['bin_v_center']
     hh_h = ticket['histogram_h']
     hh_v = ticket['histogram_v']
+    peak_h, peak_v = get_peak_location_2D(xx, yy, hh)
 
     if do_gaussian_fit:
         try:    gaussian_fit = calculate_2D_gaussian_fit(data_2D=hh, x=xx, y=yy)
@@ -131,9 +132,11 @@ def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins
                h_sigma=get_sigma(hh_h, xx),
                h_fwhm=ticket['fwhm_h'],
                h_centroid=get_average(hh_h, xx),
+               h_peak=peak_h,
                v_sigma=get_sigma(hh_v, yy),
                v_fwhm=ticket['fwhm_v'],
                v_centroid=get_average(hh_v, yy),
+               v_peak=peak_v,
                integral_intensity=ticket['intensity'],
                peak_intensity=numpy.average(hh[numpy.where(hh >= numpy.max(hh) * 0.95)]),
                gaussian_fit=gaussian_fit
@@ -143,7 +146,7 @@ def __plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbin
     if plot_mode in [PlotMode.INTERNAL, PlotMode.BOTH]:
         x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins_h, nbins_v, nolost, xrange, yrange)
 
-        plot_2D(x_array, y_array, z_array, title, None, None, int_um="", peak_um="", flip=Flip.BOTH, aspect_ratio=aspect_ratio, color_map=color_map)
+        plot_2D(x_array, y_array, z_array, title, None, None, int_um="", peak_um="", flip=Flip.VERTICAL, aspect_ratio=aspect_ratio, color_map=color_map)
 
     if plot_mode in [PlotMode.NATIVE, PlotMode.BOTH]:
         Shadow.ShadowTools.plotxy(shadow_beam._beam, var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
