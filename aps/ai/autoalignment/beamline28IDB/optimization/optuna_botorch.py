@@ -55,8 +55,8 @@ import joblib
 
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import ExecutionMode
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
-from aps.ai.autoalignment.beamline28IDB.optimization import common, configs
-
+from aps.ai.autoalignment.beamline28IDB.optimization import configs
+from aps.ai.autoalignment.beamline28IDB.optimization.common import OptimizationCriteria, OptimizationCommon, MooThresholds
 from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration import (
     BoTorchSampler,
     qehvi_candidates_func,
@@ -66,8 +66,7 @@ from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration 
 )
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 
-
-class OptunaOptimizer(common.OptimizationCommon):
+class OptunaOptimizer(OptimizationCommon):
     opt_platform = "optuna"
     acquisition_functions = {
         "qei": qei_candidates_func,
@@ -239,14 +238,14 @@ class OptunaOptimizer(common.OptimizationCommon):
         if self._constraints is None:
             return
         minimize_constraint_fns = {
-            "centroid": self.get_centroid_distance,
-            "sigma": self.get_sigma,
-            "fwhm": self.get_fwhm,
-            "peak_distance": self.get_peak_distance,
+            MooThresholds.CENTROID:      self.get_centroid_distance,
+            MooThresholds.SIGMA:         self.get_sigma,
+            MooThresholds.FWHM:          self.get_fwhm,
+            MooThresholds.PEAK_DISTANCE: self.get_peak_distance,
         }
         maximize_constraint_fns = {
-            "sum_intensity": self.get_sum_intensity,
-            "peak_intensity": self.get_peak_intensity,
+            MooThresholds.SUM_INTENSITY:  self.get_sum_intensity,
+            MooThresholds.PEAK_INTENSITY: self.get_peak_intensity,
         }
         for constraint, threshold in self._constraints.items():
             if constraint in minimize_constraint_fns:
@@ -279,9 +278,7 @@ class OptunaOptimizer(common.OptimizationCommon):
             if trial.number % self._every_n_images == 0:
                 joblib.dump(
                     value=self.beam_state.hist,
-                    filename=os.path.join(
-                        self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".pkl"
-                    ),
+                    filename=os.path.join(self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".gz"),
                 )
 
         self._set_trial_constraints(trial)
@@ -298,7 +295,7 @@ class OptunaOptimizer(common.OptimizationCommon):
                     else:
                         return [1e4] * len(self._loss_function_list)
 
-            for k in ["sigma", "fwhm"]:
+            for k in [OptimizationCriteria.SIGMA, OptimizationCriteria.FWHM]:
                 if k in self.loss_parameters:
                     width_idx = self.loss_parameters.index(k)
                     if loss[width_idx] == 0:
@@ -317,7 +314,7 @@ class OptunaOptimizer(common.OptimizationCommon):
                     else:
                         return 1e4
 
-            for k in ["sigma", "fwhm"]:
+            for k in [OptimizationCriteria.SIGMA, OptimizationCriteria.FWHM]:
                 if k in self.loss_parameters:
                     if loss == 0:
                         loss = 1e4

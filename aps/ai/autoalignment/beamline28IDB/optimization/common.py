@@ -68,6 +68,23 @@ from aps.ai.autoalignment.common.util.shadow.common import (
 )
 
 
+
+class OptimizationCriteria:
+    CENTROID                    = "centroid"
+    PEAK_DISTANCE               = "peak_distance"
+    FWHM                        = "fwhm"
+    SIGMA                       = "sigma"
+    NEGATIVE_LOG_PEAK_INTENSITY = "negative_log_peak_intensity"
+    LOG_WEIGHTED_SUM_INTENSITY  = "log_weighted_sum_intensity"
+
+class MooThresholds:
+    CENTROID       = "centroid"
+    PEAK_DISTANCE  = "peak_distance"
+    FWHM           = "fwhm"
+    SIGMA          = "sigma"
+    PEAK_INTENSITY = "peak_intensity"
+    SUM_INTENSITY  = "sum_intensity"
+
 def get_distribution_info(
     execution_mode=ExecutionMode.SIMULATION,
     implementor=Implementors.SHADOW,
@@ -103,9 +120,7 @@ def get_distribution_info(
                 gaussian_fit=None,
             )
         else:
-            return get_info(
-                x_array=beam["h_coord"], y_array=beam["v_coord"], z_array=beam["image"], do_gaussian_fit=do_gaussian_fit
-            )
+            return get_info(x_array=beam["h_coord"], y_array=beam["v_coord"], z_array=beam["image"], do_gaussian_fit=do_gaussian_fit)
     else:
         raise ValueError("Executione Mode not valid")
 
@@ -304,12 +319,14 @@ def get_weighted_sum_intensity(
 def _get_weighted_sum_intensity_from_hist(
     hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0
 ) -> float:
-    if hist is None:
-        return no_beam_value
-    radius = (hist.hh**2 + hist.vv**2) ** 0.5
+    if hist is None: return no_beam_value
 
-    weights = radius**radial_weight_power
-    return (hist.data_2D * weights).sum()
+    mesh = np.meshgrid(hist.hh, hist.vv)
+    radius = (mesh[0]**2 + mesh[1]**2)**0.5
+    weight = radius**radial_weight_power
+    weighted_hist = hist.data_2D*weight.T
+
+    return weighted_hist.sum()
 
 
 def _get_centroid_distance_from_dw(
@@ -641,7 +658,7 @@ class OptimizationCommon(abc.ABC):
         focusing_system: AbstractFocusingOptics,
         motor_types: List[str],
         random_seed: int = None,
-        loss_parameters: List[str] = "centroid",
+        loss_parameters: List[str] = OptimizationCriteria.CENTROID,
         reference_parameters_h_v: Dict[str, Tuple] = None,
         loss_min_value: float = None,
         xrange: List[float] = None,
@@ -675,18 +692,18 @@ class OptimizationCommon(abc.ABC):
         self._loss_function_list = []
         temp_loss_min_value = 0
         for loss_type in self.loss_parameters:
-            if loss_type == "centroid":
+            if loss_type == OptimizationCriteria.CENTROID:
                 self._loss_function_list.append(self.get_centroid_distance)
-            elif loss_type == "peak_distance":
+            elif loss_type == OptimizationCriteria.PEAK_DISTANCE:
                 self._loss_function_list.append(self.get_peak_distance)
-            elif loss_type == "negative_log_peak_intensity":
+            elif loss_type == OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY:
                 print("Warning: Stopping condition for the peak intensity case is not supported.")
                 self._loss_function_list.append(self.get_negative_log_peak_intensity)
-            elif loss_type == "fwhm":
+            elif loss_type == OptimizationCriteria.FWHM:
                 self._loss_function_list.append(self.get_fwhm)
-            elif loss_type == "sigma":
+            elif loss_type == OptimizationCriteria.SIGMA:
                 self._loss_function_list.append(self.get_sigma)
-            elif loss_type == "log_weighted_sum_intensity":
+            elif loss_type == OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY:
                 self._loss_function_list.append(self.get_log_weighted_sum_intensity)
             else:
                 raise ValueError("Supplied loss parameter is not valid.")
@@ -768,8 +785,8 @@ class OptimizationCommon(abc.ABC):
     def get_peak_distance(self) -> float:
         return _get_peak_distance_from_dw(
             self.beam_state.dw,
-            self.reference_parameter_h_v["peak_distance"][0],
-            self.reference_parameter_h_v["peak_distance"][1],
+            self.reference_parameter_h_v[OptimizationCriteria.PEAK_DISTANCE][0],
+            self.reference_parameter_h_v[OptimizationCriteria.PEAK_DISTANCE][1],
             self._do_gaussian_fit,
             self._no_beam_loss,
         )
@@ -777,8 +794,8 @@ class OptimizationCommon(abc.ABC):
     def get_centroid_distance(self) -> float:
         return _get_centroid_distance_from_dw(
             self.beam_state.dw,
-            self.reference_parameter_h_v["centroid"][0],
-            self.reference_parameter_h_v["centroid"][1],
+            self.reference_parameter_h_v[OptimizationCriteria.CENTROID][0],
+            self.reference_parameter_h_v[OptimizationCriteria.CENTROID][1],
             self._do_gaussian_fit,
             self._no_beam_loss,
         )
@@ -786,8 +803,8 @@ class OptimizationCommon(abc.ABC):
     def get_fwhm(self) -> float:
         return _get_fwhm_from_dw(
             self.beam_state.dw,
-            self.reference_parameter_h_v["fwhm"][0],
-            self.reference_parameter_h_v["fwhm"][1],
+            self.reference_parameter_h_v[OptimizationCriteria.FWHM][0],
+            self.reference_parameter_h_v[OptimizationCriteria.FWHM][1],
             self._do_gaussian_fit,
             self._no_beam_loss,
         )
@@ -795,8 +812,8 @@ class OptimizationCommon(abc.ABC):
     def get_sigma(self) -> float:
         return _get_sigma_from_dw(
             self.beam_state.dw,
-            self.reference_parameter_h_v["sigma"][0],
-            self.reference_parameter_h_v["sigma"][1],
+            self.reference_parameter_h_v[OptimizationCriteria.SIGMA][0],
+            self.reference_parameter_h_v[OptimizationCriteria.SIGMA][1],
             self._do_gaussian_fit,
             self._no_beam_loss,
         )
