@@ -60,7 +60,13 @@ from aps.ai.autoalignment.common.simulation.facade.parameters import Implementor
 from aps.ai.autoalignment.common.util import clean_up
 from aps.ai.autoalignment.common.util.common import DictionaryWrapper, Histogram, get_info
 from aps.ai.autoalignment.common.util.wrappers import get_distribution_info as get_simulated_distribution_info
-from aps.ai.autoalignment.common.util.shadow.common import EmptyBeamException, HybridFailureException, PreProcessorFiles, load_shadow_beam
+from aps.ai.autoalignment.common.util.shadow.common import (
+    EmptyBeamException,
+    HybridFailureException,
+    PreProcessorFiles,
+    load_shadow_beam,
+)
+
 
 def get_distribution_info(
     execution_mode=ExecutionMode.SIMULATION,
@@ -301,6 +307,7 @@ def _get_weighted_sum_intensity_from_hist(
     if hist is None:
         return no_beam_value
     radius = (hist.hh**2 + hist.vv**2) ** 0.5
+
     weights = radius**radial_weight_power
     return (hist.data_2D * weights).sum()
 
@@ -331,11 +338,11 @@ def _get_centroid_distance_from_dw(
 
 
 def _get_peak_distance_from_dw(
-        dw: DictionaryWrapper,
-        reference_h: float = 0,
-        reference_v: float = 0,
-        do_gaussian_fit: bool = False,
-        no_beam_value: float = 1e4,
+    dw: DictionaryWrapper,
+    reference_h: float = 0,
+    reference_v: float = 0,
+    do_gaussian_fit: bool = False,
+    no_beam_value: float = 1e4,
 ) -> float:
     if dw is None:
         return no_beam_value
@@ -356,20 +363,20 @@ def _get_peak_distance_from_dw(
 
 
 def get_peak_distance(
-        focusing_system: AbstractFocusingOptics = None,
-        photon_beam: object = None,
-        random_seed: float = None,
-        no_beam_value: float = 1e4,
-        xrange: List[float] = None,
-        yrange: List[float] = None,
-        nbins_h: int = 256,
-        nbins_v: int = 256,
-        reference_h: float = 0,
-        reference_v: float = 0,
-        do_gaussian_fit: bool = False,
-        execution_mode=ExecutionMode.SIMULATION,
-        implementor: int = Implementors.SHADOW,
-        **kwargs
+    focusing_system: AbstractFocusingOptics = None,
+    photon_beam: object = None,
+    random_seed: float = None,
+    no_beam_value: float = 1e4,
+    xrange: List[float] = None,
+    yrange: List[float] = None,
+    nbins_h: int = 256,
+    nbins_v: int = 256,
+    reference_h: float = 0,
+    reference_v: float = 0,
+    do_gaussian_fit: bool = False,
+    execution_mode=ExecutionMode.SIMULATION,
+    implementor: int = Implementors.SHADOW,
+    **kwargs,
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
         execution_mode=execution_mode,
@@ -386,6 +393,7 @@ def get_peak_distance(
     peak_distance = _get_peak_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
 
     return BeamParameterOutput(peak_distance, photon_beam, hist, dw)
+
 
 def get_centroid_distance(
     focusing_system: AbstractFocusingOptics = None,
@@ -464,6 +472,7 @@ def _get_sigma_from_dw(
     sigma = ((h_sigma - reference_h) ** 2 + (v_sigma - reference_v) ** 2) ** 0.5
     return sigma
 
+
 def get_fwhm(
     focusing_system: AbstractFocusingOptics = None,
     photon_beam: object = None,
@@ -496,6 +505,7 @@ def get_fwhm(
 
     return BeamParameterOutput(fwhm, photon_beam, hist, dw)
 
+
 def get_sigma(
     focusing_system: AbstractFocusingOptics = None,
     photon_beam: object = None,
@@ -527,6 +537,7 @@ def get_sigma(
     sigma = _get_sigma_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
 
     return BeamParameterOutput(sigma, photon_beam, hist, dw)
+
 
 def get_random_init(
     focusing_system,
@@ -583,7 +594,9 @@ def get_random_init(
                 continue
         regenerate = False
 
-    print("Random initialization is (ABSOLUTE)", motor_types, movers.get_absolute_positions(focusing_system, motor_types))
+    print(
+        "Random initialization is (ABSOLUTE)", motor_types, movers.get_absolute_positions(focusing_system, motor_types)
+    )
     print("Random initialization is (RELATIVE)", motor_types, initial_guess)
 
     return initial_guess, focusing_system, BeamState(photon_beam, hist, dw)
@@ -664,15 +677,17 @@ class OptimizationCommon(abc.ABC):
         for loss_type in self.loss_parameters:
             if loss_type == "centroid":
                 self._loss_function_list.append(self.get_centroid_distance)
-            elif loss_type == "peak":
-                    self._loss_function_list.append(self.get_peak_distance)
-            elif loss_type == "peak_intensity":
+            elif loss_type == "peak_distance":
+                self._loss_function_list.append(self.get_peak_distance)
+            elif loss_type == "negative_log_peak_intensity":
                 print("Warning: Stopping condition for the peak intensity case is not supported.")
                 self._loss_function_list.append(self.get_negative_log_peak_intensity)
             elif loss_type == "fwhm":
                 self._loss_function_list.append(self.get_fwhm)
             elif loss_type == "sigma":
                 self._loss_function_list.append(self.get_sigma)
+            elif loss_type == "log_weighted_sum_intensity":
+                self._loss_function_list.append(self.get_log_weighted_sum_intensity)
             else:
                 raise ValueError("Supplied loss parameter is not valid.")
             temp_loss_min_value += configs.DEFAULT_LOSS_TOLERANCES[loss_type]
@@ -742,14 +757,23 @@ class OptimizationCommon(abc.ABC):
     def get_weighted_sum_intensity(self) -> float:
         return _get_weighted_sum_intensity_from_hist(self.beam_state.hist, 2, self._intensity_no_beam_loss)
 
+    def get_log_weighted_sum_intensity(self) -> float:
+        weighted_sum_intensity = self.get_weighted_sum_intensity()
+        if weighted_sum_intensity == 0:
+            log_weighted_sum_intensity = self._no_beam_loss
+        else:
+            log_weighted_sum_intensity = np.log(weighted_sum_intensity)
+        return log_weighted_sum_intensity
+
     def get_peak_distance(self) -> float:
         return _get_peak_distance_from_dw(
             self.beam_state.dw,
-            self.reference_parameter_h_v["peak"][0],
-            self.reference_parameter_h_v["peak"][1],
+            self.reference_parameter_h_v["peak_distance"][0],
+            self.reference_parameter_h_v["peak_distance"][1],
             self._do_gaussian_fit,
             self._no_beam_loss,
         )
+
     def get_centroid_distance(self) -> float:
         return _get_centroid_distance_from_dw(
             self.beam_state.dw,
@@ -791,14 +815,16 @@ class OptimizationCommon(abc.ABC):
         self._opt_trials_motor_positions.append(translations)
         self._opt_trials_losses.append(loss)
         self._opt_fn_call_counter += 1
-        if verbose: print("motors", self.motor_types, "trans", translations, "current loss", loss)
+        if verbose:
+            print("motors", self.motor_types, "trans", translations, "current loss", loss)
         return loss
 
     def _check_initial_loss(self, verbose=False) -> NoReturn:
         size = np.size(self.motor_types)
         lossfn_obj_this = self.TrialInstanceLossFunction(self, verbose=verbose)
         initial_loss = lossfn_obj_this.loss(np.atleast_1d(np.zeros(size)), verbose=False)
-        if initial_loss >= self._no_beam_loss: raise EmptyBeamException("Initial beam is out of bounds.")
+        if initial_loss >= self._no_beam_loss:
+            raise EmptyBeamException("Initial beam is out of bounds.")
         print("Initial loss is", initial_loss)
 
     def reset(self) -> NoReturn:

@@ -40,10 +40,10 @@ class OptimizationParameters:
         self.params = {
             "sum_intensity_soft_constraint": 7e3,
             "sum_intensity_hard_constraint": 6.5e3,
-            "reference_parameters_h_v": {"centroid": (-0.01, 0.01), "sigma": (0.00, 0.0)},
+            "reference_parameters_h_v": {"peak": (0.00, 0.00), "fwhm": (0.00, 0.0)},
             #            "centroid_sigma_loss_threshold_dependency": CentroidSigmaLossThresholdDependency.FULLY_DYNAMIC,
             #            "centroid_sigma_loss_hard_thresholds": [0.01, 0.03],
-            "loss_parameters": ["centroid", "sigma"],
+            "loss_parameters": ["peak", "fwhm"],
             "multi_objective_optimization": True,
             "n_pitch_trans_motor_trials": 50,
             "n_all_motor_trials": 100,
@@ -125,6 +125,7 @@ if __name__ == "__main__":
         **sim_params.params,
     )
 
+    opt_params.params["loss_parameters"]
     centroid_ground, *_ = opt_common.get_centroid_distance(photon_beam=beam, **sim_params.params)
     sigma_ground, *_ = opt_common.get_sigma(photon_beam=beam, **sim_params.params)
 

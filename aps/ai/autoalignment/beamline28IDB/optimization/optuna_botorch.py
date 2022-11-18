@@ -57,7 +57,6 @@ from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import Ex
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 from aps.ai.autoalignment.beamline28IDB.optimization import common, configs
 
-# from matplotlib import pyplot as plt
 from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration import (
     BoTorchSampler,
     qehvi_candidates_func,
@@ -77,43 +76,47 @@ class OptunaOptimizer(common.OptimizationCommon):
         "qnehvi": qnehvi_candidates_func,
     }
 
-    def __init__(self,
-                 focusing_system             : AbstractFocusingOptics,
-                 motor_types                 : List[str],
-                 random_seed                 : int = None,
-                 loss_parameters             : List[str] = "centroid",
-                 reference_parameters_h_v    : Dict[str, Tuple] = None,
-                 loss_min_value              : float = None,
-                 xrange                      : List[float] = None,
-                 yrange                      : List[float] = None,
-                 nbins_h                     : int = 256,
-                 nbins_v                     : int = 256,
-                 do_gaussian_fit             : bool = False,
-                 no_beam_loss                : float = 1e4,
-                 intensity_no_beam_loss      : float = 0,
-                 multi_objective_optimization: bool = False,
-                 execution_mode              : int = ExecutionMode.SIMULATION,
-                 implementor                 : int = Implementors.SHADOW,
-                 save_images                 : bool = False,
-                 every_n_images              : int = 5,
-                 **kwargs):
-        super().__init__(focusing_system,
-                         motor_types,
-                         random_seed,
-                         loss_parameters,
-                         reference_parameters_h_v,
-                         loss_min_value,
-                         xrange,
-                         yrange,
-                         nbins_h,
-                         nbins_v,
-                         do_gaussian_fit,
-                         no_beam_loss,
-                         intensity_no_beam_loss,
-                         multi_objective_optimization,
-                         execution_mode,
-                         implementor,
-                         **kwargs)
+    def __init__(
+        self,
+        focusing_system: AbstractFocusingOptics,
+        motor_types: List[str],
+        random_seed: int = None,
+        loss_parameters: List[str] = "centroid",
+        reference_parameters_h_v: Dict[str, Tuple] = None,
+        loss_min_value: float = None,
+        xrange: List[float] = None,
+        yrange: List[float] = None,
+        nbins_h: int = 256,
+        nbins_v: int = 256,
+        do_gaussian_fit: bool = False,
+        no_beam_loss: float = 1e4,
+        intensity_no_beam_loss: float = 0,
+        multi_objective_optimization: bool = False,
+        execution_mode: int = ExecutionMode.SIMULATION,
+        implementor: int = Implementors.SHADOW,
+        save_images: bool = False,
+        every_n_images: int = 5,
+        **kwargs,
+    ):
+        super().__init__(
+            focusing_system,
+            motor_types,
+            random_seed,
+            loss_parameters,
+            reference_parameters_h_v,
+            loss_min_value,
+            xrange,
+            yrange,
+            nbins_h,
+            nbins_v,
+            do_gaussian_fit,
+            no_beam_loss,
+            intensity_no_beam_loss,
+            multi_objective_optimization,
+            execution_mode,
+            implementor,
+            **kwargs,
+        )
         self.best_params = None
         self.motor_ranges = None
         self.study = None
@@ -126,7 +129,8 @@ class OptunaOptimizer(common.OptimizationCommon):
         self._save_images = save_images
         self._every_n_images = every_n_images
         self._dump_directory = os.path.join(os.curdir, "dump")
-        if not os.path.exists(self._dump_directory): os.mkdir(self._dump_directory)
+        if not os.path.exists(self._dump_directory):
+            os.mkdir(self._dump_directory)
 
     def set_optimizer_options(
         self,
@@ -150,9 +154,11 @@ class OptunaOptimizer(common.OptimizationCommon):
         # Creating the acquisition function
         if acquisition_function is None:
             if self._multi_objective_optimization:
+
                 def acquisition_function(*args, **kwargs):
                     thresholds_list = self._check_thresholds(moo_thresholds, directions_list)
                     return self.acquisition_functions["qnehvi"](*args, ref_point=thresholds_list, **kwargs)
+
             else:
                 acquisition_function = self.acquisition_functions["qnei"]
 
@@ -236,6 +242,7 @@ class OptunaOptimizer(common.OptimizationCommon):
             "centroid": self.get_centroid_distance,
             "sigma": self.get_sigma,
             "fwhm": self.get_fwhm,
+            "peak_distance": self.get_peak_distance,
         }
         maximize_constraint_fns = {
             "sum_intensity": self.get_sum_intensity,
@@ -270,7 +277,12 @@ class OptunaOptimizer(common.OptimizationCommon):
 
         if self._save_images:
             if trial.number % self._every_n_images == 0:
-                joblib.dump(value=self.beam_state.hist, filename=os.path.join(self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".pkl"))
+                joblib.dump(
+                    value=self.beam_state.hist,
+                    filename=os.path.join(
+                        self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".pkl"
+                    ),
+                )
 
         self._set_trial_constraints(trial)
         if self._multi_objective_optimization:
@@ -310,11 +322,8 @@ class OptunaOptimizer(common.OptimizationCommon):
                     if loss == 0:
                         loss = 1e4
 
-        # plt.pcolormesh(self.beam_state.hist.hh, self.beam_state.hist.vv, self.beam_state.hist.data_2D)
-        # plt.title(str(self.beam_state.hist.data_2D.sum()))
-        # plt.show()
         trial.set_user_attr("dw", deepcopy(self.beam_state.dw))
-
+        trial.set_user_attr("ws", self.get_weighted_sum_intensity())
         return loss
 
     def trials(self, n_trials: int, trial_motor_types: list = None, step_scale: float = 1):
