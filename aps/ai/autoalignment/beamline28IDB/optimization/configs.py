@@ -96,9 +96,31 @@ DEFAULT_MOTOR_RESOLUTIONS = {
 DEFAULT_MOTOR_TOLERANCES = DEFAULT_MOTOR_RESOLUTIONS
 
 # These values only apply for the simulation with 50k simulated beams
-DEFAULT_LOSS_TOLERANCES = {"peak": 2e-4, "centroid": 2e-4, "fwhm": 2e-4, "peak_intensity": -np.inf, "sigma": 2e-4}
-DEFAULT_CONSTRAINT_OPTIONS = {"peak", "centroid", "fwhm", "sigma", "peak_intensity", "sum_intensity"}
-DEFAULT_LOSS_REFERENCE_VALUES = {"peak": np.array([0, 0]), "centroid": np.array([0, 0]), "sigma": np.array([0, 0]), "fwhm": np.array([0, 0])}
+DEFAULT_LOSS_TOLERANCES = {
+    "peak_distance": 2e-4,
+    "centroid": 2e-4,
+    "fwhm": 2e-4,
+    "negative_log_peak_intensity": -np.inf,
+    "sigma": 2e-4,
+    "log_weighted_sum_intensity": -np.inf,
+}
+DEFAULT_CONSTRAINT_OPTIONS = [
+    "peak_distance",
+    "centroid",
+    "fwhm",
+    "sigma",
+    "peak_intensity",
+    "sum_intensity",
+]
+DEFAULT_LOSS_REFERENCE_VALUES = {
+    "peak_distance": np.array([0, 0]),
+    "centroid": np.array([0, 0]),
+    "sigma": np.array([0, 0]),
+    "fwhm": np.array([0, 0]),
+}
+
+# Optuna constraint details
+
 
 DETECTOR_X = IMAGE_SIZE_PIXEL_HxV[0] * PIXEL_SIZE * 1e3
 DETECTOR_Y = IMAGE_SIZE_PIXEL_HxV[1] * PIXEL_SIZE * 1e3
