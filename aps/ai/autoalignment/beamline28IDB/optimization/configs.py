@@ -46,15 +46,19 @@
 # ----------------------------------------------------------------------- #
 
 import numpy as np
-
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AngularUnits, DistanceUnits, MotorResolutionRegistry
 from aps.common.measurment.beamline.image_processor import PIXEL_SIZE, IMAGE_SIZE_PIXEL_HxV
+
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import (
+    AngularUnits,
+    DistanceUnits,
+    MotorResolutionRegistry,
+)
 
 motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("28-ID-B")
 
 
 DEFAULT_DISTANCE_UNIT = DistanceUnits.MILLIMETERS
-DEFAULT_ANGLE_UNIT    = AngularUnits.DEGREES
+DEFAULT_ANGLE_UNIT = AngularUnits.DEGREES
 DEFAULT_ACTUATOR_UNIT = DistanceUnits.OTHER  # This should be volts
 
 # not sure about the movement ranges for hkb4 and vkb4
@@ -70,13 +74,13 @@ UNITS_PER_MOTOR = {
 
 # not sure about the movement ranges for hkb4 and vkb4
 DEFAULT_MOVEMENT_RANGES = {
-    "hb_1":      [-25.0, 25.0],
-    "hb_2":      [-25.0, 25.0],
-    "hb_pitch":  [-0.002, 0.002],
-    "hb_trans":  [-0.03, 0.03],
+    "hb_1": [-25, 25],
+    "hb_2": [-25, 25],
+    "hb_pitch": [-0.002, 0.002],
+    "hb_trans": [-0.03, 0.03],
     "vb_bender": [-20.0, 20.0],
-    "vb_pitch":  [-0.002, 0.002],
-    "vb_trans":  [-0.03, 0.03],
+    "vb_pitch": [-0.002, 0.002],
+    "vb_trans": [-0.03, 0.03],
 }
 # These are shorthands for the longer names in the focusing system interface.
 # The units for the bender motors are Volts.

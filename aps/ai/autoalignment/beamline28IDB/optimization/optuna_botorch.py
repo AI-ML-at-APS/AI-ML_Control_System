@@ -53,11 +53,9 @@ import optuna
 from optuna.trial import Trial
 import joblib
 
-from aps.ai.autoalignment.beamline28IDB.optimization import common, configs
-
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import  ExecutionMode
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import ExecutionMode
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
-from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
+from aps.ai.autoalignment.beamline28IDB.optimization import common, configs
 
 # from matplotlib import pyplot as plt
 from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration import (
@@ -67,6 +65,7 @@ from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration 
     qnehvi_candidates_func,
     qnei_candidates_func,
 )
+from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 
 
 class OptunaOptimizer(common.OptimizationCommon):
