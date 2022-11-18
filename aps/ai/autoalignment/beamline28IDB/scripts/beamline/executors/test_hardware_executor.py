@@ -60,6 +60,7 @@ from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import Ex
 
 class HardwareTestParameters:
     plot_motors = True
+    restore     = True
     test_h_pitch = True
     h_pitch_absolute_move = 0.17189
     h_pitch_relative_move = -0.01
@@ -150,11 +151,12 @@ class TestHardwareScript(AbstractScript):
             self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=self.__hardware_test_parameters.h_pitch_relative_move, movement=Movement.RELATIVE, units=AngularUnits.DEGREES)
             print("Current Pitch Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_pitch(units=AngularUnits.DEGREES)))
             plot("H Pitch - Rel")
-            time.sleep(1)
-            print("Restore Pitch to initial position: " + str(initial_value) + " deg")
-            self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=initial_value, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-            print("Final Pitch Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_pitch(units=AngularUnits.DEGREES)))
-            plot("H Pitch - Fin")
+            if self.__hardware_test_parameters.restore:
+                time.sleep(1)
+                print("Restore Pitch to initial position: " + str(initial_value) + " deg")
+                self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=initial_value, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+                print("Final Pitch Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_pitch(units=AngularUnits.DEGREES)))
+                plot("H Pitch - Fin")
 
         if self.__hardware_test_parameters.test_v_pitch:
             print("\nVertical Mirror - TEST OF THE PITCH MOTOR")
@@ -171,11 +173,12 @@ class TestHardwareScript(AbstractScript):
             self.__focusing_system.move_v_bimorph_mirror_motor_pitch(angle=self.__hardware_test_parameters.v_pitch_relative_move, movement=Movement.RELATIVE, units=AngularUnits.DEGREES)
             print("Current Pitch Value: " + str(self.__focusing_system.get_v_bimorph_mirror_motor_pitch(units=AngularUnits.DEGREES)))
             plot("V Pitch - Rel")
-            time.sleep(1)
-            print("Restore Pitch to initial position: " + str(initial_value) + " deg")
-            self.__focusing_system.move_v_bimorph_mirror_motor_pitch(angle=initial_value, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-            print("Final Pitch Value: " + str(self.__focusing_system.get_v_bimorph_mirror_motor_pitch(units=AngularUnits.DEGREES)))
-            plot("V Pitch - Fin")
+            if self.__hardware_test_parameters.restore:
+                time.sleep(1)
+                print("Restore Pitch to initial position: " + str(initial_value) + " deg")
+                self.__focusing_system.move_v_bimorph_mirror_motor_pitch(angle=initial_value, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+                print("Final Pitch Value: " + str(self.__focusing_system.get_v_bimorph_mirror_motor_pitch(units=AngularUnits.DEGREES)))
+                plot("V Pitch - Fin")
 
         if self.__hardware_test_parameters.test_h_translation:
             print("\nHorizontal Mirror - TEST OF THE TRANSLATION MOTOR")
@@ -193,10 +196,11 @@ class TestHardwareScript(AbstractScript):
             print("Current Translation Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)))
             plot("H Trans - Rel")
             time.sleep(1)
-            print("Restore Translation to initial position: " + str(initial_value) + " mm")
-            self.__focusing_system.move_h_bendable_mirror_motor_translation(translation=initial_value, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            print("Final Translation Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)))
-            plot("H Trans - Fin")
+            if self.__hardware_test_parameters.restore:
+                print("Restore Translation to initial position: " + str(initial_value) + " mm")
+                self.__focusing_system.move_h_bendable_mirror_motor_translation(translation=initial_value, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+                print("Final Translation Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)))
+                plot("H Trans - Fin")
 
         if self.__hardware_test_parameters.test_v_translation:
             print("\nVertical Mirror - TEST OF THE TRANSLATION MOTOR")
@@ -213,11 +217,12 @@ class TestHardwareScript(AbstractScript):
             self.__focusing_system.move_v_bimorph_mirror_motor_translation(translation=self.__hardware_test_parameters.v_translation_relative_move, movement=Movement.RELATIVE, units=DistanceUnits.MILLIMETERS)
             print("Current Translation Value: " + str(self.__focusing_system.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)))
             plot("V Trans - Rel")
-            time.sleep(2)
-            print("Restore Translation to initial position: " + str(initial_value) + " mm")
-            self.__focusing_system.move_v_bimorph_mirror_motor_translation(translation=initial_value, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            print("Final Translation Value: " + str(self.__focusing_system.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)))
-            plot("V Trans - Fin")
+            if self.__hardware_test_parameters.restore:
+                time.sleep(2)
+                print("Restore Translation to initial position: " + str(initial_value) + " mm")
+                self.__focusing_system.move_v_bimorph_mirror_motor_translation(translation=initial_value, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+                print("Final Translation Value: " + str(self.__focusing_system.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)))
+                plot("V Trans - Fin")
 
         if self.__hardware_test_parameters.test_h_bender_1:
             print("\nHorizontal Mirror - TEST OF THE BENDER MOTOR 1")
@@ -234,11 +239,12 @@ class TestHardwareScript(AbstractScript):
             self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=self.__hardware_test_parameters.h_bender_1_relative_move, movement=Movement.RELATIVE)
             print("Current Bender 1 Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_1_bender()))
             plot("H B1 - Rel")
-            time.sleep(1)
-            print("Restore Bender 1 to initial position: " + str(initial_value))
-            self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=initial_value, movement=Movement.ABSOLUTE)
-            print("Final Bender 1 Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_1_bender()))
-            plot("H B1 - Fin")
+            if self.__hardware_test_parameters.restore:
+                time.sleep(1)
+                print("Restore Bender 1 to initial position: " + str(initial_value))
+                self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=initial_value, movement=Movement.ABSOLUTE)
+                print("Final Bender 1 Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_1_bender()))
+                plot("H B1 - Fin")
 
         if self.__hardware_test_parameters.test_h_bender_2:
             print("\nHorizontal Mirror - TEST OF THE BENDER MOTOR 2")
@@ -255,11 +261,12 @@ class TestHardwareScript(AbstractScript):
             self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=self.__hardware_test_parameters.h_bender_2_relative_move, movement=Movement.RELATIVE)
             print("Current Bender 2 Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_2_bender()))
             plot("H B2 - Rel")
-            time.sleep(1)
-            print("Restore Bender 2 to initial position: " + str(initial_value) + " deg")
-            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=initial_value, movement=Movement.ABSOLUTE)
-            print("Final Bender 2 Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_2_bender()))
-            plot("H B2 - Fin")
+            if self.__hardware_test_parameters.restore:
+                time.sleep(1)
+                print("Restore Bender 2 to initial position: " + str(initial_value) + " deg")
+                self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=initial_value, movement=Movement.ABSOLUTE)
+                print("Final Bender 2 Value: " + str(self.__focusing_system.get_h_bendable_mirror_motor_2_bender()))
+                plot("H B2 - Fin")
 
         if self.__hardware_test_parameters.test_v_bender:
             print("\nVertical Mirror - TEST OF THE BENDER MOTOR")
@@ -276,11 +283,12 @@ class TestHardwareScript(AbstractScript):
             self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=self.__hardware_test_parameters.v_bender_relative_move, movement=Movement.RELATIVE)
             print("Current Bender Value: " + str(self.__focusing_system.get_v_bimorph_mirror_motor_bender()))
             plot("V Bender - Rel")
-            time.sleep(1)
-            print("Restore Bender to initial position: " + str(initial_value) + " deg")
-            self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=initial_value, movement=Movement.ABSOLUTE)
-            print("Final Bender Value: " + str(self.__focusing_system.get_v_bimorph_mirror_motor_bender()))
-            plot("V Bender - Fin")
+            if self.__hardware_test_parameters.restore:
+                time.sleep(1)
+                print("Restore Bender to initial position: " + str(initial_value) + " deg")
+                self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=initial_value, movement=Movement.ABSOLUTE)
+                print("Final Bender Value: " + str(self.__focusing_system.get_v_bimorph_mirror_motor_bender()))
+                plot("V Bender - Fin")
 
         if self.__hardware_test_parameters.test_detector:
             print("\nTEST OF THE DETECTOR")
