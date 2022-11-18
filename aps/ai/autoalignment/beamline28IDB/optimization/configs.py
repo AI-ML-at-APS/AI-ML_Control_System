@@ -56,7 +56,6 @@ from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import 
 
 motor_resolutions = MotorResolutionRegistry.getInstance().get_motor_resolution_set("28-ID-B")
 
-
 DEFAULT_DISTANCE_UNIT = DistanceUnits.MILLIMETERS
 DEFAULT_ANGLE_UNIT = AngularUnits.DEGREES
 DEFAULT_ACTUATOR_UNIT = DistanceUnits.OTHER  # This should be volts
