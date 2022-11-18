@@ -48,7 +48,9 @@ import os
 import numpy
 from datetime import datetime
 import joblib
+import optuna
 import warnings
+from matplotlib import pyplot as plt
 
 from aps.common.measurment.beamline.image_processor import IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
 
@@ -109,6 +111,7 @@ multi_objective_optimization         =  ini_file.get_boolean_from_ini(section="O
 n_pitch_trans_motor_trials           =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    default=50)
 n_all_motor_trials                   =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-All-Motor-Trials",            default=100)
 save_images                          =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Save-Images",                   default=False)
+every_n_images                       =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="Every-N-Images",                default=5)
 
 ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-1",                  values_list=hb_1     )
 ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-2",                  values_list=hb_2     )
@@ -137,6 +140,7 @@ ini_file.set_value_at_ini(section="Optimization-Parameters", key="Multi-Objectiv
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    value=n_pitch_trans_motor_trials   )
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-All-Motor-Trials",            value=n_all_motor_trials           )
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Save-Images",                   value=save_images                  )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Every-N-Images",                value=every_n_images               )
 
 ini_file.push()
 
@@ -175,7 +179,6 @@ class OptimizationParameters:
             "multi_objective_optimization":         multi_objective_optimization,
             "n_pitch_trans_motor_trials":           n_pitch_trans_motor_trials,
             "n_all_motor_trials":                   n_all_motor_trials,
-            "save_images":                          save_images
         }
 
     def analyze_motor_ranges(self, initial_positions):
@@ -206,7 +209,9 @@ class PlotParameters(object):
             "ycoord" : ycoord,
             "nbins_h": nbins_h,
             "nbins_v": nbins_v,
-            "do_gaussian_fit": False
+            "do_gaussian_fit": False,
+            "save_images": save_images,
+            "every_n_images": every_n_images
         }
 
 class SimulationParameters(PlotParameters):
@@ -216,31 +221,12 @@ class SimulationParameters(PlotParameters):
         self.params["implementor"]    = Sim_Implementors.SHADOW
         self.params["random_seed"]    = DEFAULT_RANDOM_SEED
 
-    def get_plot_params(self):
-        return {
-            "xrange": self.params["xrange"],
-            "yrange": self.params["yrange"],
-            "nbins_h": self.params["nbins_h"],
-            "nbins_v": self.params["nbins_v"],
-            "do_gaussian_fit": self.params["do_gaussian_fit"]
-        }
-
 class HardwareParameters(PlotParameters):
     def __init__(self):
         super(HardwareParameters, self).__init__()
         self.params["execution_mode"] = ExecutionMode.HARDWARE
         self.params["implementor"]    = HW_Implementors.EPICS
         self.params["from_raw_image"] = True
-
-    def get_plot_params(self):
-        return {
-            "xrange": self.params["xrange"],
-            "yrange": self.params["yrange"],
-            "nbins_h": self.params["nbins_h"],
-            "nbins_v": self.params["nbins_v"],
-            "do_gaussian_fit": self.params["do_gaussian_fit"]
-        }
-
 
 input_beam_path = "primary_optics_system_beam.dat"
 
@@ -439,6 +425,24 @@ class AutofocusingScript(GenericScript):
         chkpt_name = f"optimization_final_{n1 + n2}_{datetime_str}.pkl"
         joblib.dump(opt_trial.study.trials, chkpt_name)
         print(f"Saving all trials in {chkpt_name}")
+
+        study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]]) # For multiobjective optimization
+        # study = optuna.create_study(directions=["minimize"]) # For single objective
+
+        study.add_trials(opt_trial.study.trials)
+
+        # Generating the pareto front for the multiobjective optimization
+        optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
+        plt.tight_layout()
+        plt.show()
+
+        for i in range(len(self.__opt_params.params["loss_parameters"])):
+            optuna.visualization.matplotlib.plot_optimization_history(study,
+                                                                      target=lambda t: t.values[i],
+                                                                      target_name=self.__opt_params.params["loss_parameters"][i])
+            plt.tight_layout()
+            plt.show()
+
 
     def __setup_work_dir(self):
         os.chdir(os.path.join(self.__data_directory, "simulation"))
