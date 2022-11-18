@@ -94,9 +94,9 @@ if __name__ == "__main__":
 
     focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
 
-    #focusing_system.move_v_bimorph_mirror_motor_bender(150, movement=Movement.ABSOLUTE) # vertical focus
-    #focusing_system.move_h_bendable_mirror_motor_1_bender(-90, movement=Movement.ABSOLUTE)
-    #focusing_system.move_h_bendable_mirror_motor_2_bender(-90, movement=Movement.ABSOLUTE)
+    focusing_system.move_v_bimorph_mirror_motor_bender(425, movement=Movement.ABSOLUTE) # vertical focus
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-170, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-160, movement=Movement.ABSOLUTE)
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed)
 
@@ -105,6 +105,7 @@ if __name__ == "__main__":
                       title="Initial Beam",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
 
+    sys.exit(0)
     #--------------------------------------------------
     # interaction with the beamline
 
