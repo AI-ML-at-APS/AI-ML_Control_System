@@ -365,7 +365,7 @@ def get_centroid_distance(
         do_gaussian_fit=do_gaussian_fit,
     )
     centroid_distance = _get_centroid_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
-    
+
     return BeamParameterOutput(centroid_distance, photon_beam, hist, dw)
 
 
@@ -442,7 +442,7 @@ def get_fwhm(
         implementor=implementor,
     )
     fwhm = _get_fwhm_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
-    
+
     return BeamParameterOutput(fwhm, photon_beam, hist, dw)
 
 def get_sigma(
@@ -474,7 +474,7 @@ def get_sigma(
         implementor=implementor,
     )
     sigma = _get_sigma_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
-    
+
     return BeamParameterOutput(sigma, photon_beam, hist, dw)
 
 def get_random_init(
