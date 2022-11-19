@@ -56,7 +56,7 @@ import joblib
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import ExecutionMode
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 from aps.ai.autoalignment.beamline28IDB.optimization import configs
-from aps.ai.autoalignment.beamline28IDB.optimization.common import OptimizationCriteria, OptimizationCommon, MooThresholds
+from aps.ai.autoalignment.beamline28IDB.optimization.common import OptimizationCriteria, OptimizationCommon
 from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration import (
     BoTorchSampler,
     qehvi_candidates_func,
@@ -65,6 +65,16 @@ from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration 
     qnei_candidates_func,
 )
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
+
+
+class Constraints:
+    CENTROID       = "centroid"
+    PEAK_DISTANCE  = "peak_distance"
+    FWHM           = "fwhm"
+    SIGMA          = "sigma"
+    PEAK_INTENSITY = "peak_intensity"
+    SUM_INTENSITY  = "sum_intensity"
+
 
 class OptunaOptimizer(OptimizationCommon):
     opt_platform = "optuna"
@@ -238,14 +248,14 @@ class OptunaOptimizer(OptimizationCommon):
         if self._constraints is None:
             return
         minimize_constraint_fns = {
-            MooThresholds.CENTROID:      self.get_centroid_distance,
-            MooThresholds.SIGMA:         self.get_sigma,
-            MooThresholds.FWHM:          self.get_fwhm,
-            MooThresholds.PEAK_DISTANCE: self.get_peak_distance,
+            Constraints.CENTROID:      self.get_centroid_distance,
+            Constraints.SIGMA:         self.get_sigma,
+            Constraints.FWHM:          self.get_fwhm,
+            Constraints.PEAK_DISTANCE: self.get_peak_distance,
         }
         maximize_constraint_fns = {
-            MooThresholds.SUM_INTENSITY:  self.get_sum_intensity,
-            MooThresholds.PEAK_INTENSITY: self.get_peak_intensity,
+            Constraints.SUM_INTENSITY:  self.get_sum_intensity,
+            Constraints.PEAK_INTENSITY: self.get_peak_intensity,
         }
         for constraint, threshold in self._constraints.items():
             if constraint in minimize_constraint_fns:
@@ -345,6 +355,7 @@ class OptunaOptimizer(OptimizationCommon):
             rms_metrics.append(np.sum(np.array(vals) ** 2) ** 0.5)
         idx = np.argmin(rms_metrics)
         return trials[idx].params, trials[idx].values
+
 
     # def trials(self, n_guesses = 1, verbose: bool = False, accept_all_solutions: bool = False):
     #    pass

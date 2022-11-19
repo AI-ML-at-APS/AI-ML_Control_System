@@ -77,14 +77,6 @@ class OptimizationCriteria:
     NEGATIVE_LOG_PEAK_INTENSITY = "negative_log_peak_intensity"
     LOG_WEIGHTED_SUM_INTENSITY  = "log_weighted_sum_intensity"
 
-class MooThresholds:
-    CENTROID       = "centroid"
-    PEAK_DISTANCE  = "peak_distance"
-    FWHM           = "fwhm"
-    SIGMA          = "sigma"
-    PEAK_INTENSITY = "peak_intensity"
-    SUM_INTENSITY  = "sum_intensity"
-
 def get_distribution_info(
     execution_mode=ExecutionMode.SIMULATION,
     implementor=Implementors.SHADOW,
@@ -692,21 +684,7 @@ class OptimizationCommon(abc.ABC):
         self._loss_function_list = []
         temp_loss_min_value = 0
         for loss_type in self.loss_parameters:
-            if loss_type == OptimizationCriteria.CENTROID:
-                self._loss_function_list.append(self.get_centroid_distance)
-            elif loss_type == OptimizationCriteria.PEAK_DISTANCE:
-                self._loss_function_list.append(self.get_peak_distance)
-            elif loss_type == OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY:
-                print("Warning: Stopping condition for the peak intensity case is not supported.")
-                self._loss_function_list.append(self.get_negative_log_peak_intensity)
-            elif loss_type == OptimizationCriteria.FWHM:
-                self._loss_function_list.append(self.get_fwhm)
-            elif loss_type == OptimizationCriteria.SIGMA:
-                self._loss_function_list.append(self.get_sigma)
-            elif loss_type == OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY:
-                self._loss_function_list.append(self.get_log_weighted_sum_intensity)
-            else:
-                raise ValueError("Supplied loss parameter is not valid.")
+            self._loss_function_list.append(self.get_beam_property_function_for_loss(loss_type))
             temp_loss_min_value += configs.DEFAULT_LOSS_TOLERANCES[loss_type]
 
         self._multi_objective_optimization = multi_objective_optimization
@@ -734,6 +712,17 @@ class OptimizationCommon(abc.ABC):
         self._update_beam_state()
         self.guesses_all = []
         self.results_all = []
+
+    def get_beam_property_function_for_loss(self, beam_prop: str):
+        property_functions = {OptimizationCriteria.CENTROID: self.get_centroid_distance,
+                              OptimizationCriteria.PEAK_DISTANCE: self.get_peak_distance,
+                              OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY: self.get_negative_log_peak_intensity,
+                              OptimizationCriteria.FWHM: self.get_fwhm,
+                              OptimizationCriteria.SIGMA: self.get_sigma,
+                              OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY: self.get_log_weighted_sum_intensity}
+        if beam_prop not in property_functions:
+            raise ValueError("Supplied loss option is not valid.")
+        return property_functions[beam_prop]
 
     def _update_beam_state(self) -> bool:
         (current_beam, current_hist, current_dw) = get_beam_hist_dw(
