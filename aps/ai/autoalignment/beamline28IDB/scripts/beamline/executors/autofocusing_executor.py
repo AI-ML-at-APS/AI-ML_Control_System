@@ -107,6 +107,7 @@ bound_vb_trans  = ini_file.get_list_from_ini( section="Motor-Boundaries", key="B
 sum_intensity_soft_constraint        =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", default=7e3)
 sum_intensity_hard_constraint        =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", default=6.5e3)
 loss_parameters                      =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Loss-Parameters",               default=[OptimizationCriteria.FWHM, OptimizationCriteria.PEAK_DISTANCE], type=str)
+log_parameters_weight                =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Log-Parameters-Weight",         default=0.25)
 reference_position                   =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Reference-Position",            default=[0.0, 0.0], type=float)
 reference_size                       =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Reference-Size",                default=[0.0, 0.0], type=float)
 moo_thresholds                       =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Moo-Thresholds",                default=[OptimizationCriteria.FWHM, OptimizationCriteria.PEAK_DISTANCE], type=str)
@@ -141,6 +142,7 @@ ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-VKB-Transl
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", value=sum_intensity_soft_constraint)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", value=sum_intensity_hard_constraint)
 ini_file.set_list_at_ini( section="Optimization-Parameters", key="Loss-Parameters",               values_list=loss_parameters)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Log-Parameters-Weight",         value=log_parameters_weight)
 ini_file.set_list_at_ini( section="Optimization-Parameters", key="Reference-Position",            values_list=reference_position)
 ini_file.set_list_at_ini( section="Optimization-Parameters", key="Reference-Size",                values_list=reference_size)
 ini_file.set_list_at_ini( section="Optimization-Parameters", key="Moo-Thresholds",                values_list=moo_thresholds)
@@ -200,6 +202,7 @@ class OptimizationParameters:
             "sum_intensity_hard_constraint":        sum_intensity_hard_constraint,
             "reference_parameters_h_v":             reference_parameters_h_v,
             "loss_parameters":                      loss_parameters,
+            "log_parameters_weight":                log_parameters_weight,
             "moo_thresholds":                       moo_thresholds_dict,
             "multi_objective_optimization":         multi_objective_optimization,
             "n_pitch_trans_motor_trials":           n_pitch_trans_motor_trials,
