@@ -67,10 +67,12 @@ from aps.ai.autoalignment.common.simulation.facade.parameters import Implementor
 from aps.ai.autoalignment.common.hardware.facade.parameters import Implementors as HW_Implementors
 
 from aps.ai.autoalignment.common.util import clean_up
-from aps.ai.autoalignment.common.util.common import AspectRatio, ColorMap, PlotMode, get_info, plot_2D
+from aps.ai.autoalignment.common.util.common import AspectRatio, ColorMap, PlotMode, plot_2D
 from aps.ai.autoalignment.common.util.shadow.common import PreProcessorFiles, load_shadow_beam
 from aps.ai.autoalignment.common.util.wrappers import plot_distribution
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, AngularUnits
+
+from aps.ai.autoalignment.beamline28IDB.optimization.common import OptimizationCriteria, MooThresholds
 
 from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
 
@@ -104,9 +106,13 @@ bound_vb_trans  = ini_file.get_list_from_ini( section="Motor-Boundaries", key="B
 
 sum_intensity_soft_constraint        =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", default=7e3)
 sum_intensity_hard_constraint        =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", default=6.5e3)
-loss_parameters                      =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Loss-Parameters",               default=["fwhm", "peak"], type=str)
+loss_parameters                      =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Loss-Parameters",               default=[OptimizationCriteria.FWHM, OptimizationCriteria.PEAK_DISTANCE], type=str)
 reference_position                   =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Reference-Position",            default=[0.0, 0.0], type=float)
 reference_size                       =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Reference-Size",                default=[0.0, 0.0], type=float)
+moo_thresholds                       =  ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Moo-Thresholds",                default=[OptimizationCriteria.FWHM, OptimizationCriteria.PEAK_DISTANCE], type=str)
+moo_threshold_position               =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Moo-Thresholds-Position",       default=0.2)
+moo_threshold_size                   =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Moo-Thresholds-Size",           default=0.2)
+moo_threshold_intensity              =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Moo-Thresholds-Intensity",      default=0.0)
 multi_objective_optimization         =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  default=True)
 n_pitch_trans_motor_trials           =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    default=50)
 n_all_motor_trials                   =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-All-Motor-Trials",            default=100)
@@ -133,9 +139,13 @@ ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-VKB-Transl
 
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", value=sum_intensity_soft_constraint)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", value=sum_intensity_hard_constraint)
-ini_file.set_list_at_ini( section="Optimization-Parameters", key="Loss-Parameters",               values_list=loss_parameters        )
+ini_file.set_list_at_ini( section="Optimization-Parameters", key="Loss-Parameters",               values_list=loss_parameters)
 ini_file.set_list_at_ini( section="Optimization-Parameters", key="Reference-Position",            values_list=reference_position)
-ini_file.set_list_at_ini( section="Optimization-Parameters", key="Reference-Size",                values_list=reference_size         )
+ini_file.set_list_at_ini( section="Optimization-Parameters", key="Reference-Size",                values_list=reference_size)
+ini_file.set_list_at_ini( section="Optimization-Parameters", key="Moo-Thresholds",                values_list=moo_thresholds)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Moo-Thresholds-Position",       value=moo_threshold_position)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Moo-Thresholds-Size",           value=moo_threshold_size)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Moo-Thresholds-Intensity",      value=moo_threshold_intensity)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  value=multi_objective_optimization )
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    value=n_pitch_trans_motor_trials   )
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-All-Motor-Trials",            value=n_all_motor_trials           )
@@ -169,13 +179,26 @@ class OptimizationParameters:
 
         reference_parameters_h_v = {}
         for loss_parameter in loss_parameters:
-            reference_parameters_h_v[loss_parameter] = reference_position if loss_parameter in ["centroid", "peak"]  else reference_size
+            if   loss_parameter in [OptimizationCriteria.CENTROID,
+                                    OptimizationCriteria.PEAK_DISTANCE]: reference_parameters_h_v[loss_parameter] = reference_position
+            elif loss_parameter in [OptimizationCriteria.SIGMA,
+                                    OptimizationCriteria.FWHM]:          reference_parameters_h_v[loss_parameter] = reference_size
+
+        moo_thresholds_dict = {}
+        for moo_threshold in moo_thresholds:
+            if   moo_threshold in [MooThresholds.CENTROID,
+                                   MooThresholds.PEAK_DISTANCE]: moo_thresholds_dict[moo_threshold] = moo_threshold_position
+            elif moo_threshold in [MooThresholds.SIGMA,
+                                   MooThresholds.FWHM]:          moo_thresholds_dict[moo_threshold] = moo_threshold_size
+            elif moo_threshold in [MooThresholds.PEAK_INTENSITY,
+                                   MooThresholds.SUM_INTENSITY]: moo_thresholds_dict[moo_threshold] = moo_threshold_intensity
 
         self.params = {
             "sum_intensity_soft_constraint":        sum_intensity_soft_constraint,
             "sum_intensity_hard_constraint":        sum_intensity_hard_constraint,
             "reference_parameters_h_v":             reference_parameters_h_v,
             "loss_parameters":                      loss_parameters,
+            "moo_thresholds":                       moo_thresholds_dict,
             "multi_objective_optimization":         multi_objective_optimization,
             "n_pitch_trans_motor_trials":           n_pitch_trans_motor_trials,
             "n_all_motor_trials":                   n_all_motor_trials,
@@ -310,11 +333,13 @@ class AutofocusingScript(GenericScript):
 
             return opt_trial
 
-        def print_beam_attributes(dw, title):
-            if "peak"     in self.__opt_params.params["loss_parameters"]: print(title + f" system peak:     {opt_common._get_peak_distance_from_dw(dw):4.3e}")
-            if "centroid" in self.__opt_params.params["loss_parameters"]: print(title + f" system centroid: {opt_common._get_centroid_distance_from_dw(dw):4.3e}")
-            if "sigma"    in self.__opt_params.params["loss_parameters"]: print(title + f" system sigma:    {opt_common._get_sigma_from_dw(dw):4.3e}")
-            if "fwhm"     in self.__opt_params.params["loss_parameters"]: print(title + f" system fwhm:     {opt_common._get_fwhm_from_dw(dw):4.3e}")
+        def print_beam_attributes(hist, dw, title):
+            if OptimizationCriteria.PEAK_DISTANCE               in self.__opt_params.params["loss_parameters"]: print(title + f" system peak:     {opt_common._get_peak_distance_from_dw(dw):4.3e}")
+            if OptimizationCriteria.CENTROID                    in self.__opt_params.params["loss_parameters"]: print(title + f" system centroid: {opt_common._get_centroid_distance_from_dw(dw):4.3e}")
+            if OptimizationCriteria.SIGMA                       in self.__opt_params.params["loss_parameters"]: print(title + f" system sigma:    {opt_common._get_sigma_from_dw(dw):4.3e}")
+            if OptimizationCriteria.FWHM                        in self.__opt_params.params["loss_parameters"]: print(title + f" system fwhm:     {opt_common._get_fwhm_from_dw(dw):4.3e}")
+            if OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY in self.__opt_params.params["loss_parameters"]: print(title + f" system peak intensity: {opt_common._get_peak_intensity_from_dw(dw):8.1e}")
+            if OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY  in self.__opt_params.params["loss_parameters"]: print(title + f" system sum intensity:  {opt_common._get_weighted_sum_intensity_from_hist(hist):8.1e}")
 
 
         warnings.filterwarnings("ignore")
@@ -343,7 +368,7 @@ class AutofocusingScript(GenericScript):
                 **self.__sim_params.params,
             )
 
-            print_beam_attributes(dw_init, "Perturbed")
+            print_beam_attributes(hist_init, dw_init, "Perturbed")
 
             plot_distribution(
                 beam=beam_init,
@@ -366,11 +391,11 @@ class AutofocusingScript(GenericScript):
 
             # taking initial image of the beam
 
-            beam, hist, dw_init = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system,
-                                                              photon_beam=None,
-                                                              **self.__hw_params.params)
+            beam, hist_init, dw_init = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system,
+                                                                   photon_beam=None,
+                                                                   **self.__hw_params.params)
 
-            print_beam_attributes(dw_init, "Initial")
+            print_beam_attributes(hist_init, dw_init, "Initial")
 
             plot_2D(x_array=beam["h_coord"],
                     y_array=beam["v_coord"],
@@ -422,12 +447,14 @@ class AutofocusingScript(GenericScript):
                     aspect_ratio=self.__aspect_ratio)
 
         datetime_str = datetime.strftime(datetime.now(), "%Y-%m-%d_%H:%M")
-        chkpt_name = f"optimization_final_{n1 + n2}_{datetime_str}.pkl"
+        chkpt_name = f"optimization_final_{n1 + n2}_{datetime_str}.gz"
         joblib.dump(opt_trial.study.trials, chkpt_name)
         print(f"Saving all trials in {chkpt_name}")
 
-        study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]]) # For multiobjective optimization
-        # study = optuna.create_study(directions=["minimize"]) # For single objective
+        if self.__opt_params.params["multi_objective_optimization"] == True:
+            study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]]) # For multiobjective optimization
+        else:
+            study = optuna.create_study(directions=["minimize"])
 
         study.add_trials(opt_trial.study.trials)
 
