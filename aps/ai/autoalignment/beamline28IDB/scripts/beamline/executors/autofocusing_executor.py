@@ -320,6 +320,15 @@ class AutofocusingScript(GenericScript):
                 **params,
             )
 
+            # using the first beam as a safe moo thresold in case is not indicated
+            moo_thresholds = self.__opt_params.params["moo_thresholds"]
+            if 'log_weighted_sum_intensity' in loss_parameters and \
+                    ('log_weighted_sum_intensity' not in moo_thresholds):
+                moo_thresholds['log_weighted_sum_intensity'] = opt_trial.get_log_weighted_sum_intensity()
+            if 'negative_log_peak_intensity' in loss_parameters and \
+                    ('negative_log_peak_intensity' not in moo_thresholds):
+                moo_thresholds['negative_log_peak_intensity'] = opt_trial.get_negative_log_peak_intensity()
+
             # Setting up the optimizer
             constraints = {"sum_intensity": self.__opt_params.params["sum_intensity_soft_constraint"]}
 
@@ -329,6 +338,7 @@ class AutofocusingScript(GenericScript):
                 use_discrete_space=True,
                 sum_intensity_threshold=self.__opt_params.params["sum_intensity_hard_constraint"],
                 constraints=constraints,
+                moo_thresholds=moo_thresholds
             )
 
             return opt_trial
