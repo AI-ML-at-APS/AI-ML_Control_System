@@ -301,15 +301,15 @@ def get_weighted_sum_intensity(
     return BeamParameterOutput(sum_intensity, photon_beam, hist, dw)
 
 
-def _get_weighted_sum_intensity_from_hist(
-    hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0
-) -> float:
-    if hist is None:
-        return no_beam_value
-    radius = (hist.hh**2 + hist.vv**2) ** 0.5
+def _get_weighted_sum_intensity_from_hist(hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0) -> float:
+    if hist is None: return no_beam_value
 
-    weights = radius**radial_weight_power
-    return (hist.data_2D * weights).sum()
+    mesh = np.meshgrid(hist.hh, hist.vv)
+    radius = (mesh[0]**2 + mesh[1]**2)**0.5
+    weight = radius**radial_weight_power
+    weighted_hist = hist.data_2D*weight.T
+
+    return weighted_hist.sum()
 
 
 def _get_centroid_distance_from_dw(
