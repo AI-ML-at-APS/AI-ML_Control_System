@@ -92,6 +92,7 @@ class OptunaOptimizer(OptimizationCommon):
         motor_types: List[str],
         random_seed: int = None,
         loss_parameters: List[str] = "centroid",
+        log_parameters_weight = 0.25,
         reference_parameters_h_v: Dict[str, Tuple] = None,
         loss_min_value: float = None,
         xrange: List[float] = None,
@@ -132,6 +133,7 @@ class OptunaOptimizer(OptimizationCommon):
         self.best_params = None
         self.motor_ranges = None
         self.study = None
+        self._log_parameters_weight = log_parameters_weight
         self._constraints = None
         self._raise_prune_exception = None
         self._base_sampler = None
@@ -360,7 +362,7 @@ class OptunaOptimizer(OptimizationCommon):
 
         weights = numpy.ones(n_loss_parameters)
         weights[numpy.where(numpy.logical_or(self.loss_parameters == OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY,
-                                             self.loss_parameters == OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY))] = 0.1
+                                             self.loss_parameters == OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY))] = self._log_parameters_weight
 
         v         = all_values / numpy.sqrt(numpy.sum(all_values, axis=0)**2)
         v         = v * weights
