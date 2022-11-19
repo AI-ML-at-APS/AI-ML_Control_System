@@ -417,6 +417,13 @@ class AutofocusingScript(GenericScript):
                     title="Initial beam",
                     color_map=self.__color_map,
                     aspect_ratio=self.__aspect_ratio)
+            if self.__hw_params.params["use_denoised"]:
+                plot_2D(x_array=beam["h_coord"],
+                        y_array=beam["v_coord"],
+                        z_array=beam["image_denoised"],
+                        title="Initial beam - Denoised",
+                        color_map=self.__color_map,
+                        aspect_ratio=self.__aspect_ratio)
 
             opt_trial = get_optimizer(self.__hw_params.params)
 
@@ -459,6 +466,13 @@ class AutofocusingScript(GenericScript):
                     title="Optimized beam",
                     color_map=self.__color_map,
                     aspect_ratio=self.__aspect_ratio)
+            if self.__hw_params.params["use_denoised"]:
+                plot_2D(x_array=beam["h_coord"],
+                        y_array=beam["v_coord"],
+                        z_array=opt_trial.beam_state.photon_beam["image_denoised"],
+                        title="Optimized beam - Denoised",
+                        color_map=self.__color_map,
+                        aspect_ratio=self.__aspect_ratio)
 
         datetime_str = datetime.strftime(datetime.now(), "%Y-%m-%d_%H:%M")
         chkpt_name = f"optimization_final_{n1 + n2}_{datetime_str}.gz"
