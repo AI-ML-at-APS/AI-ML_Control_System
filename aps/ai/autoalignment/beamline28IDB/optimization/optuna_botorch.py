@@ -341,28 +341,26 @@ class OptunaOptimizer(OptimizationCommon):
 
         self.best_params.update(self.study.best_trials[0].params)
 
-    def select_best_trial_params(self, trials):
-        rms_metrics = []
-
+    def select_best_trial_params(self, trials): # TOPSIS ALGORITHM
         n_loss_parameters = len(self.loss_parameters)
         n_trials = len(trials)
 
-        all_values = numpy.zeros((n_trials, n_loss_parameters))
+        all_values = numpy.ones((n_trials, n_loss_parameters))
         for ti in range(n_trials): all_values[ti, :] = trials[ti].values
-        min_values = numpy.zeros(n_loss_parameters)
-        max_values = numpy.zeros(n_loss_parameters)
-        for li in range(n_loss_parameters):
-            min_values[li] = np.argmin(all_values[:, li])
-            max_values[li] = np.argmax(all_values[:, li])
 
-        for ti in range(n_trials):
-            s_plus  = numpy.sum((all_values[ti, :]- max_values[:])**2)**0.5
-            s_minus = numpy.sum((all_values[ti, :]- min_values[:])**2)**0.5
-            closeness = s_minus / (s_minus + s_plus)
+        weights = numpy.ones(n_loss_parameters)
+        weights[numpy.where(numpy.logical_or(self.loss_parameters == OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY,
+                                             self.loss_parameters == OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY))] = 0.1
 
-            rms_metrics.append(closeness)
+        v         = all_values / numpy.sqrt(numpy.sum(all_values, axis=0)**2)
+        v         = v * weights
+        v_minus   = numpy.amin(v, axis=0, keepdims=True)
+        v_plus    = numpy.amax(v, axis=0, keepdims=True)
+        s_plus    = numpy.sqrt(numpy.sum((v - v_plus)**2, axis=0))
+        s_minus   = numpy.sqrt(numpy.sum((v - v_minus)**2, axis=0))
+        closeness = s_minus / (s_plus + s_minus)
 
-        idx = np.argmax(rms_metrics)
+        idx = np.argmax(closeness)
 
         return trials[idx].params, trials[idx].values
 
