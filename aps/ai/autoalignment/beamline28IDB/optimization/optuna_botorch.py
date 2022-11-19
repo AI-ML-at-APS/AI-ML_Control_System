@@ -356,15 +356,13 @@ class OptunaOptimizer(OptimizationCommon):
             max_values[li] = np.argmax(all_values[:, li])
 
         for ti in range(n_trials):
-            metric = 0.0
-            for li in range(n_loss_parameters):
-                value = all_values[ti, li]
-                if min_values[li] == 0.0: metric += (1-(value - max_values[li] / max_values[li]))**2
-                else:                     metric += (value - min_values[li] / min_values[li])**2
+            s_plus  = numpy.sum((all_values[ti, :]- max_values[:])**2)**0.5
+            s_minus = numpy.sum((all_values[ti, :]- min_values[:])**2)**0.5
+            closeness = s_minus / (s_minus + s_plus)
 
-            rms_metrics.append(metric**0.5)
+            rms_metrics.append(closeness)
 
-        idx = np.argmin(rms_metrics)
+        idx = np.argmax(rms_metrics)
 
         return trials[idx].params, trials[idx].values
 
