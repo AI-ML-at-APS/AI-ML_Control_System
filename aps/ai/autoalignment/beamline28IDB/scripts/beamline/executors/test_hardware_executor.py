@@ -83,6 +83,7 @@ class HardwareTestParameters:
     v_bender_absolute_move = 445
     v_bender_relative_move = -20
     test_detector = True
+    use_denoised = True
 
 class PlotParameters(object):
     def __init__(self):
@@ -128,9 +129,12 @@ class TestHardwareScript(AbstractScript):
             if self.__hardware_test_parameters.plot_motors:
                 photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=True)
 
+                if self.__hardware_test_parameters.use_denoised: image = photon_beam["image_denoised"]
+                else: image = photon_beam["image"]
+
                 plot_2D(x_array=photon_beam["h_coord"],
                         y_array=photon_beam["v_coord"],
-                        z_array=photon_beam["image"],
+                        z_array=image,
                         title=title,
                         color_map=ColorMap.GRAY,
                         aspect_ratio=AspectRatio.CARTESIAN)
@@ -294,9 +298,12 @@ class TestHardwareScript(AbstractScript):
             print("\nTEST OF THE DETECTOR")
             photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=True)
 
+            if self.__hardware_test_parameters.use_denoised: image = photon_beam["image_denoised"]
+            else:                                            image = photon_beam["image"]
+
             plot_2D(x_array=photon_beam["h_coord"],
                     y_array=photon_beam["v_coord"],
-                    z_array=photon_beam["image"],
+                    z_array=image,
                     title="Raw Image from detector",
                     color_map=ColorMap.GRAY,
                     aspect_ratio=AspectRatio.CARTESIAN)

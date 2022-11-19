@@ -110,14 +110,11 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
             raw_image, raw_image_denoised, crop_region, cropped_image = self.__image_processor.get_image_data(image_index=1, raw_only=from_raw_image)
 
             output = {}
-
             if from_raw_image:
                 output["h_coord"]        = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[0]/2, IMAGE_SIZE_PIXEL_HxV[0]/2, IMAGE_SIZE_PIXEL_HxV[0])*PIXEL_SIZE*1e3
                 output["v_coord"]        = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[1]/2, IMAGE_SIZE_PIXEL_HxV[1]/2, IMAGE_SIZE_PIXEL_HxV[1])*PIXEL_SIZE*1e3
                 output["image"]          = raw_image
                 output["image_denoised"] = raw_image_denoised
-
-                print(raw_image.shape)
             else:
                 output["width"]      = (crop_region[1]-crop_region[0])*PIXEL_SIZE*1e3
                 output["height"]     = (crop_region[3]-crop_region[2])*PIXEL_SIZE*1e3
