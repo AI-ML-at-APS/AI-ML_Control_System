@@ -86,6 +86,7 @@ def get_distribution_info(
     nbins_h=201,
     nbins_v=201,
     do_gaussian_fit=False,
+    use_denoised=True,
     **kwargs,
 ):
     if execution_mode == ExecutionMode.SIMULATION:
@@ -99,7 +100,7 @@ def get_distribution_info(
             do_gaussian_fit=do_gaussian_fit,
         )
     elif execution_mode == ExecutionMode.HARDWARE:
-        if len(beam.keys()) > 3:
+        if len(beam.keys()) > 4:
             return Histogram(hh=beam["h_coord"], vv=beam["v_coord"], data_2D=beam["image"]), DictionaryWrapper(
                 h_sigma=beam["width"],
                 h_fwhm=beam["width"],
@@ -112,10 +113,10 @@ def get_distribution_info(
                 gaussian_fit=None,
             )
         else:
-            return get_info(x_array=beam["h_coord"], y_array=beam["v_coord"], z_array=beam["image"], do_gaussian_fit=do_gaussian_fit)
+            if use_denoised: return get_info(x_array=beam["h_coord"], y_array=beam["v_coord"], z_array=beam["image_denoised"], do_gaussian_fit=do_gaussian_fit)
+            else:            return get_info(x_array=beam["h_coord"], y_array=beam["v_coord"], z_array=beam["image"], do_gaussian_fit=do_gaussian_fit)
     else:
         raise ValueError("Executione Mode not valid")
-
 
 class BeamState(NamedTuple):
     photon_beam: object
@@ -202,7 +203,8 @@ def get_beam_hist_dw(
     nbins_h: int = 256,
     nbins_v: int = 256,
     do_gaussian_fit: bool = False,
-    execution_mode=ExecutionMode.SIMULATION,
+    use_denoised = True,
+    execution_mode = ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
 ) -> BeamState:
@@ -223,6 +225,7 @@ def get_beam_hist_dw(
         nbins_h=nbins_h,
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
+        use_denoised=use_denoised,
     )
 
     return BeamState(photon_beam, hist, dw)
@@ -238,6 +241,7 @@ def get_peak_intensity(
     nbins_h: int = 256,
     nbins_v: int = 256,
     do_gaussian_fit: bool = False,
+    use_denoised = True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -252,6 +256,7 @@ def get_peak_intensity(
         nbins_h=nbins_h,
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
+        use_denoised=use_denoised,
         implementor=implementor,
     )
     peak = _get_peak_intensity_from_dw(dw, do_gaussian_fit, no_beam_value)
@@ -286,6 +291,7 @@ def get_weighted_sum_intensity(
     nbins_v: int = 256,
     radial_weight_power: float = 0,
     do_gaussian_fit: bool = False,
+    use_denoised = True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -303,6 +309,7 @@ def get_weighted_sum_intensity(
         nbins_h=nbins_h,
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
+        use_denoised=use_denoised,
     )
     sum_intensity = _get_weighted_sum_intensity_from_hist(hist, radial_weight_power, no_beam_value)
     return BeamParameterOutput(sum_intensity, photon_beam, hist, dw)
@@ -383,6 +390,7 @@ def get_peak_distance(
     reference_h: float = 0,
     reference_v: float = 0,
     do_gaussian_fit: bool = False,
+    use_denoised = True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -398,6 +406,7 @@ def get_peak_distance(
         nbins_h=nbins_h,
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
+        use_denoised=use_denoised,
     )
     peak_distance = _get_peak_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
 
@@ -416,6 +425,7 @@ def get_centroid_distance(
     reference_h: float = 0,
     reference_v: float = 0,
     do_gaussian_fit: bool = False,
+    use_denoised = True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -431,6 +441,7 @@ def get_centroid_distance(
         nbins_h=nbins_h,
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
+        use_denoised=use_denoised
     )
     centroid_distance = _get_centroid_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
 
@@ -494,6 +505,7 @@ def get_fwhm(
     reference_h: float = 0,
     reference_v: float = 0,
     do_gaussian_fit: bool = False,
+    use_denoised = True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -507,6 +519,7 @@ def get_fwhm(
         nbins_h=nbins_h,
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
+        use_denoised=use_denoised,
         execution_mode=execution_mode,
         implementor=implementor,
     )
@@ -527,6 +540,7 @@ def get_sigma(
     reference_h: float = 0,
     reference_v: float = 0,
     do_gaussian_fit: bool = False,
+    use_denoised = True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -540,6 +554,7 @@ def get_sigma(
         nbins_h=nbins_h,
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
+        use_denoised=use_denoised,
         execution_mode=execution_mode,
         implementor=implementor,
     )
@@ -658,6 +673,7 @@ class OptimizationCommon(abc.ABC):
         nbins_h: int = 256,
         nbins_v: int = 256,
         do_gaussian_fit: bool = False,
+        use_denoised=True,
         no_beam_loss: float = 1e4,
         intensity_no_beam_loss: float = 0,
         multi_objective_optimization: bool = False,
@@ -700,6 +716,7 @@ class OptimizationCommon(abc.ABC):
         self._nbins_h = nbins_h
         self._nbins_v = nbins_v
         self._do_gaussian_fit = do_gaussian_fit
+        self._use_denoised = use_denoised
         self._execution_mode = execution_mode
         self._implementor = implementor
 
@@ -733,6 +750,7 @@ class OptimizationCommon(abc.ABC):
             nbins_h=self._nbins_h,
             nbins_v=self._nbins_v,
             do_gaussian_fit=self._do_gaussian_fit,
+            use_denoised=self._use_denoised,
             execution_mode=self._execution_mode,
             implementor=self._implementor,
         )
