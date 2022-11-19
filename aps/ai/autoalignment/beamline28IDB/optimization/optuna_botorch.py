@@ -48,6 +48,7 @@ import os
 from copy import deepcopy
 from typing import Callable, Dict, List, NoReturn, Optional, Union, Tuple
 
+import numpy
 import numpy as np
 import optuna
 from optuna.trial import Trial
@@ -88,6 +89,7 @@ class OptunaOptimizer(OptimizationCommon):
         nbins_h: int = 256,
         nbins_v: int = 256,
         do_gaussian_fit: bool = False,
+        use_denoised: bool = True,
         no_beam_loss: float = 1e4,
         intensity_no_beam_loss: float = 0,
         multi_objective_optimization: bool = False,
@@ -109,6 +111,7 @@ class OptunaOptimizer(OptimizationCommon):
             nbins_h,
             nbins_v,
             do_gaussian_fit,
+            use_denoised,
             no_beam_loss,
             intensity_no_beam_loss,
             multi_objective_optimization,
@@ -340,10 +343,29 @@ class OptunaOptimizer(OptimizationCommon):
 
     def select_best_trial_params(self, trials):
         rms_metrics = []
-        for t in trials:
-            vals = t.values
-            rms_metrics.append(np.sum(np.array(vals) ** 2) ** 0.5)
+
+        n_loss_parameters = len(self.loss_parameters)
+        n_trials = len(trials)
+
+        all_values = numpy.zeros((n_trials, n_loss_parameters))
+        for ti in range(n_trials): all_values[ti, :] = trials[ti].values
+        min_values = numpy.zeros(n_loss_parameters)
+        max_values = numpy.zeros(n_loss_parameters)
+        for li in range(n_loss_parameters):
+            min_values[li] = np.argmin(all_values[:, li])
+            max_values[li] = np.argmax(all_values[:, li])
+
+        for ti in range(n_trials):
+            metric = 0.0
+            for li in range(n_loss_parameters):
+                value = all_values[ti, li]
+                if min_values[li] == 0.0: metric += (1-(value - max_values[li] / max_values[li]))**2
+                else:                     metric += (value - min_values[li] / min_values[li])**2
+
+            rms_metrics.append(metric**0.5)
+
         idx = np.argmin(rms_metrics)
+
         return trials[idx].params, trials[idx].values
 
     # def trials(self, n_guesses = 1, verbose: bool = False, accept_all_solutions: bool = False):

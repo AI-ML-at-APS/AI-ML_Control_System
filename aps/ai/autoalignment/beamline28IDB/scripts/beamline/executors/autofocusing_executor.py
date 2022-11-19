@@ -118,6 +118,7 @@ n_pitch_trans_motor_trials           =  ini_file.get_int_from_ini(    section="O
 n_all_motor_trials                   =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-All-Motor-Trials",            default=100)
 save_images                          =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Save-Images",                   default=False)
 every_n_images                       =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="Every-N-Images",                default=5)
+use_denoised                         =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Use-Denoised-Image",            default=True)
 
 ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-1",                  values_list=hb_1     )
 ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-2",                  values_list=hb_2     )
@@ -151,6 +152,7 @@ ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-Pitch-Trans-
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-All-Motor-Trials",            value=n_all_motor_trials           )
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Save-Images",                   value=save_images                  )
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Every-N-Images",                value=every_n_images               )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Use-Denoised-Image",            value=use_denoised               )
 
 ini_file.push()
 
@@ -243,6 +245,7 @@ class SimulationParameters(PlotParameters):
         self.params["execution_mode"] = ExecutionMode.SIMULATION
         self.params["implementor"]    = Sim_Implementors.SHADOW
         self.params["random_seed"]    = DEFAULT_RANDOM_SEED
+        self.params["use_denoised"]   = False
 
 class HardwareParameters(PlotParameters):
     def __init__(self):
@@ -250,6 +253,7 @@ class HardwareParameters(PlotParameters):
         self.params["execution_mode"] = ExecutionMode.HARDWARE
         self.params["implementor"]    = HW_Implementors.EPICS
         self.params["from_raw_image"] = True
+        self.params["use_denoised"]   = use_denoised
 
 input_beam_path = "primary_optics_system_beam.dat"
 
