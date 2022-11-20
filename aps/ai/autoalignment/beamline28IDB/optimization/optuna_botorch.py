@@ -158,7 +158,6 @@ class OptunaOptimizer(OptimizationCommon):
         # Creating the acquisition function
         if acquisition_function is None:
             if self._multi_objective_optimization:
-
                 def acquisition_function(*args, **kwargs):
                     thresholds_list = self._check_thresholds(moo_thresholds, directions_list)
                     return self.acquisition_functions["qnehvi"](*args, ref_point=thresholds_list, **kwargs)
@@ -211,7 +210,7 @@ class OptunaOptimizer(OptimizationCommon):
         return directions_list
 
     def _check_thresholds(self, thresholds: Dict, directions_list: List) -> Union[List, None]:
-        if thresholds is None:
+        if thresholds is None or len(thresholds) == 0:
             return None
 
         thresholds_list = []
