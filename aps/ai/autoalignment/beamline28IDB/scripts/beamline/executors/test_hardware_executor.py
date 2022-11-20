@@ -45,6 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os
+import sys
 import time
 
 import numpy
@@ -84,6 +85,7 @@ class HardwareTestParameters:
     v_bender_relative_move = -20
     test_detector = True
     use_denoised = True
+    reset = True
 
 class PlotParameters(object):
     def __init__(self):
@@ -139,6 +141,20 @@ class TestHardwareScript(AbstractScript):
                         color_map=ColorMap.GRAY,
                         aspect_ratio=AspectRatio.CARTESIAN)
 
+
+        if self.__hardware_test_parameters.reset:
+            from aps.ai.autoalignment.beamline28IDB.hardware.epics.focusing_optics import Motors
+
+            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_VO, -0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DO, 0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DI, 0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=400, movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=0.1723, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+            self.__focusing_system.move_h_bendable_mirror_motor_translation(translation=0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=-160.0, movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_upstream=-160.0, movement=Movement.ABSOLUTE)
+
+            sys.exit(0)
 
         if self.__hardware_test_parameters.test_h_pitch:
             print("\nHorizontal Mirror - TEST OF THE PITCH MOTOR")

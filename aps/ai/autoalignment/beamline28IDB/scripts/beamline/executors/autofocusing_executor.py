@@ -419,14 +419,18 @@ class AutofocusingScript(GenericScript):
                     z_array=beam["image"],
                     title="Initial beam",
                     color_map=self.__color_map,
-                    aspect_ratio=self.__aspect_ratio)
+                    aspect_ratio=self.__aspect_ratio,
+                    save_image=True,
+                    save_path=self.__data_directory)
             if self.__hw_params.params["use_denoised"]:
                 plot_2D(x_array=beam["h_coord"],
                         y_array=beam["v_coord"],
                         z_array=beam["image_denoised"],
                         title="Initial beam - Denoised",
                         color_map=self.__color_map,
-                        aspect_ratio=self.__aspect_ratio)
+                        aspect_ratio=self.__aspect_ratio,
+                        save_image=True,
+                        save_path=self.__data_directory)
 
             opt_trial = get_optimizer(self.__hw_params.params)
 
@@ -468,14 +472,18 @@ class AutofocusingScript(GenericScript):
                     z_array=opt_trial.beam_state.photon_beam["image"],
                     title="Optimized beam",
                     color_map=self.__color_map,
-                    aspect_ratio=self.__aspect_ratio)
+                    aspect_ratio=self.__aspect_ratio,
+                    save_image=True,
+                    save_path=self.__data_directory)
             if self.__hw_params.params["use_denoised"]:
                 plot_2D(x_array=beam["h_coord"],
                         y_array=beam["v_coord"],
                         z_array=opt_trial.beam_state.photon_beam["image_denoised"],
                         title="Optimized beam - Denoised",
                         color_map=self.__color_map,
-                        aspect_ratio=self.__aspect_ratio)
+                        aspect_ratio=self.__aspect_ratio,
+                        save_image=True,
+                        save_path=self.__data_directory)
 
         datetime_str = datetime.strftime(datetime.now(), "%Y-%m-%d_%H:%M")
         chkpt_name = f"optimization_final_{n1 + n2}_{datetime_str}.gz"
@@ -492,6 +500,8 @@ class AutofocusingScript(GenericScript):
         # Generating the pareto front for the multiobjective optimization
         optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
         plt.tight_layout()
+        try: plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
+        except: print("Image not saved")
         plt.show()
 
         for i in range(len(self.__opt_params.params["loss_parameters"])):
@@ -499,6 +509,8 @@ class AutofocusingScript(GenericScript):
                                                                       target=lambda t: t.values[i],
                                                                       target_name=self.__opt_params.params["loss_parameters"][i])
             plt.tight_layout()
+            try: plt.savefig(os.path.join(self.__data_directory, "optimization_" + self.__opt_params.params["loss_parameters"][i] + ".png"))
+            except: print("Image not saved")
             plt.show()
 
 
