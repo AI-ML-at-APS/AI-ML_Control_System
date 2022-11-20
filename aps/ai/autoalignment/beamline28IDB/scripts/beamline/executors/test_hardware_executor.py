@@ -152,7 +152,7 @@ class TestHardwareScript(AbstractScript):
             self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=0.1723, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
             self.__focusing_system.move_h_bendable_mirror_motor_translation(translation=0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
             self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=-160.0, movement=Movement.ABSOLUTE)
-            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_upstream=-160.0, movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=-160.0, movement=Movement.ABSOLUTE)
 
             sys.exit(0)
 
