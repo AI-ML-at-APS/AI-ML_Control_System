@@ -72,7 +72,7 @@ from aps.ai.autoalignment.common.util.shadow.common import PreProcessorFiles, lo
 from aps.ai.autoalignment.common.util.wrappers import plot_distribution
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, AngularUnits
 
-from aps.ai.autoalignment.beamline28IDB.optimization.common import OptimizationCriteria, MooThresholds
+from aps.ai.autoalignment.beamline28IDB.optimization.common import OptimizationCriteria, MooThresholds, SelectionAlgorithm
 
 from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
 
@@ -115,6 +115,7 @@ moo_threshold_position               =  ini_file.get_float_from_ini(  section="O
 moo_threshold_size                   =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Moo-Thresholds-Size",           default=0.2)
 moo_threshold_intensity              =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Moo-Thresholds-Intensity",      default=0.0)
 multi_objective_optimization         =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  default=True)
+selection_algorithm                  =  ini_file.get_string_from_ini( section="Optimization-Parameters", key="Selection-Algorithm",           default=SelectionAlgorithm.TOPSIS)
 n_pitch_trans_motor_trials           =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    default=50)
 n_all_motor_trials                   =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-All-Motor-Trials",            default=100)
 save_images                          =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Save-Images",                   default=False)
@@ -149,12 +150,13 @@ ini_file.set_list_at_ini( section="Optimization-Parameters", key="Moo-Thresholds
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Moo-Thresholds-Position",       value=moo_threshold_position)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Moo-Thresholds-Size",           value=moo_threshold_size)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Moo-Thresholds-Intensity",      value=moo_threshold_intensity)
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  value=multi_objective_optimization )
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    value=n_pitch_trans_motor_trials   )
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-All-Motor-Trials",            value=n_all_motor_trials           )
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="Save-Images",                   value=save_images                  )
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="Every-N-Images",                value=every_n_images               )
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="Use-Denoised-Image",            value=use_denoised               )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  value=multi_objective_optimization)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Selection-Algorithm",           value=selection_algorithm)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    value=n_pitch_trans_motor_trials)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-All-Motor-Trials",            value=n_all_motor_trials)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Save-Images",                   value=save_images)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Every-N-Images",                value=every_n_images)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Use-Denoised-Image",            value=use_denoised)
 
 ini_file.push()
 
@@ -205,6 +207,7 @@ class OptimizationParameters:
             "log_parameters_weight":                log_parameters_weight,
             "moo_thresholds":                       moo_thresholds_dict,
             "multi_objective_optimization":         multi_objective_optimization,
+            "selection_algorithm":                  selection_algorithm,
             "n_pitch_trans_motor_trials":           n_pitch_trans_motor_trials,
             "n_all_motor_trials":                   n_all_motor_trials,
         }
@@ -443,8 +446,8 @@ class AutofocusingScript(GenericScript):
         print(f"Optimizing all motors together for {n2} trials.")
         opt_trial.trials(n2)
 
-        print("Selecting the optimal parameters")
-        optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials)
+        print("Selecting the optimal parameters, with algorithm: " + self.__opt_params.params["selection_algorithm"])
+        optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials, algorithm=self.__opt_params.params["selection_algorithm"])
 
         print("Optimal parameters")
         print(optimal_params)

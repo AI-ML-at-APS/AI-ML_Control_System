@@ -85,6 +85,10 @@ class MooThresholds:
     PEAK_INTENSITY = "peak_intensity"
     SUM_INTENSITY  = "sum_intensity"
 
+class SelectionAlgorithm:
+    TOPSIS           = "topsis"
+    NASH_EQUILIBRIUM = "nash-equilibrium"
+
 def get_distribution_info(
     execution_mode=ExecutionMode.SIMULATION,
     implementor=Implementors.SHADOW,
