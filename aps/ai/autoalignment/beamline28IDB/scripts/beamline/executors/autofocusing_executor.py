@@ -44,6 +44,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import json
 import os
 import numpy
 from datetime import datetime
@@ -408,9 +409,9 @@ class AutofocusingScript(GenericScript):
             initial_absolute_positions = {k: movers.get_absolute_positions(self.__focusing_system, k)[0] for k in motors}
 
             print("Focused absolute position are", initial_absolute_positions)
+            with open(os.path.join(self.__data_directory, "initial_motor_positions.json"), 'w') as fp: json.dump(initial_absolute_positions, fp)
 
             # taking initial image of the beam
-
             beam, hist_init, dw_init = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system,
                                                                    photon_beam=None,
                                                                    **self.__hw_params.params)
