@@ -72,7 +72,7 @@ from aps.ai.autoalignment.common.util.shadow.common import PreProcessorFiles, lo
 from aps.ai.autoalignment.common.util.wrappers import plot_distribution
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, AngularUnits
 
-from aps.ai.autoalignment.beamline28IDB.optimization.common import OptimizationCriteria, MooThresholds
+from aps.ai.autoalignment.beamline28IDB.optimization.common import OptimizationCriteria, MooThresholds, SelectionAlgorithm
 
 from aps.common.initializer import IniMode, register_ini_instance, get_registered_ini_instance
 
@@ -115,6 +115,7 @@ moo_threshold_position               =  ini_file.get_float_from_ini(  section="O
 moo_threshold_size                   =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Moo-Thresholds-Size",           default=0.2)
 moo_threshold_intensity              =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Moo-Thresholds-Intensity",      default=0.0)
 multi_objective_optimization         =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  default=True)
+selection_algorithm                  =  ini_file.get_string_from_ini( section="Optimization-Parameters", key="Selection-Algorithm",           default=SelectionAlgorithm.TOPSIS)
 n_pitch_trans_motor_trials           =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    default=50)
 n_all_motor_trials                   =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="N-All-Motor-Trials",            default=100)
 save_images                          =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Save-Images",                   default=False)
@@ -149,12 +150,13 @@ ini_file.set_list_at_ini( section="Optimization-Parameters", key="Moo-Thresholds
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Moo-Thresholds-Position",       value=moo_threshold_position)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Moo-Thresholds-Size",           value=moo_threshold_size)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Moo-Thresholds-Intensity",      value=moo_threshold_intensity)
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  value=multi_objective_optimization )
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    value=n_pitch_trans_motor_trials   )
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-All-Motor-Trials",            value=n_all_motor_trials           )
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="Save-Images",                   value=save_images                  )
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="Every-N-Images",                value=every_n_images               )
-ini_file.set_value_at_ini(section="Optimization-Parameters", key="Use-Denoised-Image",            value=use_denoised               )
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Multi-Objective-Optimization",  value=multi_objective_optimization)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Selection-Algorithm",           value=selection_algorithm)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-Pitch-Trans-Motor-Trials",    value=n_pitch_trans_motor_trials)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-All-Motor-Trials",            value=n_all_motor_trials)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Save-Images",                   value=save_images)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Every-N-Images",                value=every_n_images)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Use-Denoised-Image",            value=use_denoised)
 
 ini_file.push()
 
@@ -205,6 +207,7 @@ class OptimizationParameters:
             "log_parameters_weight":                log_parameters_weight,
             "moo_thresholds":                       moo_thresholds_dict,
             "multi_objective_optimization":         multi_objective_optimization,
+            "selection_algorithm":                  selection_algorithm,
             "n_pitch_trans_motor_trials":           n_pitch_trans_motor_trials,
             "n_all_motor_trials":                   n_all_motor_trials,
         }
@@ -265,7 +268,7 @@ class AutofocusingScript(GenericScript):
     def __init__(self, root_directory, energy, period, n_cycles, mocking_mode, simulation_mode):
         super(AutofocusingScript, self).__init__(root_directory, energy, period, n_cycles, mocking_mode, simulation_mode)
 
-        self.__data_directory = os.path.join(self._root_directory, "AI", "autoalignment")
+        self.__data_directory = os.path.join(self._root_directory, "AI", "autofocusing")
         self.__plot_mode      = PlotMode.INTERNAL
         self.__aspect_ratio   = AspectRatio.AUTO
         self.__color_map      = ColorMap.GRAY
@@ -289,7 +292,7 @@ class AutofocusingScript(GenericScript):
         else:
             self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
                                                                     implementor=HW_Implementors.EPICS,
-                                                                    measurement_directory=os.path.join(self._root_directory, "AI", "autoalignment"),
+                                                                    measurement_directory=self.__data_directory,
                                                                     bender_threshold=hb_threshold,
                                                                     n_bender_threshold_check=hb_n_threshold_check)
             self.__focusing_system.initialize()
@@ -419,14 +422,18 @@ class AutofocusingScript(GenericScript):
                     z_array=beam["image"],
                     title="Initial beam",
                     color_map=self.__color_map,
-                    aspect_ratio=self.__aspect_ratio)
+                    aspect_ratio=self.__aspect_ratio,
+                    save_image=True,
+                    save_path=self.__data_directory)
             if self.__hw_params.params["use_denoised"]:
                 plot_2D(x_array=beam["h_coord"],
                         y_array=beam["v_coord"],
                         z_array=beam["image_denoised"],
                         title="Initial beam - Denoised",
                         color_map=self.__color_map,
-                        aspect_ratio=self.__aspect_ratio)
+                        aspect_ratio=self.__aspect_ratio,
+                        save_image=True,
+                        save_path=self.__data_directory)
 
             opt_trial = get_optimizer(self.__hw_params.params)
 
@@ -439,8 +446,8 @@ class AutofocusingScript(GenericScript):
         print(f"Optimizing all motors together for {n2} trials.")
         opt_trial.trials(n2)
 
-        print("Selecting the optimal parameters")
-        optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials)
+        print("Selecting the optimal parameters, with algorithm: " + self.__opt_params.params["selection_algorithm"])
+        optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials, algorithm=self.__opt_params.params["selection_algorithm"])
 
         print("Optimal parameters")
         print(optimal_params)
@@ -468,37 +475,46 @@ class AutofocusingScript(GenericScript):
                     z_array=opt_trial.beam_state.photon_beam["image"],
                     title="Optimized beam",
                     color_map=self.__color_map,
-                    aspect_ratio=self.__aspect_ratio)
+                    aspect_ratio=self.__aspect_ratio,
+                    save_image=True,
+                    save_path=self.__data_directory)
             if self.__hw_params.params["use_denoised"]:
                 plot_2D(x_array=beam["h_coord"],
                         y_array=beam["v_coord"],
                         z_array=opt_trial.beam_state.photon_beam["image_denoised"],
                         title="Optimized beam - Denoised",
                         color_map=self.__color_map,
-                        aspect_ratio=self.__aspect_ratio)
+                        aspect_ratio=self.__aspect_ratio,
+                        save_image=True,
+                        save_path=self.__data_directory)
 
         datetime_str = datetime.strftime(datetime.now(), "%Y-%m-%d_%H:%M")
         chkpt_name = f"optimization_final_{n1 + n2}_{datetime_str}.gz"
         joblib.dump(opt_trial.study.trials, chkpt_name)
         print(f"Saving all trials in {chkpt_name}")
 
-        if self.__opt_params.params["multi_objective_optimization"] == True:
+        if self.__opt_params.params["multi_objective_optimization"]:
             study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]]) # For multiobjective optimization
         else:
             study = optuna.create_study(directions=["minimize"])
 
         study.add_trials(opt_trial.study.trials)
 
-        # Generating the pareto front for the multiobjective optimization
-        optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
-        plt.tight_layout()
-        plt.show()
+        if self.__opt_params.params["multi_objective_optimization"]:
+            # Generating the pareto front for the multiobjective optimization
+            optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
+            plt.tight_layout()
+            try: plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
+            except: print("Image not saved")
+            plt.show()
 
         for i in range(len(self.__opt_params.params["loss_parameters"])):
             optuna.visualization.matplotlib.plot_optimization_history(study,
                                                                       target=lambda t: t.values[i],
                                                                       target_name=self.__opt_params.params["loss_parameters"][i])
             plt.tight_layout()
+            try: plt.savefig(os.path.join(self.__data_directory, "optimization_" + self.__opt_params.params["loss_parameters"][i] + ".png"))
+            except: print("Image not saved")
             plt.show()
 
 

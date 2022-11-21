@@ -147,7 +147,7 @@ def __get_input_parameters(sys_argv):
     plot_motors                 = ini_file.get_boolean_from_ini(section="Tests",   key="plot-motors",                 default=hardware_test_parameters.plot_motors              )
     restore                     = ini_file.get_boolean_from_ini(section="Tests",   key="restore",                     default=hardware_test_parameters.restore              )
     use_denoised                = ini_file.get_boolean_from_ini(section="Tests",   key="use-denoise" ,                default=hardware_test_parameters.use_denoised              )
-
+    reset                       = ini_file.get_boolean_from_ini(section="Tests",   key="reset" ,                      default=hardware_test_parameters.reset              )
     regenerate_ini                 = False
     exit_script                    = False
 
@@ -190,6 +190,7 @@ def __get_input_parameters(sys_argv):
         ini_file.set_value_at_ini(section="Tests", key="plot-motors",                 value=hardware_test_parameters.plot_motors              )
         ini_file.set_value_at_ini(section="Tests", key="restore",                     value=hardware_test_parameters.restore              )
         ini_file.set_value_at_ini(section="Tests", key="use-denoised",                value=hardware_test_parameters.use_denoised              )
+        ini_file.set_value_at_ini(section="Tests", key="reset",                       value=hardware_test_parameters.reset              )
 
         print("File ini regenerated with default values in\n" + os.path.abspath(os.curdir))
     else:
@@ -221,6 +222,7 @@ def __get_input_parameters(sys_argv):
         ini_file.set_value_at_ini(section="Tests", key="plot-motors",                 value=plot_motors              )
         ini_file.set_value_at_ini(section="Tests", key="restore",                     value=restore              )
         ini_file.set_value_at_ini(section="Tests", key="use-denoised",                value=use_denoised              )
+        ini_file.set_value_at_ini(section="Tests", key="reset",                       value=reset              )
 
     ini_file.push()
 
@@ -254,6 +256,7 @@ def __get_input_parameters(sys_argv):
     hardware_test_parameters.plot_motors                 = plot_motors
     hardware_test_parameters.restore                     = restore
     hardware_test_parameters.use_denoised                = use_denoised
+    hardware_test_parameters.reset                       = reset
 
     return root_directory, energy, hardware_test_parameters
 

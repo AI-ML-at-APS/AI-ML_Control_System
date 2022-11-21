@@ -48,6 +48,7 @@
 import abc
 from typing import Dict, List, NamedTuple, NoReturn, Tuple, Union
 
+import numpy
 import numpy as np
 
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import (
@@ -76,6 +77,18 @@ class OptimizationCriteria:
     SIGMA                       = "sigma"
     NEGATIVE_LOG_PEAK_INTENSITY = "negative_log_peak_intensity"
     LOG_WEIGHTED_SUM_INTENSITY  = "log_weighted_sum_intensity"
+
+class MooThresholds:
+    CENTROID       = "centroid"
+    PEAK_DISTANCE  = "peak_distance"
+    FWHM           = "fwhm"
+    SIGMA          = "sigma"
+    PEAK_INTENSITY = "peak_intensity"
+    SUM_INTENSITY  = "sum_intensity"
+
+class SelectionAlgorithm:
+    TOPSIS           = "topsis"
+    NASH_EQUILIBRIUM = "nash-equilibrium"
 
 def get_distribution_info(
     execution_mode=ExecutionMode.SIMULATION,
@@ -327,6 +340,25 @@ def _get_weighted_sum_intensity_from_hist(
 
     return weighted_hist.sum()
 
+def _get_weighted_sum_intensity_around_peak_from_hist_dw(
+        hist: Histogram, dw: DictionaryWrapper, radial_weight_power: float = 0, no_beam_value: float = 0
+) -> float:
+    if hist is None: return no_beam_value
+
+    h_fwhm = dw.get_parameter("h_fwhm")
+    v_fwhm = dw.get_parameter("v_fwhm")
+    h_peak = dw.get_parameter("h_peak")
+    v_peak = dw.get_parameter("v_peak")
+
+    cursor_h = numpy.where(numpy.logical_and(hist.hh >= h_peak - 5 * h_fwhm, hist.hh <= h_peak + 5 * h_fwhm))
+    cursor_v = numpy.where(numpy.logical_and(hist.vv >= v_peak - 5 * v_fwhm, hist.vv <= v_peak + 5 * v_fwhm))
+
+    mesh = np.meshgrid(hist.hh[cursor_h], hist.vv[cursor_v])
+    radius = (mesh[0] ** 2 + mesh[1] ** 2) ** 0.5
+    weight = radius ** radial_weight_power
+    weighted_hist = hist.data_2D[tuple(numpy.meshgrid(cursor_h, cursor_v))].T * weight.T
+
+    return weighted_hist.sum()
 
 def _get_centroid_distance_from_dw(
     dw: DictionaryWrapper,
@@ -788,6 +820,27 @@ class OptimizationCommon(abc.ABC):
         else:
             log_weighted_sum_intensity = np.log(weighted_sum_intensity)
         return log_weighted_sum_intensity
+
+    # ----------------------------------------
+    # ----------------------------------------
+    # ----------------------------------------
+
+    def get_weighted_sum_intensity_around_peak(self) -> float:
+        return _get_weighted_sum_intensity_around_peak_from_hist_dw(self.beam_state.hist, self.beam_state.dw, 2, self._intensity_no_beam_loss)
+
+    def get_log_weighted_sum_intensity_around_peak(self) -> float:
+        weighted_sum_intensity = self.get_weighted_sum_intensity_around_peak()
+        if weighted_sum_intensity == 0:
+            log_weighted_sum_intensity = self._no_beam_loss
+        else:
+            log_weighted_sum_intensity = np.log(weighted_sum_intensity)
+        return log_weighted_sum_intensity
+
+    # ----------------------------------------
+    # ----------------------------------------
+    # ----------------------------------------
+    # ----------------------------------------
+
 
     def get_peak_distance(self) -> float:
         return _get_peak_distance_from_dw(

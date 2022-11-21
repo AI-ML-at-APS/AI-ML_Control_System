@@ -57,7 +57,9 @@ import joblib
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import ExecutionMode
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 from aps.ai.autoalignment.beamline28IDB.optimization import configs
-from aps.ai.autoalignment.beamline28IDB.optimization.common import OptimizationCriteria, OptimizationCommon
+
+from aps.ai.autoalignment.beamline28IDB.optimization.common import SelectionAlgorithm, OptimizationCriteria, OptimizationCommon
+from aps.ai.autoalignment.beamline28IDB.optimization.analysis_utils import select_nash_equil_trial_from_pareto_front
 from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration import (
     BoTorchSampler,
     qehvi_candidates_func,
@@ -168,7 +170,6 @@ class OptunaOptimizer(OptimizationCommon):
         # Creating the acquisition function
         if acquisition_function is None:
             if self._multi_objective_optimization:
-
                 def acquisition_function(*args, **kwargs):
                     thresholds_list = self._check_thresholds(moo_thresholds, directions_list)
                     return self.acquisition_functions["qnehvi"](*args, ref_point=thresholds_list, **kwargs)
@@ -221,7 +222,7 @@ class OptunaOptimizer(OptimizationCommon):
         return directions_list
 
     def _check_thresholds(self, thresholds: Dict, directions_list: List) -> Union[List, None]:
-        if thresholds is None:
+        if thresholds is None or len(thresholds) == 0:
             return None
 
         thresholds_list = []
@@ -353,26 +354,29 @@ class OptunaOptimizer(OptimizationCommon):
 
         self.best_params.update(self.study.best_trials[0].params)
 
-    def select_best_trial_params(self, trials): # TOPSIS ALGORITHM
-        n_loss_parameters = len(self.loss_parameters)
-        n_trials = len(trials)
+    def select_best_trial_params(self, trials, algorithm=SelectionAlgorithm.TOPSIS): # TOPSIS ALGORITHM
+        if algorithm == SelectionAlgorithm.TOPSIS:
+            n_loss_parameters = len(self.loss_parameters)
+            n_trials = len(trials)
 
-        all_values = numpy.ones((n_trials, n_loss_parameters))
-        for ti in range(n_trials): all_values[ti, :] = trials[ti].values
+            all_values = numpy.ones((n_trials, n_loss_parameters))
+            for ti in range(n_trials): all_values[ti, :] = trials[ti].values
 
-        weights = numpy.ones(n_loss_parameters)
-        weights[numpy.where(numpy.logical_or(self.loss_parameters == OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY,
-                                             self.loss_parameters == OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY))] = self._log_parameters_weight
+            weights = numpy.ones(n_loss_parameters)
+            weights[numpy.where(numpy.logical_or(self.loss_parameters == OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY,
+                                                 self.loss_parameters == OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY))] = self._log_parameters_weight
 
-        v         = all_values / numpy.sqrt(numpy.sum(all_values, axis=0)**2)
-        v         = v * weights
-        v_minus   = numpy.amin(v, axis=0, keepdims=True)
-        v_plus    = numpy.amax(v, axis=0, keepdims=True)
-        s_plus    = numpy.sqrt(numpy.sum((v - v_plus)**2, axis=0))
-        s_minus   = numpy.sqrt(numpy.sum((v - v_minus)**2, axis=0))
-        closeness = s_minus / (s_plus + s_minus)
+            v         = all_values / numpy.sqrt(numpy.sum(all_values, axis=0)**2)
+            v         = v * weights
+            v_minus   = numpy.amin(v, axis=0, keepdims=True)
+            v_plus    = numpy.amax(v, axis=0, keepdims=True)
+            s_plus    = numpy.sqrt(numpy.sum((v - v_plus)**2, axis=0))
+            s_minus   = numpy.sqrt(numpy.sum((v - v_minus)**2, axis=0))
+            closeness = s_minus / (s_plus + s_minus)
 
-        idx = np.argmax(closeness)
+            idx = np.argmax(closeness)
+        elif algorithm == SelectionAlgorithm.NASH_EQUILIBRIUM:
+            _, idx, _ = select_nash_equil_trial_from_pareto_front(self.study)
 
         return trials[idx].params, trials[idx].values
 
