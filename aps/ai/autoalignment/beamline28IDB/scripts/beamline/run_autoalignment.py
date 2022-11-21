@@ -62,41 +62,49 @@ def __get_input_parameters(sys_argv):
 
     ini_file = get_registered_ini_instance(APPLICATION_NAME)
 
-    root_directory = ini_file.get_string_from_ini( section="Directories", key="Root-Directory", default=DefaultValues.ROOT_DIRECTORY)
-    energy         = ini_file.get_float_from_ini(  section="Execution",   key="Energy",         default=DefaultValues.ENERGY)
-    period         = ini_file.get_float_from_ini(  section="Execution",   key="Period",         default=DefaultValues.PERIOD)
-    n_cycles       = ini_file.get_float_from_ini(  section="Execution",   key="N-Cycles",       default=DefaultValues.N_CYCLES)
-    mocking_mode   = False
-    regenerate_ini = False
-    exit_script    = False
+    root_directory    = ini_file.get_string_from_ini( section="Directories", key="Root-Directory",    default=DefaultValues.ROOT_DIRECTORY)
+    energy            = ini_file.get_float_from_ini(  section="Execution",   key="Energy",            default=DefaultValues.ENERGY)
+    period            = ini_file.get_float_from_ini(  section="Execution",   key="Period",            default=DefaultValues.PERIOD)
+    n_cycles          = ini_file.get_float_from_ini(  section="Execution",   key="N-Cycles",          default=DefaultValues.N_CYCLES)
+    get_new_reference = ini_file.get_boolean_from_ini(section="Execution",   key="Get-New-Reference", default=False)
+    simulation_mode   = False
+    mocking_mode      = False
+    regenerate_ini    = False
+    exit_script       = False
 
     if len(sys_argv) > 2:
         for i in range(2, len(sys_argv)):
             if "-pd"     == sys_argv[i][:3]: period = int(sys_argv[i][3:])
             elif "-nc"   == sys_argv[i][:3]: n_cycles = int(sys_argv[i][3:])
+            elif "-nr"   == sys_argv[i][:3]: get_new_reference = int(sys_argv[i][3:])==1
             elif "-ri"   == sys_argv[i][:3]: exit_script = regenerate_ini   = True
+            elif "-sim"  == sys_argv[i][:4]: simulation_mode = True
             elif "-mock" == sys_argv[i][:5]: mocking_mode = True
             elif "--h"   == sys_argv[i][:3]:
                 print("Run Autolignment\n\npython -m aps.ai.autolignment 28ID AA <options>\n\n" +
                       "Options: -pd <period in minutes (int)>\n" +
                       "         -nc <number of cycles>\n" +
+                      "         -nr <get new reference image 0(No)/1(Yes)>\n" +
+                      "         -sim (run optimizer on simulation)\n" +
                       "         -mock (fake execution, for test purposes)\n" +
                       "         -ri (to regenerate ini file with default value)>")
                 exit_script = True
 
     ini_file = get_registered_ini_instance(APPLICATION_NAME)
     if regenerate_ini:
-        ini_file.set_value_at_ini(section="Directories", key="Root-Directory",  value=DefaultValues.ROOT_DIRECTORY)
-        ini_file.set_value_at_ini(section="Execution",   key="Energy",          value=DefaultValues.ENERGY)
-        ini_file.set_value_at_ini(section="Execution",   key="Period",          value=DefaultValues.PERIOD)
-        ini_file.set_value_at_ini(section="Execution",   key="N-Cycles",        value=DefaultValues.N_CYCLES)
+        ini_file.set_value_at_ini(section="Directories", key="Root-Directory",    value=DefaultValues.ROOT_DIRECTORY)
+        ini_file.set_value_at_ini(section="Execution",   key="Energy",            value=DefaultValues.ENERGY)
+        ini_file.set_value_at_ini(section="Execution",   key="Period",            value=DefaultValues.PERIOD)
+        ini_file.set_value_at_ini(section="Execution",   key="N-Cycles",          value=DefaultValues.N_CYCLES)
+        ini_file.set_value_at_ini(section="Execution",   key="Get-New-Reference", value=False)
 
         print("File ini regenerated with default values in\n" + os.path.abspath(os.curdir))
     else:
-        ini_file.set_value_at_ini(section="Directories", key="Root-Directory", value=root_directory)
-        ini_file.set_value_at_ini(section="Execution",   key="Energy",         value=energy)
-        ini_file.set_value_at_ini(section="Execution",   key="Period",         value=period)
-        ini_file.set_value_at_ini(section="Execution",   key="N-Cycles",       value=n_cycles)
+        ini_file.set_value_at_ini(section="Directories", key="Root-Directory",    value=root_directory)
+        ini_file.set_value_at_ini(section="Execution",   key="Energy",            value=energy)
+        ini_file.set_value_at_ini(section="Execution",   key="Period",            value=period)
+        ini_file.set_value_at_ini(section="Execution",   key="N-Cycles",          value=n_cycles)
+        ini_file.set_value_at_ini(section="Execution",   key="Get-New-Reference", value=get_new_reference)
 
     ini_file.push()
 
@@ -105,18 +113,20 @@ def __get_input_parameters(sys_argv):
 
     if exit_script: sys.exit(0)
 
-    return root_directory, energy, period, n_cycles, mocking_mode
+    return root_directory, energy, period, n_cycles, get_new_reference, mocking_mode, simulation_mode
 
 
 def run_script(sys_argv):
     if "linux" in sys.platform: os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
-    root_directory, energy, period, n_cycles, mocking_mode = __get_input_parameters(sys_argv)
+    root_directory, energy, period, n_cycles, get_new_reference, mocking_mode, simulation_mode = __get_input_parameters(sys_argv)
 
     script = AutoalignmentScript(root_directory=root_directory,
                                  energy=energy,
                                  period=period,
-                                 mocking_mode=mocking_mode
+                                 get_new_reference=get_new_reference,
+                                 mocking_mode=mocking_mode,
+                                 simulation_mode=simulation_mode
                                  )
     register_running_script_instance(script)
 

@@ -493,19 +493,20 @@ class AutofocusingScript(GenericScript):
         joblib.dump(opt_trial.study.trials, chkpt_name)
         print(f"Saving all trials in {chkpt_name}")
 
-        if self.__opt_params.params["multi_objective_optimization"] == True:
+        if self.__opt_params.params["multi_objective_optimization"]:
             study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]]) # For multiobjective optimization
         else:
             study = optuna.create_study(directions=["minimize"])
 
         study.add_trials(opt_trial.study.trials)
 
-        # Generating the pareto front for the multiobjective optimization
-        optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
-        plt.tight_layout()
-        try: plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
-        except: print("Image not saved")
-        plt.show()
+        if self.__opt_params.params["multi_objective_optimization"]:
+            # Generating the pareto front for the multiobjective optimization
+            optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
+            plt.tight_layout()
+            try: plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
+            except: print("Image not saved")
+            plt.show()
 
         for i in range(len(self.__opt_params.params["loss_parameters"])):
             optuna.visualization.matplotlib.plot_optimization_history(study,

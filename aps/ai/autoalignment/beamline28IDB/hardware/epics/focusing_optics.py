@@ -120,11 +120,9 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
                 output["height"]     = (crop_region[3]-crop_region[2])*PIXEL_SIZE*1e3
                 output["centroid_h"] = (crop_region[0] + 0.5*output["width"])*PIXEL_SIZE*1e3
                 output["centroid_v"] = (crop_region[2] + 0.5*output["height"])*PIXEL_SIZE*1e3
-                output["h_coord"]    = numpy.linspace(crop_region[0], crop_region[1], cropped_image.shape[0])*PIXEL_SIZE*1e3
-                output["v_coord"]    = numpy.linspace(crop_region[2], crop_region[3], cropped_image.shape[1])*PIXEL_SIZE*1e3
+                output["h_coord"]    = (-IMAGE_SIZE_PIXEL_HxV[0]/2 + numpy.linspace(crop_region[0], crop_region[1], cropped_image.shape[0]))*PIXEL_SIZE*1e3
+                output["v_coord"]    = (-IMAGE_SIZE_PIXEL_HxV[1]/2 + numpy.linspace(crop_region[2], crop_region[3], cropped_image.shape[1]))*PIXEL_SIZE*1e3
                 output["image"]      = cropped_image
-
-                print(cropped_image.shape)
 
             try: self.__image_collector.end_collection()
             except: pass

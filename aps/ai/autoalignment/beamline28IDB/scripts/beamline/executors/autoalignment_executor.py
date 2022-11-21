@@ -156,11 +156,9 @@ class OptimizationParameters:
 
         reference_parameters_h_v = {}
         for loss_parameter in loss_parameters:
-            if loss_parameter in [OptimizationCriteria.CENTROID,
-                                  OptimizationCriteria.PEAK_DISTANCE]:
+            if loss_parameter == OptimizationCriteria.CENTROID:
                 reference_parameters_h_v[loss_parameter] = reference_position
-            elif loss_parameter in [OptimizationCriteria.SIGMA,
-                                    OptimizationCriteria.FWHM]:
+            elif loss_parameter in [OptimizationCriteria.SIGMA, OptimizationCriteria.FWHM]:
                 reference_parameters_h_v[loss_parameter] = reference_size
 
         moo_thresholds_dict = {}
@@ -233,18 +231,18 @@ class HardwareParameters(PlotParameters):
         self.params["implementor"] = HW_Implementors.EPICS
         self.params["from_raw_image"] = False
 
-
 input_beam_path = "primary_optics_system_beam.dat"
 
-class AutofocusingScript(GenericScript):
+class AutoalignmentScript(GenericScript):
 
-    def __init__(self, root_directory, energy, period, n_cycles, mocking_mode, simulation_mode):
-        super(AutofocusingScript, self).__init__(root_directory, energy, period, n_cycles, mocking_mode, simulation_mode)
+    def __init__(self, root_directory, energy, period, n_cycles, get_new_reference, mocking_mode, simulation_mode):
+        super(AutoalignmentScript, self).__init__(root_directory, energy, period, n_cycles, mocking_mode, simulation_mode)
 
         self.__data_directory = os.path.join(self._root_directory, "AI", "autoalignment")
         self.__plot_mode = PlotMode.INTERNAL
         self.__aspect_ratio = AspectRatio.AUTO
         self.__color_map = ColorMap.GRAY
+        self.__get_new_reference = get_new_reference
 
         if self._simulation_mode:
             self.__sim_params = SimulationParameters()
@@ -288,6 +286,16 @@ class AutofocusingScript(GenericScript):
         return "Autoalignment"
 
     def _execute_script_inner(self, **kwargs):
+        if not self._simulation_mode and self.__get_new_reference:
+            reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
+
+            if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]:
+                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.CENTROID] = [reference_beam["centroid_h"], reference_beam["centroid_h"]]
+            if OptimizationCriteria.SIGMA in self.__opt_params.params["loss_parameters"]:
+                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.SIGMA]    = [reference_beam["width"], reference_beam["height"]]
+            if OptimizationCriteria.FWHM in self.__opt_params.params["loss_parameters"]:
+                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.FWHM]     = [reference_beam["width"], reference_beam["height"]]
+
         def get_optimizer(params):
             opt_trial = OptunaOptimizer(
                 self.__focusing_system,
@@ -425,7 +433,7 @@ class AutofocusingScript(GenericScript):
         joblib.dump(opt_trial.study.trials, chkpt_name)
         print(f"Saving all trials in {chkpt_name}")
 
-        if self.__opt_params.params["multi_objective_optimization"] == True:
+        if self.__opt_params.params["multi_objective_optimization"]:
             study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]])  # For multiobjective optimization
         else:
             study = optuna.create_study(directions=["minimize"])
@@ -433,7 +441,7 @@ class AutofocusingScript(GenericScript):
         study.add_trials(opt_trial.study.trials)
 
         # Generating the pareto front for the multiobjective optimization
-        if self.__opt_params.params["multi_objective_optimization"] == True:
+        if self.__opt_params.params["multi_objective_optimization"]:
             optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
             plt.tight_layout()
             try:    plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
