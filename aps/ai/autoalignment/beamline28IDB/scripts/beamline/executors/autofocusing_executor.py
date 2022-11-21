@@ -268,7 +268,7 @@ class AutofocusingScript(GenericScript):
     def __init__(self, root_directory, energy, period, n_cycles, mocking_mode, simulation_mode):
         super(AutofocusingScript, self).__init__(root_directory, energy, period, n_cycles, mocking_mode, simulation_mode)
 
-        self.__data_directory = os.path.join(self._root_directory, "AI", "autoalignment")
+        self.__data_directory = os.path.join(self._root_directory, "AI", "autofocusing")
         self.__plot_mode      = PlotMode.INTERNAL
         self.__aspect_ratio   = AspectRatio.AUTO
         self.__color_map      = ColorMap.GRAY
@@ -292,7 +292,7 @@ class AutofocusingScript(GenericScript):
         else:
             self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
                                                                     implementor=HW_Implementors.EPICS,
-                                                                    measurement_directory=os.path.join(self._root_directory, "AI", "autoalignment"),
+                                                                    measurement_directory=self.__data_directory,
                                                                     bender_threshold=hb_threshold,
                                                                     n_bender_threshold_check=hb_n_threshold_check)
             self.__focusing_system.initialize()
