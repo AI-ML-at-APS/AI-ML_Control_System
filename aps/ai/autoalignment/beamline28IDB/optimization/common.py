@@ -733,7 +733,7 @@ class OptimizationCommon(abc.ABC):
             elif loss_type == OptimizationCriteria.SIGMA:
                 self._loss_function_list.append(self.get_sigma)
             elif loss_type == OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY:
-                self._loss_function_list.append(self.get_log_weighted_sum_intensity_cropped)
+                self._loss_function_list.append(self.get_log_weighted_sum_intensity)
             else:
                 raise ValueError("Supplied loss parameter is not valid.")
             temp_loss_min_value += configs.DEFAULT_LOSS_TOLERANCES[loss_type]
@@ -812,27 +812,6 @@ class OptimizationCommon(abc.ABC):
         else:
             log_weighted_sum_intensity = np.log(weighted_sum_intensity)
         return log_weighted_sum_intensity
-
-    # ----------------------------------------
-    # ----------------------------------------
-    # ----------------------------------------
-
-    def get_weighted_sum_intensity_cropped(self) -> float:
-        return _get_weighted_sum_intensity_from_hist(self.beam_state.hist, 2, self._intensity_no_beam_loss, crop_distance=0.25)
-
-    def get_log_weighted_sum_intensity_cropped(self) -> float:
-        weighted_sum_intensity = self.get_weighted_sum_intensity_cropped()
-        if weighted_sum_intensity == 0:
-            log_weighted_sum_intensity = self._no_beam_loss
-        else:
-            log_weighted_sum_intensity = np.log(weighted_sum_intensity)
-        return log_weighted_sum_intensity
-
-    # ----------------------------------------
-    # ----------------------------------------
-    # ----------------------------------------
-    # ----------------------------------------
-
 
     def get_peak_distance(self) -> float:
         return _get_peak_distance_from_dw(
