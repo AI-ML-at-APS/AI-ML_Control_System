@@ -329,34 +329,23 @@ def get_weighted_sum_intensity(
 
 
 def _get_weighted_sum_intensity_from_hist(
-    hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0
+    hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0, crop_distance: float = 0.0,
 ) -> float:
     if hist is None: return no_beam_value
 
-    mesh = np.meshgrid(hist.hh, hist.vv)
-    radius = (mesh[0]**2 + mesh[1]**2)**0.5
-    weight = radius**radial_weight_power
-    weighted_hist = hist.data_2D*weight.T
+    if crop_distance == 0.0:
+        mesh = np.meshgrid(hist.hh, hist.vv)
+        radius = (mesh[0]**2 + mesh[1]**2)**0.5
+        weight = radius**radial_weight_power
+        weighted_hist = hist.data_2D*weight.T
+    else:
+        cursor_h = numpy.where(numpy.logical_and(hist.hh >= -crop_distance, hist.hh <= crop_distance))
+        cursor_v = numpy.where(numpy.logical_and(hist.vv >= -crop_distance, hist.vv <= crop_distance))
 
-    return weighted_hist.sum()
-
-def _get_weighted_sum_intensity_around_peak_from_hist_dw(
-        hist: Histogram, dw: DictionaryWrapper, radial_weight_power: float = 0, no_beam_value: float = 0
-) -> float:
-    if hist is None: return no_beam_value
-
-    h_fwhm = dw.get_parameter("h_fwhm")
-    v_fwhm = dw.get_parameter("v_fwhm")
-    h_peak = dw.get_parameter("h_peak")
-    v_peak = dw.get_parameter("v_peak")
-
-    cursor_h = numpy.where(numpy.logical_and(hist.hh >= h_peak - 5 * h_fwhm, hist.hh <= h_peak + 5 * h_fwhm))
-    cursor_v = numpy.where(numpy.logical_and(hist.vv >= v_peak - 5 * v_fwhm, hist.vv <= v_peak + 5 * v_fwhm))
-
-    mesh = np.meshgrid(hist.hh[cursor_h], hist.vv[cursor_v])
-    radius = (mesh[0] ** 2 + mesh[1] ** 2) ** 0.5
-    weight = radius ** radial_weight_power
-    weighted_hist = hist.data_2D[tuple(numpy.meshgrid(cursor_h, cursor_v))].T * weight.T
+        mesh = np.meshgrid(hist.hh[cursor_h], hist.vv[cursor_v])
+        radius = (mesh[0] ** 2 + mesh[1] ** 2) ** 0.5
+        weight = radius ** radial_weight_power
+        weighted_hist = hist.data_2D[tuple(numpy.meshgrid(cursor_h, cursor_v))] * weight
 
     return weighted_hist.sum()
 
@@ -768,7 +757,7 @@ class OptimizationCommon(abc.ABC):
                               OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY: self.get_negative_log_peak_intensity,
                               OptimizationCriteria.FWHM: self.get_fwhm,
                               OptimizationCriteria.SIGMA: self.get_sigma,
-                              OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY: self.get_log_weighted_sum_intensity}
+                              OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY: self.get_log_weighted_sum_intensity_cropped}
         if beam_prop not in property_functions:
             raise ValueError("Supplied loss option is not valid.")
         return property_functions[beam_prop]
@@ -825,11 +814,11 @@ class OptimizationCommon(abc.ABC):
     # ----------------------------------------
     # ----------------------------------------
 
-    def get_weighted_sum_intensity_around_peak(self) -> float:
-        return _get_weighted_sum_intensity_around_peak_from_hist_dw(self.beam_state.hist, self.beam_state.dw, 2, self._intensity_no_beam_loss)
+    def get_weighted_sum_intensity_cropped(self) -> float:
+        return _get_weighted_sum_intensity_from_hist(self.beam_state.hist, 2, self._intensity_no_beam_loss, crop_distance=0.25)
 
-    def get_log_weighted_sum_intensity_around_peak(self) -> float:
-        weighted_sum_intensity = self.get_weighted_sum_intensity_around_peak()
+    def get_log_weighted_sum_intensity_cropped(self) -> float:
+        weighted_sum_intensity = self.get_weighted_sum_intensity_cropped()
         if weighted_sum_intensity == 0:
             log_weighted_sum_intensity = self._no_beam_loss
         else:
