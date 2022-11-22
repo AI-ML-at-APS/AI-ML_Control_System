@@ -49,7 +49,7 @@ from aps.common.registry import AlreadyInitializedError
 from aps.common.traffic_light import register_traffic_light_instance
 from aps.ai.autoalignment.beamline28IDB.util.beamline.default_values import DefaultValues
 
-AA_28ID_BEAMLINE_SCRIPTS = "aa-28id-beamline-scripts"
+AA_28ID_BEAMLINE_SCRIPTS = "traffic-light"
 
 try: register_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS, common_directory=DefaultValues.ROOT_DIRECTORY)
 except AlreadyInitializedError: pass

@@ -47,6 +47,7 @@
 import os
 import numpy
 from datetime import datetime
+import json
 import joblib
 import optuna
 import warnings
@@ -370,6 +371,7 @@ class AutoalignmentScript(GenericScript):
             initial_absolute_positions = {k: movers.get_absolute_positions(self.__focusing_system, k)[0] for k in motors}
 
             print("Initial absolute position are", initial_absolute_positions)
+            with open(os.path.join(self.__data_directory, "initial_motor_positions.json"), 'w') as fp: json.dump(initial_absolute_positions, fp)
 
             # taking initial image of the beam
 
