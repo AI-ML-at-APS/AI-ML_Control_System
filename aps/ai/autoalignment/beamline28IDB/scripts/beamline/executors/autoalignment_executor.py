@@ -354,7 +354,7 @@ class AutoalignmentScript(GenericScript):
                 plt.show()
 
         if not self._simulation_mode:
-            # TODO: SET JTEC ACTUATORS TO 500
+            self.__focusing_system.set_surface_actuators_to_baseline(baseline=500)
 
             if self.__get_new_reference:
                 reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)

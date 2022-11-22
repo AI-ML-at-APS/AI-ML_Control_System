@@ -79,6 +79,31 @@ class Motors:
     LATERAL_V      = PV(pvname='1bmopt:m15')
     BENDER_V       = PV(pvname='simJTEC:E4')
 
+    SURFACE_ACTUATORS_V = [PV(pvname='simJTEC:A1'),
+                           PV(pvname='simJTEC:A2'),
+                           PV(pvname='simJTEC:A3'),
+                           PV(pvname='simJTEC:A4'),
+
+                           PV(pvname='simJTEC:B1'),
+                           PV(pvname='simJTEC:B2'),
+                           PV(pvname='simJTEC:B3'),
+                           PV(pvname='simJTEC:B4'),
+
+                           PV(pvname='simJTEC:C1'),
+                           PV(pvname='simJTEC:C2'),
+                           PV(pvname='simJTEC:C3'),
+                           PV(pvname='simJTEC:C4'),
+
+                           PV(pvname='simJTEC:D1'),
+                           PV(pvname='simJTEC:D2'),
+                           PV(pvname='simJTEC:D3'),
+                           PV(pvname='simJTEC:D4'),
+
+                           PV(pvname='simJTEC:E1'),
+                           PV(pvname='simJTEC:E2'),
+                           PV(pvname='simJTEC:E3')]
+
+
 class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
 
     def __init__(self, **kwargs):
@@ -141,7 +166,10 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
             raise e
     
     def initialize(self, **kwargs): pass
-    
+
+    def set_surface_actuators_to_baseline(self, baseline=500):
+        for actuator in Motors.SURFACE_ACTUATORS_V: actuator.put(baseline)
+
     def move_v_bimorph_mirror_motor_bender(self, actuator_value, movement=Movement.ABSOLUTE):
         if movement == Movement.ABSOLUTE:   Motors.BENDER_V.put(actuator_value)
         elif movement == Movement.RELATIVE: Motors.BENDER_V.put(Motors.BENDER_V.get() + actuator_value)
