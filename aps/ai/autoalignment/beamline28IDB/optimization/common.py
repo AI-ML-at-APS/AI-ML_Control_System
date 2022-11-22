@@ -329,23 +329,14 @@ def get_weighted_sum_intensity(
 
 
 def _get_weighted_sum_intensity_from_hist(
-    hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0, crop_distance: float = 0.0,
+    hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0,
 ) -> float:
     if hist is None: return no_beam_value
 
-    if crop_distance == 0.0:
-        mesh = np.meshgrid(hist.hh, hist.vv)
-        radius = (mesh[0]**2 + mesh[1]**2)**0.5
-        weight = radius**radial_weight_power
-        weighted_hist = hist.data_2D*weight.T
-    else:
-        cursor_h = numpy.where(numpy.logical_and(hist.hh >= -crop_distance, hist.hh <= crop_distance))
-        cursor_v = numpy.where(numpy.logical_and(hist.vv >= -crop_distance, hist.vv <= crop_distance))
-
-        mesh = np.meshgrid(hist.hh[cursor_h], hist.vv[cursor_v])
-        radius = (mesh[0] ** 2 + mesh[1] ** 2) ** 0.5
-        weight = radius ** radial_weight_power
-        weighted_hist = hist.data_2D[tuple(numpy.meshgrid(cursor_h, cursor_v))] * weight
+    mesh = np.meshgrid(hist.hh, hist.vv)
+    radius = (mesh[0]**2 + mesh[1]**2)**0.5
+    weight = radius**radial_weight_power
+    weighted_hist = hist.data_2D*weight.T
 
     return weighted_hist.sum()
 
