@@ -124,6 +124,7 @@ def run_script(sys_argv):
     script = AutoalignmentScript(root_directory=root_directory,
                                  energy=energy,
                                  period=period,
+                                 n_cycles=n_cycles,
                                  get_new_reference=get_new_reference,
                                  mocking_mode=mocking_mode,
                                  simulation_mode=simulation_mode

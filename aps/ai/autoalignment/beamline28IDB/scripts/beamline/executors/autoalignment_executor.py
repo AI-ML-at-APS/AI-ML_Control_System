@@ -245,35 +245,37 @@ class AutoalignmentScript(GenericScript):
         self.__color_map = ColorMap.GRAY
         self.__get_new_reference = get_new_reference
 
-        if self._simulation_mode:
-            self.__sim_params = SimulationParameters()
-            print("Simulation parameters")
-            print(self.__sim_params.__dict__)
-            self.__setup_work_dir()
-            clean_up()
-
-            # Initializing the focused beam from simulation
-            self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION,
-                                                                    implementor=self.__sim_params.params["implementor"],
-                                                                    bender=True)
-
-            self.__focusing_system.initialize(input_photon_beam=load_shadow_beam(input_beam_path),
-                                              rewrite_preprocessor_files=PreProcessorFiles.NO,
-                                              layout=Layout.AUTO_ALIGNMENT,
-                                              input_features=get_default_input_features(layout=Layout.AUTO_ALIGNMENT))
+        if mocking_mode: "Autoalignment in Mocking Mode"
         else:
-            self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
-                                                                    implementor=HW_Implementors.EPICS,
-                                                                    measurement_directory=self.__data_directory)
-            self.__focusing_system.initialize()
+            if self._simulation_mode:
+                self.__sim_params = SimulationParameters()
+                print("Simulation parameters")
+                print(self.__sim_params.__dict__)
+                self.__setup_work_dir()
+                clean_up()
 
-        self.__opt_params = OptimizationParameters()
-        self.__opt_params.analyze_motor_ranges(self.__get_initial_positions())
+                # Initializing the focused beam from simulation
+                self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION,
+                                                                        implementor=self.__sim_params.params["implementor"],
+                                                                        bender=True)
 
-        print("Motors and movement ranges")
-        print(self.__opt_params.move_motors_ranges)
-        print("Optimization parameters")
-        print(self.__opt_params.params)
+                self.__focusing_system.initialize(input_photon_beam=load_shadow_beam(input_beam_path),
+                                                  rewrite_preprocessor_files=PreProcessorFiles.NO,
+                                                  layout=Layout.AUTO_ALIGNMENT,
+                                                  input_features=get_default_input_features(layout=Layout.AUTO_ALIGNMENT))
+            else:
+                self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
+                                                                        implementor=HW_Implementors.EPICS,
+                                                                        measurement_directory=self.__data_directory)
+                self.__focusing_system.initialize()
+
+            self.__opt_params = OptimizationParameters()
+            self.__opt_params.analyze_motor_ranges(self.__get_initial_positions())
+
+            print("Motors and movement ranges")
+            print(self.__opt_params.move_motors_ranges)
+            print("Optimization parameters")
+            print(self.__opt_params.params)
 
     def __get_initial_positions(self):
         return {
