@@ -74,7 +74,6 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
 
     xx = x_array[cursor_x]
     yy = y_array[cursor_y]
-
     hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))].T
     hh_h = hh.sum(axis=1)
     hh_v = hh.sum(axis=0)
@@ -167,7 +166,6 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
     xx = x_array[cursor_x]
     yy = y_array[cursor_y]
     hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))].T
-
     hh_h = hh.sum(axis=1)
     hh_v = hh.sum(axis=0)
 

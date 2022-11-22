@@ -326,7 +326,7 @@ class TestHardwareScript(AbstractScript):
 
             _, dictionary = get_info(x_array=photon_beam["h_coord"],
                                      y_array=photon_beam["v_coord"],
-                                     z_array=photon_beam["image"],
+                                     z_array=image,
                                      do_gaussian_fit=False)
 
             print("Beam Infos:")
