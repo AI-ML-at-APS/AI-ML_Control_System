@@ -97,6 +97,7 @@ bound_hb_trans = ini_file.get_list_from_ini(section="Motor-Boundaries", key="Bou
 bound_vb_pitch = ini_file.get_list_from_ini(section="Motor-Boundaries", key="Boundaries-VKB-Pitch",       default=[-0.2, 0.2], type=float)  # in degrees
 bound_vb_trans = ini_file.get_list_from_ini(section="Motor-Boundaries", key="Boundaries-VKB-Translation", default=[-5.0, 5.0], type=float)  # in mm
 
+pitch_only                    = ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Pitch-Only",                    default=True)
 sum_intensity_soft_constraint = ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", default=7e3)
 sum_intensity_hard_constraint = ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", default=6.5e3)
 loss_parameters               = ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Loss-Parameters",               default=[OptimizationCriteria.CENTROID], type=str)
@@ -121,6 +122,7 @@ ini_file.set_list_at_ini(section="Motor-Boundaries", key="Boundaries-HKB-Transla
 ini_file.set_list_at_ini(section="Motor-Boundaries", key="Boundaries-VKB-Pitch", values_list=bound_vb_pitch)
 ini_file.set_list_at_ini(section="Motor-Boundaries", key="Boundaries-VKB-Translation", values_list=bound_vb_trans)
 
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Pitch-Only", value=pitch_only)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", value=sum_intensity_soft_constraint)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", value=sum_intensity_hard_constraint)
 ini_file.set_list_at_ini(section="Optimization-Parameters", key="Loss-Parameters", values_list=loss_parameters)
@@ -172,6 +174,7 @@ class OptimizationParameters:
                 moo_thresholds_dict[moo_threshold] = moo_threshold_size
 
         self.params = {
+            "pitch_only" : pitch_only,
             "sum_intensity_soft_constraint": sum_intensity_soft_constraint,
             "sum_intensity_hard_constraint": sum_intensity_hard_constraint,
             "reference_parameters_h_v": reference_parameters_h_v,
@@ -350,15 +353,18 @@ class AutoalignmentScript(GenericScript):
                     print("Image not saved")
                 plt.show()
 
-        if not self._simulation_mode and self.__get_new_reference:
-            reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
+        if not self._simulation_mode:
+            # TODO: SET JTEC ACTUATORS TO 500
 
-            if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]:
-                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.CENTROID] = [reference_beam["centroid_h"], reference_beam["centroid_h"]]
-            if OptimizationCriteria.SIGMA in self.__opt_params.params["loss_parameters"]:
-                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.SIGMA]    = [reference_beam["width"], reference_beam["height"]]
-            if OptimizationCriteria.FWHM in self.__opt_params.params["loss_parameters"]:
-                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.FWHM]     = [reference_beam["width"], reference_beam["height"]]
+            if self.__get_new_reference:
+                reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
+
+                if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]:
+                    self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.CENTROID] = [reference_beam["centroid_h"], reference_beam["centroid_h"]]
+                if OptimizationCriteria.SIGMA in self.__opt_params.params["loss_parameters"]:
+                    self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.SIGMA]    = [reference_beam["width"], reference_beam["height"]]
+                if OptimizationCriteria.FWHM in self.__opt_params.params["loss_parameters"]:
+                    self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.FWHM]     = [reference_beam["width"], reference_beam["height"]]
 
         warnings.filterwarnings("ignore")
 
@@ -427,10 +433,11 @@ class AutoalignmentScript(GenericScript):
 
             opt_trial = get_optimizer(self.__hw_params.params)
 
-
         n1 = self.__opt_params.params["n_trials"]
         print(f"Optimizing all motors together for {n1} trials.")
-        opt_trial.trials(n1)
+
+        if self.__opt_params.params["pitch_only"]: opt_trial.trials(n1, trial_motor_types=["hb_pitch", "vb_pitch"])
+        else:                                      opt_trial.trials(n1)
 
         print("Selecting the optimal parameters, with algorithm: " + self.__opt_params.params["selection_algorithm"])
         optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials, algorithm=self.__opt_params.params["selection_algorithm"])
