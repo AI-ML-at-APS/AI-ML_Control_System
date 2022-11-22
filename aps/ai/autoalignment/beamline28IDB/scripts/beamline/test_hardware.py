@@ -146,7 +146,7 @@ def __get_input_parameters(sys_argv):
     test_detector               = ini_file.get_boolean_from_ini(section="Tests",   key="test-detector",               default=hardware_test_parameters.test_detector              )
     plot_motors                 = ini_file.get_boolean_from_ini(section="Tests",   key="plot-motors",                 default=hardware_test_parameters.plot_motors              )
     restore                     = ini_file.get_boolean_from_ini(section="Tests",   key="restore",                     default=hardware_test_parameters.restore              )
-    use_denoised                = ini_file.get_boolean_from_ini(section="Tests",   key="use-denoise" ,                default=hardware_test_parameters.use_denoised              )
+    use_denoised                = ini_file.get_boolean_from_ini(section="Tests",   key="use-denoised" ,               default=hardware_test_parameters.use_denoised              )
     reset                       = ini_file.get_boolean_from_ini(section="Tests",   key="reset" ,                      default=hardware_test_parameters.reset              )
     regenerate_ini                 = False
     exit_script                    = False

@@ -148,11 +148,19 @@ class TestHardwareScript(AbstractScript):
             self.__focusing_system._move_translational_motor(Motors.TRANSLATION_VO, -0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
             self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DO, 0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
             self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DI, 0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=400, movement=Movement.ABSOLUTE)
-            self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=0.1723, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
             self.__focusing_system.move_h_bendable_mirror_motor_translation(translation=0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=-160.0, movement=Movement.ABSOLUTE)
-            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=-160.0, movement=Movement.ABSOLUTE)
+
+            # AUTOFOCUSING
+            # self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=400, movement=Movement.ABSOLUTE)
+            # self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=0.1723, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+            # self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=-160.0, movement=Movement.ABSOLUTE)
+            # self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=-160.0, movement=Movement.ABSOLUTE)
+
+            # AUTOALIGNMENT
+            self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=200, movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=0.17189, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+            self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=-80.0, movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=-80.0, movement=Movement.ABSOLUTE)
 
             sys.exit(0)
 
@@ -312,7 +320,9 @@ class TestHardwareScript(AbstractScript):
 
         if self.__hardware_test_parameters.test_detector:
             print("\nTEST OF THE DETECTOR")
-            photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=True)
+
+            # photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=True) # Autofocusing
+            photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=False) # Autoalignment
 
             if self.__hardware_test_parameters.use_denoised: image = photon_beam["image_denoised"]
             else:                                            image = photon_beam["image"]

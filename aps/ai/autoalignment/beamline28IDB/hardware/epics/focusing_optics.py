@@ -110,19 +110,21 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
             raw_image, raw_image_denoised, crop_region, cropped_image = self.__image_processor.get_image_data(image_index=1, raw_only=from_raw_image)
 
             output = {}
+
+            output["h_coord"] = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[0] / 2, IMAGE_SIZE_PIXEL_HxV[0] / 2, IMAGE_SIZE_PIXEL_HxV[0]) * PIXEL_SIZE * 1e3
+            output["v_coord"] = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[1] / 2, IMAGE_SIZE_PIXEL_HxV[1] / 2, IMAGE_SIZE_PIXEL_HxV[1]) * PIXEL_SIZE * 1e3
+            output["image"]   = raw_image
+
             if from_raw_image:
-                output["h_coord"]        = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[0]/2, IMAGE_SIZE_PIXEL_HxV[0]/2, IMAGE_SIZE_PIXEL_HxV[0])*PIXEL_SIZE*1e3
-                output["v_coord"]        = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[1]/2, IMAGE_SIZE_PIXEL_HxV[1]/2, IMAGE_SIZE_PIXEL_HxV[1])*PIXEL_SIZE*1e3
-                output["image"]          = raw_image
                 output["image_denoised"] = raw_image_denoised
             else:
-                output["width"]      = (crop_region[1]-crop_region[0])*PIXEL_SIZE*1e3
-                output["height"]     = (crop_region[3]-crop_region[2])*PIXEL_SIZE*1e3
-                output["centroid_h"] = (crop_region[0] + 0.5*output["width"])*PIXEL_SIZE*1e3
-                output["centroid_v"] = (crop_region[2] + 0.5*output["height"])*PIXEL_SIZE*1e3
-                output["h_coord"]    = (-IMAGE_SIZE_PIXEL_HxV[0]/2 + numpy.linspace(crop_region[0], crop_region[1], cropped_image.shape[0]))*PIXEL_SIZE*1e3
-                output["v_coord"]    = (-IMAGE_SIZE_PIXEL_HxV[1]/2 + numpy.linspace(crop_region[2], crop_region[3], cropped_image.shape[1]))*PIXEL_SIZE*1e3
-                output["image"]      = cropped_image
+                output["width"]           = (crop_region[3]-crop_region[2])*PIXEL_SIZE*1e3
+                output["height"]          = (crop_region[1]-crop_region[0])*PIXEL_SIZE*1e3
+                output["centroid_h"]      = (crop_region[2] + 0.5*output["width"])*PIXEL_SIZE*1e3
+                output["centroid_v"]      = (crop_region[1] + 0.5*output["height"])*PIXEL_SIZE*1e3
+                output["h_coord_cropped"] = (-IMAGE_SIZE_PIXEL_HxV[0]/2 + numpy.linspace(crop_region[2], crop_region[3], cropped_image.shape[0]))*PIXEL_SIZE*1e3
+                output["v_coord_cropped"] = (-IMAGE_SIZE_PIXEL_HxV[1]/2 + numpy.linspace(crop_region[0], crop_region[1], cropped_image.shape[1]))*PIXEL_SIZE*1e3
+                output["image_cropped"]   = cropped_image.T
 
             try: self.__image_collector.end_collection()
             except: pass
