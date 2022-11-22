@@ -362,6 +362,38 @@ class AutofocusingScript(GenericScript):
             if OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY in self.__opt_params.params["loss_parameters"]: print(title + f" system peak intensity: {opt_common._get_peak_intensity_from_dw(dw):8.1e}")
             if OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY  in self.__opt_params.params["loss_parameters"]: print(title + f" system sum intensity:  {opt_common._get_weighted_sum_intensity_from_hist(hist):8.1e}")
 
+        def postprocess_optimization(trials):
+            for t in trials:
+                for td, tdval in t.distributions.items():
+                    tdval.step = None
+
+            if self.__opt_params.params["multi_objective_optimization"]:
+                study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]])  # For multiobjective optimization
+            else:
+                study = optuna.create_study(directions=["minimize"])
+
+            study.add_trials(opt_trial.study.trials)
+
+            if self.__opt_params.params["multi_objective_optimization"]:
+                # Generating the pareto front for the multiobjective optimization
+                optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
+                plt.tight_layout()
+                try:
+                    plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
+                except:
+                    print("Image not saved")
+                plt.show()
+
+            for i in range(len(self.__opt_params.params["loss_parameters"])):
+                optuna.visualization.matplotlib.plot_optimization_history(study,
+                                                                          target=lambda t: t.values[i],
+                                                                          target_name=self.__opt_params.params["loss_parameters"][i])
+                plt.tight_layout()
+                try:
+                    plt.savefig(os.path.join(self.__data_directory, "optimization_" + self.__opt_params.params["loss_parameters"][i] + ".png"))
+                except:
+                    print("Image not saved")
+                plt.show()
 
         warnings.filterwarnings("ignore")
 
@@ -494,30 +526,7 @@ class AutofocusingScript(GenericScript):
         joblib.dump(opt_trial.study.trials, chkpt_name)
         print(f"Saving all trials in {chkpt_name}")
 
-        if self.__opt_params.params["multi_objective_optimization"]:
-            study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]]) # For multiobjective optimization
-        else:
-            study = optuna.create_study(directions=["minimize"])
-
-        study.add_trials(opt_trial.study.trials)
-
-        if self.__opt_params.params["multi_objective_optimization"]:
-            # Generating the pareto front for the multiobjective optimization
-            optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
-            plt.tight_layout()
-            try: plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
-            except: print("Image not saved")
-            plt.show()
-
-        for i in range(len(self.__opt_params.params["loss_parameters"])):
-            optuna.visualization.matplotlib.plot_optimization_history(study,
-                                                                      target=lambda t: t.values[i],
-                                                                      target_name=self.__opt_params.params["loss_parameters"][i])
-            plt.tight_layout()
-            try: plt.savefig(os.path.join(self.__data_directory, "optimization_" + self.__opt_params.params["loss_parameters"][i] + ".png"))
-            except: print("Image not saved")
-            plt.show()
-
+        postprocess_optimization(opt_trial.study.trials)
 
     def __setup_work_dir(self):
         os.chdir(os.path.join(self.__data_directory, "simulation"))

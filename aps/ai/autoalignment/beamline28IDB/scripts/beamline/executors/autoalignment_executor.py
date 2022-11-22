@@ -287,16 +287,6 @@ class AutoalignmentScript(GenericScript):
         return "Autoalignment"
 
     def _execute_script_inner(self, **kwargs):
-        if not self._simulation_mode and self.__get_new_reference:
-            reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
-
-            if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]:
-                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.CENTROID] = [reference_beam["centroid_h"], reference_beam["centroid_h"]]
-            if OptimizationCriteria.SIGMA in self.__opt_params.params["loss_parameters"]:
-                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.SIGMA]    = [reference_beam["width"], reference_beam["height"]]
-            if OptimizationCriteria.FWHM in self.__opt_params.params["loss_parameters"]:
-                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.FWHM]     = [reference_beam["width"], reference_beam["height"]]
-
         def get_optimizer(params):
             opt_trial = OptunaOptimizer(
                 self.__focusing_system,
@@ -324,6 +314,49 @@ class AutoalignmentScript(GenericScript):
         def print_beam_attributes(dw, title):
             if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]: print(title + f" system centroid: {opt_common._get_centroid_distance_from_dw(dw):4.3e}")
             if OptimizationCriteria.FWHM     in self.__opt_params.params["loss_parameters"]: print(title + f" system fwhm:     {opt_common._get_fwhm_from_dw(dw):4.3e}")
+
+        def postprocess_optimization(trials):
+            for t in trials:
+                for td, tdval in t.distributions.items():
+                    tdval.step = None
+
+            if self.__opt_params.params["multi_objective_optimization"]:
+                study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]])  # For multiobjective optimization
+            else:
+                study = optuna.create_study(directions=["minimize"])
+
+            study.add_trials(opt_trial.study.trials)
+
+            if self.__opt_params.params["multi_objective_optimization"]:
+                # Generating the pareto front for the multiobjective optimization
+                optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
+                plt.tight_layout()
+                try:
+                    plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
+                except:
+                    print("Image not saved")
+                plt.show()
+
+            for i in range(len(self.__opt_params.params["loss_parameters"])):
+                optuna.visualization.matplotlib.plot_optimization_history(study,
+                                                                          target=lambda t: t.values[i],
+                                                                          target_name=self.__opt_params.params["loss_parameters"][i])
+                plt.tight_layout()
+                try:
+                    plt.savefig(os.path.join(self.__data_directory, "optimization_" + self.__opt_params.params["loss_parameters"][i] + ".png"))
+                except:
+                    print("Image not saved")
+                plt.show()
+
+        if not self._simulation_mode and self.__get_new_reference:
+            reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
+
+            if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]:
+                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.CENTROID] = [reference_beam["centroid_h"], reference_beam["centroid_h"]]
+            if OptimizationCriteria.SIGMA in self.__opt_params.params["loss_parameters"]:
+                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.SIGMA]    = [reference_beam["width"], reference_beam["height"]]
+            if OptimizationCriteria.FWHM in self.__opt_params.params["loss_parameters"]:
+                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.FWHM]     = [reference_beam["width"], reference_beam["height"]]
 
         warnings.filterwarnings("ignore")
 
@@ -435,29 +468,7 @@ class AutoalignmentScript(GenericScript):
         joblib.dump(opt_trial.study.trials, chkpt_name)
         print(f"Saving all trials in {chkpt_name}")
 
-        if self.__opt_params.params["multi_objective_optimization"]:
-            study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]])  # For multiobjective optimization
-        else:
-            study = optuna.create_study(directions=["minimize"])
-
-        study.add_trials(opt_trial.study.trials)
-
-        # Generating the pareto front for the multiobjective optimization
-        if self.__opt_params.params["multi_objective_optimization"]:
-            optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
-            plt.tight_layout()
-            try:    plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
-            except: print("Image not saved")
-            plt.show()
-
-        for i in range(len(self.__opt_params.params["loss_parameters"])):
-            optuna.visualization.matplotlib.plot_optimization_history(study,
-                                                                      target=lambda t: t.values[i],
-                                                                      target_name=self.__opt_params.params["loss_parameters"][i])
-            plt.tight_layout()
-            try:    plt.savefig(os.path.join(self.__data_directory, "optimization_" + self.__opt_params.params["loss_parameters"][i] + ".png"))
-            except: print("Image not saved")
-            plt.show()
+        postprocess_optimization(opt_trial.study.trials)
 
     def __setup_work_dir(self):
         os.chdir(os.path.join(self.__data_directory, "simulation"))
