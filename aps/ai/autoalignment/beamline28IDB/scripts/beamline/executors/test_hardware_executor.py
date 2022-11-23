@@ -322,7 +322,7 @@ class TestHardwareScript(AbstractScript):
             print("\nTEST OF THE DETECTOR")
 
             # photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=True) # Autofocusing
-            photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=False) # Autoalignment
+            photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=False, crop_threshold=None, crop_strip_width=50, debug=True) # Autoalignment
 
             if self.__hardware_test_parameters.use_denoised: image = photon_beam["image_denoised"]
             else:                                            image = photon_beam["image"]
