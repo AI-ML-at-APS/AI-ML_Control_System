@@ -162,7 +162,7 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
             if not from_raw_image:
                 from scipy.ndimage.measurements import center_of_mass
 
-                footprint = numpy.ones(image.shape) * (image > 1.5 * numpy.average(image[0:20, 0:20]))
+                footprint = numpy.ones(image.shape) * (image > 160)
 
                 # from matplotlib import pyplot as plt
                 # plt.imshow(footprint.T)
