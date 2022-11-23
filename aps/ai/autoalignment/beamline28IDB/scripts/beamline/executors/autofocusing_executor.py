@@ -94,8 +94,9 @@ hb_trans             = ini_file.get_list_from_ini( section="Motor-Ranges", key="
 vb_bender            = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Bender",                    default=configs.DEFAULT_MOVEMENT_RANGES["vb_bender"], type=float)  # in volt
 vb_pitch             = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Pitch",                     default=configs.DEFAULT_MOVEMENT_RANGES["vb_pitch"],  type=float)  # in degrees
 vb_trans             = ini_file.get_list_from_ini( section="Motor-Ranges", key="VKB-Translation",               default=configs.DEFAULT_MOVEMENT_RANGES["vb_trans"],  type=float)  # in mm
-hb_threshold         = ini_file.get_float_from_ini(section="Motor-Ranges", key="HKB-Bender-Threshold",          default=0.2)
-hb_n_threshold_check = ini_file.get_int_from_ini(  section="Motor-Ranges", key="HKB-Bender-N-Threshold-Checks", default=1)
+
+hb_threshold         = ini_file.get_float_from_ini(section="Hardware-Setup", key="HKB-Bender-Threshold",          default=0.2)
+hb_n_threshold_check = ini_file.get_int_from_ini(  section="Hardware-Setup", key="HKB-Bender-N-Threshold-Checks", default=3)
 
 bound_hb_1      = ini_file.get_list_from_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-1",    default=[-200, -50],  type=float)
 bound_hb_2      = ini_file.get_list_from_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-2",    default=[-180, -50],  type=float)
@@ -130,8 +131,9 @@ ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Translation",        
 ini_file.set_list_at_ini( section="Motor-Ranges", key="VKB-Bender",                    values_list=vb_bender)
 ini_file.set_list_at_ini( section="Motor-Ranges", key="VKB-Pitch",                     values_list=vb_pitch )
 ini_file.set_list_at_ini( section="Motor-Ranges", key="VKB-Translation",               values_list=vb_trans )
-ini_file.set_value_at_ini(section="Motor-Ranges", key="HKB-Bender-Threshold",          value=hb_threshold)
-ini_file.set_value_at_ini(section="Motor-Ranges", key="HKB-Bender-N-Threshold-Checks", value=hb_n_threshold_check)
+
+ini_file.set_value_at_ini(section="Hardware-Setup", key="HKB-Bender-Threshold",          value=hb_threshold)
+ini_file.set_value_at_ini(section="Hardware-Setup", key="HKB-Bender-N-Threshold-Checks", value=hb_n_threshold_check)
 
 ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-1",    values_list=bound_hb_1     )
 ini_file.set_list_at_ini( section="Motor-Boundaries", key="Boundaries-HKB-Bender-2",    values_list=bound_hb_2     )

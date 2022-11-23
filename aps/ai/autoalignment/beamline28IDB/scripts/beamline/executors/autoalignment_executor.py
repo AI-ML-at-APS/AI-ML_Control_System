@@ -97,6 +97,9 @@ bound_hb_trans = ini_file.get_list_from_ini(section="Motor-Boundaries", key="Bou
 bound_vb_pitch = ini_file.get_list_from_ini(section="Motor-Boundaries", key="Boundaries-VKB-Pitch",       default=[-0.2, 0.2], type=float)  # in degrees
 bound_vb_trans = ini_file.get_list_from_ini(section="Motor-Boundaries", key="Boundaries-VKB-Translation", default=[-5.0, 5.0], type=float)  # in mm
 
+crop_threshold   = ini_file.get_float_from_ini(section="Hardware-Setup", key="Crop-Threshold",   default=None)
+crop_strip_width = ini_file.get_int_from_ini(  section="Hardware-Setup", key="Crop-Strip-Width", default=50)
+
 pitch_only                    = ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Pitch-Only",                    default=True)
 sum_intensity_soft_constraint = ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", default=7e3)
 sum_intensity_hard_constraint = ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", default=6.5e3)
@@ -112,6 +115,7 @@ n_trials                      = ini_file.get_int_from_ini(    section="Optimizat
 save_images                   = ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Save-Images",                   default=False)
 every_n_images                = ini_file.get_int_from_ini(    section="Optimization-Parameters", key="Every-N-Images",                default=5)
 
+
 ini_file.set_list_at_ini(section="Motor-Ranges", key="HKB-Pitch", values_list=hb_pitch)
 ini_file.set_list_at_ini(section="Motor-Ranges", key="HKB-Translation", values_list=hb_trans)
 ini_file.set_list_at_ini(section="Motor-Ranges", key="VKB-Pitch", values_list=vb_pitch)
@@ -121,6 +125,9 @@ ini_file.set_list_at_ini(section="Motor-Boundaries", key="Boundaries-HKB-Pitch",
 ini_file.set_list_at_ini(section="Motor-Boundaries", key="Boundaries-HKB-Translation", values_list=bound_hb_trans)
 ini_file.set_list_at_ini(section="Motor-Boundaries", key="Boundaries-VKB-Pitch", values_list=bound_vb_pitch)
 ini_file.set_list_at_ini(section="Motor-Boundaries", key="Boundaries-VKB-Translation", values_list=bound_vb_trans)
+
+ini_file.set_value_at_ini(section="Hardware-Setup", key="Crop-Threshold",   value=crop_threshold)
+ini_file.set_value_at_ini(section="Hardware-Setup", key="Crop-Strip-Width", value=crop_strip_width)
 
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Pitch-Only", value=pitch_only)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", value=sum_intensity_soft_constraint)
@@ -270,7 +277,9 @@ class AutoalignmentScript(GenericScript):
             else:
                 self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
                                                                         implementor=HW_Implementors.EPICS,
-                                                                        measurement_directory=self.__data_directory)
+                                                                        measurement_directory=self.__data_directory,
+                                                                        crop_threshold=crop_threshold,
+                                                                        crop_strip_width=crop_strip_width)
                 self.__focusing_system.initialize()
 
             self.__opt_params = OptimizationParameters()

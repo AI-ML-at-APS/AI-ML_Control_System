@@ -45,10 +45,11 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os
-import sys
 import time
 
 import numpy
+from scipy.ndimage.measurements import center_of_mass
+
 from epics import PV
 
 from aps.common.measurment.beamline.image_processor import IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
@@ -57,8 +58,7 @@ from aps.common.measurment.beamline.image_collector import ImageCollector
 from aps.ai.autoalignment.common.measurement.image_processor import ImageProcessor
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
 from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptics
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics, \
-    DISTANCE_V_MOTORS
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics, DISTANCE_V_MOTORS
 
 
 def epics_focusing_optics_factory_method(**kwargs):
@@ -113,37 +113,33 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
     def __init__(self, **kwargs):
         super().__init__(translational_units=DistanceUnits.MILLIMETERS, angular_units=AngularUnits.DEGREES)
 
-        try:
-            measurement_directory = kwargs["measurement_directory"]
-        except:
-            measurement_directory = os.curdir
+        try:    measurement_directory = kwargs["measurement_directory"]
+        except: measurement_directory = os.curdir
+
         # TODO: ADD CHECK OF PHYSICAL BOuNDARIES
-        try:
-            self.__physical_boundaries = kwargs["physical_boundaries"]
-        except:
-            self.__physical_boundaries = None
-        try:
-            self.__bender_threshold = kwargs["bender_threshold"]
-        except:
-            self.__bender_threshold = Motors.BENDER_THRESHOLD
-        try:
-            self.__n_bender_threshold_check = kwargs["n_bender_threshold_check"]
-        except:
-            self.__n_bender_threshold_check = 1
+
+        try:    self.__physical_boundaries = kwargs["physical_boundaries"]
+        except: self.__physical_boundaries = None
+        try:    self.__bender_threshold = kwargs["bender_threshold"]
+        except: self.__bender_threshold = Motors.BENDER_THRESHOLD
+        try:    self.__n_bender_threshold_check = kwargs["n_bender_threshold_check"]
+        except: self.__n_bender_threshold_check = 1
+        try:    self.__crop_threshold = kwargs["crop_threshold"]
+        except: self.__crop_threshold = None
+        try:    self.__crop_strip_width = kwargs["crop_strip_width"]
+        except: self.__crop_strip_width = 50
 
         self.__image_collector = ImageCollector(measurement_directory=measurement_directory)
         self.__image_processor = ImageProcessor(data_collection_directory=measurement_directory)
 
     def get_photon_beam(self, **kwargs):
-        try:
-            from_raw_image = kwargs["from_raw_image"]
-        except:
-            from_raw_image = True
+        try:    from_raw_image = kwargs["from_raw_image"]
+        except: from_raw_image = True
+        try:    debug = kwargs["debug"]
+        except: debug = False
 
-        try:
-            self.__image_collector.restore_status()
-        except:
-            pass
+        try:    self.__image_collector.restore_status()
+        except: pass
 
         try:
             self.__image_collector.collect_single_shot_image(index=1)
@@ -154,57 +150,57 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
             image_denoised[numpy.where(image_denoised < 0)] = 0.0
 
             output = {}
-            output["h_coord"] = h_coord
-            output["v_coord"] = v_coord
-            output["image"] = image
+            output["h_coord"]        = h_coord
+            output["v_coord"]        = v_coord
+            output["image"]          = image
             output["image_denoised"] = image_denoised
 
             if not from_raw_image:
-                from scipy.ndimage.measurements import center_of_mass
+                if self.__crop_threshold is None: crop_threshold = numpy.average(image)
+                else:                             crop_threshold = self.__crop_threshold
 
-                footprint = numpy.ones(image.shape) * (image > 1100)
-
-                from matplotlib import pyplot as plt
-                plt.imshow(footprint.T)
-                plt.show()
+                footprint = numpy.ones(image.shape) * (image > crop_threshold)
 
                 center = center_of_mass(footprint)
                 center_x, center_y = int(center[0]), int(center[1])
 
                 # find the boundary
-                n_width = 50
-
+                n_width = self.__crop_strip_width
                 strip_x = numpy.array(numpy.sum(footprint[:, center_y - n_width: center_y + n_width], axis=1))
                 strip_y = numpy.flip(numpy.array(numpy.sum(footprint[center_x - n_width: center_x + n_width, :], axis=0)))
+                threshold_x = 0.5*numpy.max(strip_x)
+                threshold_y = 0.5*numpy.max(strip_y)
 
-                #from matplotlib import pyplot as plt
-                plt.plot(strip_x, 'b-')
-                plt.plot(strip_y, 'r-')
-                plt.show()
-
-                left_x  = numpy.amin(numpy.where(strip_x > 0.5*numpy.max(strip_x)))
-                right_x = numpy.amax(numpy.where(strip_x > 0.5*numpy.max(strip_x)))
-                up_y    = numpy.amin(numpy.where(strip_y > 0.5*numpy.max(strip_y)))
-                down_y  = numpy.amax(numpy.where(strip_y > 0.5*numpy.max(strip_y)))
+                left_x  = numpy.amin(numpy.where(strip_x > threshold_x))
+                right_x = numpy.amax(numpy.where(strip_x > threshold_x))
+                up_y    = numpy.amin(numpy.where(strip_y > threshold_y))
+                down_y  = numpy.amax(numpy.where(strip_y > threshold_y))
 
                 center_x = h_coord[center_x]
-                center_y = v_coord[IMAGE_SIZE_PIXEL_HxV[1] - center_y]
+                center_y = v_coord[IMAGE_SIZE_PIXEL_HxV[1] - center_y] # image is flipped vertically
                 width_x = (right_x - left_x)*PIXEL_SIZE * 1e3
                 width_y = (down_y - up_y)*PIXEL_SIZE * 1e3
 
                 print("Crop Region: Center (HxV) =", round(center_x, 4), round(center_y, 4),
-                      "mm, Dimension (HxV) =", round(width_x, 3), round(width_y, 3), "mm")
+                      "mm, Dimension (HxV) =", round(width_x, 4), round(width_y, 4), "mm")
 
                 output["width"] = width_x
                 output["height"] = width_y
                 output["centroid_h"] = center_x
                 output["centroid_v"] = center_y
 
+                if debug:
+                    from matplotlib import pyplot as plt
+                    plt.imshow(footprint.T)
+                    plt.show()
+                    plt.plot(strip_x, 'b-')
+                    plt.plot(strip_y, 'r-')
+                    plt.show()
+
             try:    self.__image_collector.end_collection()
             except: pass
             try:    self.__image_collector.save_status()
             except: pass
-
 
             return output
         except Exception as e:
