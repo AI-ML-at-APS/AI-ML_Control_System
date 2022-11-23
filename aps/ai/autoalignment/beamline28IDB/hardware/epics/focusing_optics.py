@@ -164,9 +164,9 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
 
                 footprint = numpy.ones(image.shape) * (image > 160)
 
-                # from matplotlib import pyplot as plt
-                # plt.imshow(footprint.T)
-                # plt.show()
+                #from matplotlib import pyplot as plt
+                #plt.imshow(footprint.T)
+                #plt.show()
 
                 center = center_of_mass(footprint)
                 center_x, center_y = int(center[0]), int(center[1])
@@ -174,17 +174,18 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
                 # find the boundary
                 n_width = 50
 
-                strip_x = numpy.array(numpy.sum(footprint[:, center_x - n_width: center_x + n_width], axis=1))
-                left_x  = numpy.amin(numpy.where(strip_x > 20))
-                right_x = numpy.amax(numpy.where(strip_x > 20))
-                strip_y = numpy.flip(numpy.array(numpy.sum(footprint[center_y - n_width: center_y + n_width, :], axis=0)))
-                up_y    = numpy.amin(numpy.where(strip_y > 20))
-                down_y  = numpy.amax(numpy.where(strip_y > 20))
+                strip_x = numpy.array(numpy.sum(footprint[:, center_y - n_width: center_y + n_width], axis=1))
+                strip_y = numpy.flip(numpy.array(numpy.sum(footprint[center_x - n_width: center_x + n_width, :], axis=0)))
 
                 #from matplotlib import pyplot as plt
-                # plt.plot(strip_x)
-                #plt.plot(strip_y)
+                #plt.plot(strip_x, 'b-')
+                #plt.plot(strip_y, 'r-')
                 #plt.show()
+
+                left_x  = numpy.amin(numpy.where(strip_x > 20))
+                right_x = numpy.amax(numpy.where(strip_x > 20))
+                up_y    = numpy.amin(numpy.where(strip_y > 20))
+                down_y  = numpy.amax(numpy.where(strip_y > 20))
 
                 center_x = h_coord[center_x]
                 center_y = v_coord[IMAGE_SIZE_PIXEL_HxV[1] - center_y]
