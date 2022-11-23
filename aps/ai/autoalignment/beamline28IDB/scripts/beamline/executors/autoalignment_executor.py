@@ -232,8 +232,9 @@ class HardwareParameters(PlotParameters):
     def __init__(self):
         super(HardwareParameters, self).__init__()
         self.params["execution_mode"] = ExecutionMode.HARDWARE
-        self.params["implementor"] = HW_Implementors.EPICS
+        self.params["implementor"]    = HW_Implementors.EPICS
         self.params["from_raw_image"] = False
+        self.params["use_denoised"]   = False
 
 input_beam_path = "primary_optics_system_beam.dat"
 
@@ -424,7 +425,7 @@ class AutoalignmentScript(GenericScript):
 
             plot_2D(x_array=beam["h_coord"],
                     y_array=beam["v_coord"],
-                    z_array=beam["image"],
+                    z_array=beam["image_denoised"] if self.__opt_params.params["use_denoised"] else beam["image"],
                     title="Initial beam",
                     color_map=self.__color_map,
                     aspect_ratio=self.__aspect_ratio,
@@ -465,7 +466,7 @@ class AutoalignmentScript(GenericScript):
         else:
             plot_2D(x_array=opt_trial.beam_state.photon_beam["h_coord"],
                     y_array=opt_trial.beam_state.photon_beam["v_coord"],
-                    z_array=opt_trial.beam_state.photon_beam["image"],
+                    z_array=opt_trial.beam_state.photon_beam["image_denoised"] if self.__opt_params.params["use_denoised"] else opt_trial.beam_state.photon_beam["image"],
                     title="Optimized beam",
                     color_map=self.__color_map,
                     aspect_ratio=self.__aspect_ratio,

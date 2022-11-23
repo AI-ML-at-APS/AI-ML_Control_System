@@ -45,6 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os
+import sys
 import time
 
 import numpy
@@ -56,28 +57,31 @@ from aps.common.measurment.beamline.image_collector import ImageCollector
 from aps.ai.autoalignment.common.measurement.image_processor import ImageProcessor
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
 from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptics
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics, DISTANCE_V_MOTORS
+from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics, \
+    DISTANCE_V_MOTORS
+
 
 def epics_focusing_optics_factory_method(**kwargs):
     return __EpicsFocusingOptics(**kwargs)
 
+
 class Motors:
     # Horizontal mirror:
-    TRANSLATION_H    = PV(pvname='28idb:m23')
-    PITCH_H          = PV(pvname='28idb:m24')
-    BENDER_H_1       = PV(pvname='zoomkb:pid1')
-    BENDER_H_2       = PV(pvname='zoomkb:pid2')
-    BENDER_H_1_RB    = PV(pvname='zoomkb:pid1.CVAL')
-    BENDER_H_2_RB    = PV(pvname='zoomkb:pid2.CVAL')
-    BENDER_H_1_FB    = PV(pvname='zoomkb:pid1.FBON')
-    BENDER_H_2_FB    = PV(pvname='zoomkb:pid2.FBON')
+    TRANSLATION_H = PV(pvname='28idb:m23')
+    PITCH_H = PV(pvname='28idb:m24')
+    BENDER_H_1 = PV(pvname='zoomkb:pid1')
+    BENDER_H_2 = PV(pvname='zoomkb:pid2')
+    BENDER_H_1_RB = PV(pvname='zoomkb:pid1.CVAL')
+    BENDER_H_2_RB = PV(pvname='zoomkb:pid2.CVAL')
+    BENDER_H_1_FB = PV(pvname='zoomkb:pid1.FBON')
+    BENDER_H_2_FB = PV(pvname='zoomkb:pid2.FBON')
     BENDER_THRESHOLD = 0.05
 
     TRANSLATION_VO = PV(pvname='1bmopt:m13')
     TRANSLATION_DI = PV(pvname='1bmopt:m12')
     TRANSLATION_DO = PV(pvname='1bmopt:m14')
-    LATERAL_V      = PV(pvname='1bmopt:m15')
-    BENDER_V       = PV(pvname='simJTEC:E4')
+    LATERAL_V = PV(pvname='1bmopt:m15')
+    BENDER_V = PV(pvname='simJTEC:E4')
 
     SURFACE_ACTUATORS_V = [PV(pvname='simJTEC:A1'),
                            PV(pvname='simJTEC:A2'),
@@ -108,109 +112,162 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
 
     def __init__(self, **kwargs):
         super().__init__(translational_units=DistanceUnits.MILLIMETERS, angular_units=AngularUnits.DEGREES)
-        
-        try:    measurement_directory = kwargs["measurement_directory"]
-        except: measurement_directory = os.curdir
-        #TODO: ADD CHECK OF PHYSICAL BOuNDARIES
-        try:    self.__physical_boundaries = kwargs["physical_boundaries"]
-        except: self.__physical_boundaries = None
-        try:    self.__bender_threshold = kwargs["bender_threshold"]
-        except: self.__bender_threshold    = Motors.BENDER_THRESHOLD
-        try:    self.__n_bender_threshold_check = kwargs["n_bender_threshold_check"]
-        except: self.__n_bender_threshold_check = 1
+
+        try:
+            measurement_directory = kwargs["measurement_directory"]
+        except:
+            measurement_directory = os.curdir
+        # TODO: ADD CHECK OF PHYSICAL BOuNDARIES
+        try:
+            self.__physical_boundaries = kwargs["physical_boundaries"]
+        except:
+            self.__physical_boundaries = None
+        try:
+            self.__bender_threshold = kwargs["bender_threshold"]
+        except:
+            self.__bender_threshold = Motors.BENDER_THRESHOLD
+        try:
+            self.__n_bender_threshold_check = kwargs["n_bender_threshold_check"]
+        except:
+            self.__n_bender_threshold_check = 1
 
         self.__image_collector = ImageCollector(measurement_directory=measurement_directory)
         self.__image_processor = ImageProcessor(data_collection_directory=measurement_directory)
 
     def get_photon_beam(self, **kwargs):
-        try: from_raw_image    = kwargs["from_raw_image"]
-        except: from_raw_image = True
+        try:
+            from_raw_image = kwargs["from_raw_image"]
+        except:
+            from_raw_image = True
 
-        try: self.__image_collector.restore_status()
-        except: pass
+        try:
+            self.__image_collector.restore_status()
+        except:
+            pass
 
         try:
             self.__image_collector.collect_single_shot_image(index=1)
 
-            raw_image, raw_image_denoised, crop_region, cropped_image = self.__image_processor.get_image_data(image_index=1, raw_only=from_raw_image)
+            image, h_coord, v_coord = self.__image_processor.get_image_data(image_index=1)
+
+            image_denoised = image - numpy.average(image[0:10, 0:10])
+            image_denoised[numpy.where(image_denoised < 0)] = 0.0
 
             output = {}
+            output["h_coord"] = h_coord
+            output["v_coord"] = v_coord
+            output["image"] = image
+            output["image_denoised"] = image_denoised
 
-            output["h_coord"] = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[0] / 2, IMAGE_SIZE_PIXEL_HxV[0] / 2, IMAGE_SIZE_PIXEL_HxV[0]) * PIXEL_SIZE * 1e3
-            output["v_coord"] = numpy.linspace(-IMAGE_SIZE_PIXEL_HxV[1] / 2, IMAGE_SIZE_PIXEL_HxV[1] / 2, IMAGE_SIZE_PIXEL_HxV[1]) * PIXEL_SIZE * 1e3
-            output["image"]   = raw_image
+            if not from_raw_image:
+                from scipy.ndimage.measurements import center_of_mass
 
-            if from_raw_image:
-                output["image_denoised"] = raw_image_denoised
-            else:
-                output["width"]           = (crop_region[3]-crop_region[2])*PIXEL_SIZE*1e3
-                output["height"]          = (crop_region[1]-crop_region[0])*PIXEL_SIZE*1e3
-                output["centroid_h"]      = (crop_region[2] + 0.5*output["width"])*PIXEL_SIZE*1e3
-                output["centroid_v"]      = (crop_region[1] + 0.5*output["height"])*PIXEL_SIZE*1e3
-                output["h_coord_cropped"] = (-IMAGE_SIZE_PIXEL_HxV[0]/2 + numpy.linspace(crop_region[2], crop_region[3], cropped_image.shape[0]))*PIXEL_SIZE*1e3
-                output["v_coord_cropped"] = (-IMAGE_SIZE_PIXEL_HxV[1]/2 + numpy.linspace(crop_region[0], crop_region[1], cropped_image.shape[1]))*PIXEL_SIZE*1e3
-                output["image_cropped"]   = cropped_image.T
+                footprint = numpy.ones(image.shape) * (image > 1.5 * numpy.average(image[0:20, 0:20]))
 
-            try: self.__image_collector.end_collection()
+                # from matplotlib import pyplot as plt
+                # plt.imshow(footprint.T)
+                # plt.show()
+
+                center = center_of_mass(footprint)
+                center_x, center_y = int(center[0]), int(center[1])
+
+                # find the boundary
+                n_width = 50
+
+                strip_x = numpy.array(numpy.sum(footprint[:, center_x - n_width: center_x + n_width], axis=1))
+                left_x  = numpy.amin(numpy.where(strip_x > 20))
+                right_x = numpy.amax(numpy.where(strip_x > 20))
+                strip_y = numpy.flip(numpy.array(numpy.sum(footprint[center_y - n_width: center_y + n_width, :], axis=0)))
+                up_y    = numpy.amin(numpy.where(strip_y > 20))
+                down_y  = numpy.amax(numpy.where(strip_y > 20))
+
+                #from matplotlib import pyplot as plt
+                # plt.plot(strip_x)
+                #plt.plot(strip_y)
+                #plt.show()
+
+                center_x = h_coord[center_x]
+                center_y = v_coord[IMAGE_SIZE_PIXEL_HxV[1] - center_y]
+                width_x = (right_x - left_x)*PIXEL_SIZE * 1e3
+                width_y = (down_y - up_y)*PIXEL_SIZE * 1e3
+
+                print("Crop Region: Center (HxV) =", round(center_x, 4), round(center_y, 4),
+                      "mm, Dimension (HxV) =", round(width_x, 3), round(width_y, 3), "mm")
+
+                output["width"] = width_x
+                output["height"] = width_y
+                output["centroid_h"] = center_x
+                output["centroid_v"] = center_y
+
+            try:    self.__image_collector.end_collection()
             except: pass
-            try: self.__image_collector.save_status()
+            try:    self.__image_collector.save_status()
             except: pass
+
 
             return output
         except Exception as e:
-            try: self.__image_collector.end_collection()
+            try:    self.__image_collector.end_collection()
             except: pass
-            try: self.__image_collector.save_status()
+            try:    self.__image_collector.save_status()
             except: pass
 
             raise e
-    
-    def initialize(self, **kwargs): pass
+
+    def initialize(self, **kwargs):
+        pass
 
     def set_surface_actuators_to_baseline(self, baseline=500):
         for actuator in Motors.SURFACE_ACTUATORS_V: actuator.put(baseline)
 
     def move_v_bimorph_mirror_motor_bender(self, actuator_value, movement=Movement.ABSOLUTE):
-        if movement == Movement.ABSOLUTE:   Motors.BENDER_V.put(actuator_value)
-        elif movement == Movement.RELATIVE: Motors.BENDER_V.put(Motors.BENDER_V.get() + actuator_value)
-        else: raise ValueError("Movement not recognized")
+        if movement == Movement.ABSOLUTE:
+            Motors.BENDER_V.put(actuator_value)
+        elif movement == Movement.RELATIVE:
+            Motors.BENDER_V.put(Motors.BENDER_V.get() + actuator_value)
+        else:
+            raise ValueError("Movement not recognized")
         time.sleep(2)
 
-    def get_v_bimorph_mirror_motor_bender(self): 
+    def get_v_bimorph_mirror_motor_bender(self):
         return Motors.BENDER_V.get()
-    
+
     def move_v_bimorph_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES):
-        if units == AngularUnits.MILLIRADIANS: angle *= 1e-3
-        elif units == AngularUnits.RADIANS: pass
-        elif units == AngularUnits.DEGREES: angle = numpy.radians(angle)
+        if units == AngularUnits.MILLIRADIANS:
+            angle *= 1e-3
+        elif units == AngularUnits.RADIANS:
+            pass
+        elif units == AngularUnits.DEGREES:
+            angle = numpy.radians(angle)
 
-        pos = 0.5*DISTANCE_V_MOTORS*numpy.sin(angle)
+        pos = 0.5 * DISTANCE_V_MOTORS * numpy.sin(angle)
 
-        if movement==Movement.ABSOLUTE:
+        if movement == Movement.ABSOLUTE:
             zero_pos = self.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)
 
-            self._move_translational_motor(Motors.TRANSLATION_VO, zero_pos-pos, movement=movement, units=DistanceUnits.MILLIMETERS)
-            self._move_translational_motor(Motors.TRANSLATION_DO, zero_pos+pos, movement=movement, units=DistanceUnits.MILLIMETERS)
-            self._move_translational_motor(Motors.TRANSLATION_DI, zero_pos+pos, movement=movement, units=DistanceUnits.MILLIMETERS)
-        elif movement==Movement.RELATIVE:
+            self._move_translational_motor(Motors.TRANSLATION_VO, zero_pos - pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DO, zero_pos + pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DI, zero_pos + pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+        elif movement == Movement.RELATIVE:
             self._move_translational_motor(Motors.TRANSLATION_VO, -pos, movement=movement, units=DistanceUnits.MILLIMETERS)
-            self._move_translational_motor(Motors.TRANSLATION_DO,  pos, movement=movement, units=DistanceUnits.MILLIMETERS)
-            self._move_translational_motor(Motors.TRANSLATION_DI,  pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DO, pos, movement=movement, units=DistanceUnits.MILLIMETERS)
+            self._move_translational_motor(Motors.TRANSLATION_DI, pos, movement=movement, units=DistanceUnits.MILLIMETERS)
 
     def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.DEGREES):
         zero_pos = self.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)
 
         pos = self._get_translational_motor_position(Motors.TRANSLATION_DO, units=DistanceUnits.MILLIMETERS) - zero_pos
 
-        angle = numpy.arcsin(pos/(0.5*DISTANCE_V_MOTORS))
+        angle = numpy.arcsin(pos / (0.5 * DISTANCE_V_MOTORS))
 
         if units == AngularUnits.MILLIRADIANS: angle *= 1e3
-        elif units == AngularUnits.RADIANS: pass
-        elif units == AngularUnits.DEGREES: angle = numpy.degrees(angle)
+        elif units == AngularUnits.RADIANS:    pass
+        elif units == AngularUnits.DEGREES:    angle = numpy.degrees(angle)
 
         return angle
 
-    def move_v_bimorph_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS):
+    def move_v_bimorph_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE,
+                                                units=DistanceUnits.MILLIMETERS):
         if movement == Movement.RELATIVE:
             self._move_translational_motor(Motors.TRANSLATION_VO, translation, movement=movement, units=units)
             self._move_translational_motor(Motors.TRANSLATION_DO, translation, movement=movement, units=units)
@@ -223,10 +280,10 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
             self._move_translational_motor(Motors.TRANSLATION_VO, difference, movement=Movement.RELATIVE, units=units)
             self._move_translational_motor(Motors.TRANSLATION_DO, difference, movement=Movement.RELATIVE, units=units)
             self._move_translational_motor(Motors.TRANSLATION_DI, difference, movement=Movement.RELATIVE, units=units)
-        
+
     def get_v_bimorph_mirror_motor_translation(self, units=DistanceUnits.MILLIMETERS):
-        return 0.5*(self._get_translational_motor_position(Motors.TRANSLATION_VO, units=units) +
-                    self._get_translational_motor_position(Motors.TRANSLATION_DO, units=units))
+        return 0.5 * (self._get_translational_motor_position(Motors.TRANSLATION_VO, units=units) +
+                      self._get_translational_motor_position(Motors.TRANSLATION_DO, units=units))
 
     # H-KB -----------------------
 
@@ -244,8 +301,8 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
                                                    feeback=Motors.BENDER_H_2_FB,
                                                    readback=Motors.BENDER_H_2_RB,
                                                    pos=pos_downstream, movement=movement)
-    
-    def get_h_bendable_mirror_motor_2_bender(self): 
+
+    def get_h_bendable_mirror_motor_2_bender(self):
         return Motors.BENDER_H_2.get()
 
     def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES):
@@ -272,8 +329,8 @@ class __EpicsFocusingOptics(AbstractEpicsOptics, AbstractFocusingOptics):
         # cycle until the readback is close enough to the desired position
         while (n_consecutive_positive_check < self.__n_bender_threshold_check):
             if (numpy.abs(readback.get() - desired_position) <= self.__bender_threshold):
-                n_consecutive_positive_check +=1
-                #print("H Bender ok:" + str(n_consecutive_positive_check))
+                n_consecutive_positive_check += 1
+                # print("H Bender ok:" + str(n_consecutive_positive_check))
             else:
                 n_consecutive_positive_check = 0
 
