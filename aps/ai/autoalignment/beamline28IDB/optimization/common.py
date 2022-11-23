@@ -121,8 +121,8 @@ def get_distribution_info(
                 v_sigma=beam["height"],
                 v_fwhm=beam["height"],
                 v_centroid=beam["centroid_v"],
-                integral_intensity=np.sum(beam["image_cropped"]),
-                peak_intensity=np.max(beam["image_cropped"]),
+                integral_intensity=np.sum(beam["image"]),
+                peak_intensity=np.max(beam["image"]),
                 gaussian_fit=None,
             )
         else:
