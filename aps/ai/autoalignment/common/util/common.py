@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os
-
+import datetime
 import numpy
 from matplotlib import pyplot as plt
 from matplotlib import cm
@@ -156,7 +156,7 @@ class ColorMap:
 
 def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
             int_um="$ph/s/0.1\%BW$", peak_um="$ph/s/mm^2/0.1\%BW$",
-            flip=Flip.NO, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, save_image=False, save_path=os.curdir):
+            flip=Flip.NO, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, save_image=False, save_path=os.curdir, plot=True):
     if xrange is None: xrange = [x_array[0], x_array[-1]]
     if yrange is None: yrange = [y_array[0], y_array[-1]]
 
@@ -235,8 +235,8 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
     plt.tight_layout()
 
     if save_image:
-        try: plt.savefig(os.path.join(save_path, title.replace(" ", "_").lower() + ".png"))
+        try: plt.savefig(os.path.join(save_path, title.replace(" ", "_").lower() + "_" + datetime.strftime(datetime.now(), "%Y-%m-%d_%H-%M") + ".png"))
         except: print("Image not saved")
 
-    plt.show()
+    if plot: plt.show()
 

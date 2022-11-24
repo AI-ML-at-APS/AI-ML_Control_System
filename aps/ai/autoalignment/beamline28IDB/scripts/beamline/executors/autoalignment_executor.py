@@ -372,15 +372,15 @@ class AutoalignmentScript(GenericScript):
 
             self._print_beam_attributes(dw_init, "Initial")
             
-            if self.__test_mode:
-                plot_2D(x_array=beam["h_coord"],
-                        y_array=beam["v_coord"],
-                        z_array=beam["image"],
-                        title="Initial beam",
-                        color_map=self.__color_map,
-                        aspect_ratio=self.__aspect_ratio,
-                        save_image=True,
-                        save_path=self.__data_directory)
+            plot_2D(x_array=beam["h_coord"],
+                    y_array=beam["v_coord"],
+                    z_array=beam["image"],
+                    title="Initial beam",
+                    color_map=self.__color_map,
+                    aspect_ratio=self.__aspect_ratio,
+                    save_image=True,
+                    save_path=self.__data_directory,
+                    plot=self.__test_mode)
 
         opt_trial = self._get_optimizer(self.__params.params)
 
@@ -404,25 +404,24 @@ class AutoalignmentScript(GenericScript):
 
         if self._simulation_mode:
             if self.__test_mode:
-                plot_distribution(
-                    beam=opt_trial.beam_state.photon_beam,
-                    title="Optimized beam",
-                    plot_mode=self.__plot_mode,
-                    aspect_ratio=self.__aspect_ratio,
-                    color_map=self.__color_map,
-                    **self.__params.params,
-                )
+                plot_distribution(beam=opt_trial.beam_state.photon_beam,
+                                  title="Optimized beam",
+                                  plot_mode=self.__plot_mode,
+                                  aspect_ratio=self.__aspect_ratio,
+                                  color_map=self.__color_map,
+                                  **self.__params.params)
 
             clean_up()
-        elif self.__test_mode:
+        else:
             plot_2D(x_array=opt_trial.beam_state.photon_beam["h_coord"],
                     y_array=opt_trial.beam_state.photon_beam["v_coord"],
                     z_array=opt_trial.beam_state.photon_beam["image"],
-                    title="Optimized beam",
+                    title="Optimized Beam",
                     color_map=self.__color_map,
                     aspect_ratio=self.__aspect_ratio,
                     save_image=True,
-                    save_path=self.__data_directory)
+                    save_path=self.__data_directory,
+                    plot=self.__test_mode)
         
         datetime_str = datetime.strftime(datetime.now(), "%Y-%m-%d_%H:%M")
         chkpt_name = f"optimization_final_{n1}_{datetime_str}.gz"
