@@ -144,6 +144,7 @@ class TestHardwareScript(AbstractScript):
 
         if self.__hardware_test_parameters.reset:
             from aps.ai.autoalignment.beamline28IDB.hardware.epics.focusing_optics import Motors
+            self.__focusing_system.set_surface_actuators_to_baseline(baseline=500)
 
             self.__focusing_system._move_translational_motor(Motors.TRANSLATION_VO, -0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
             self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DO, 0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)

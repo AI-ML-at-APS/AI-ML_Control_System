@@ -259,15 +259,15 @@ class AutoalignmentScript(GenericScript):
         if mocking_mode: "Autoalignment in Mocking Mode"
         else:
             if self._simulation_mode:
-                self.__params = SimulationParameters()
+                self.__parameters = SimulationParameters()
                 print("Simulation parameters")
-                print(self.__params.__dict__)
+                print(self.__parameters.__dict__)
                 self.__setup_work_dir()
                 clean_up()
 
                 # Initializing the focused beam from simulation
                 self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION,
-                                                                        implementor=self.__params.params["implementor"],
+                                                                        implementor=self.__parameters.params["implementor"],
                                                                         bender=True)
 
                 self.__focusing_system.initialize(input_photon_beam=load_shadow_beam(input_beam_path),
@@ -275,9 +275,9 @@ class AutoalignmentScript(GenericScript):
                                                   layout=Layout.AUTO_ALIGNMENT,
                                                   input_features=get_default_input_features(layout=Layout.AUTO_ALIGNMENT))
             else:
-                self.__params = HardwareParameters()
+                self.__parameters = HardwareParameters()
                 print("Hardware parameters")
-                print(self.__params.__dict__)
+                print(self.__parameters.__dict__)
 
                 self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
                                                                         implementor=HW_Implementors.EPICS,
@@ -305,11 +305,11 @@ class AutoalignmentScript(GenericScript):
     def _get_script_name(self):
         return "Autoalignment"
 
-    def _execute_script_inner(self, **kwargs):
+    def _execute_script_inner(self, current_cycle, **kwargs):
         if not self._simulation_mode:
             self.__focusing_system.set_surface_actuators_to_baseline(baseline=500)
 
-            if self.__get_new_reference:
+            if current_cycle==1 and self.__get_new_reference:
                 reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
 
                 if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]:
@@ -322,7 +322,7 @@ class AutoalignmentScript(GenericScript):
         warnings.filterwarnings("ignore")
         
         if self._simulation_mode:
-            beam, hist, dw = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system, photon_beam=None, **self.__params.params)
+            beam, hist, dw = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system, photon_beam=None, **self.__parameters.params)
             
             if self.__test_mode:
                 plot_distribution(
@@ -331,7 +331,7 @@ class AutoalignmentScript(GenericScript):
                     plot_mode=self.__plot_mode,
                     aspect_ratio=self.__aspect_ratio,
                     color_map=self.__color_map,
-                    **self.__params.params,
+                    **self.__parameters.params,
                 )
 
             motors = list(self.__opt_params.move_motors_ranges.keys())
@@ -343,7 +343,7 @@ class AutoalignmentScript(GenericScript):
                 self.__focusing_system,
                 motor_types_and_ranges=self.__opt_params.move_motors_ranges,
                 intensity_sum_threshold=self.__opt_params.params["sum_intensity_hard_constraint"],
-                **self.__params.params,
+                **self.__parameters.params,
             )
 
             self._print_beam_attributes(dw_init, "Perturbed")
@@ -355,7 +355,7 @@ class AutoalignmentScript(GenericScript):
                     plot_mode=self.__plot_mode,
                     aspect_ratio=self.__aspect_ratio,
                     color_map=self.__color_map,
-                    **self.__params.params,
+                    **self.__parameters.params,
                 )
         else:
             motors = list(self.__opt_params.move_motors_ranges.keys())
@@ -368,7 +368,7 @@ class AutoalignmentScript(GenericScript):
 
             beam, hist_init, dw_init = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system,
                                                                    photon_beam=None,
-                                                                   **self.__params.params)
+                                                                   **self.__parameters.params)
 
             self._print_beam_attributes(dw_init, "Initial")
             
@@ -382,7 +382,7 @@ class AutoalignmentScript(GenericScript):
                     save_path=self.__data_directory,
                     plot=self.__test_mode)
 
-        opt_trial = self._get_optimizer(self.__params.params)
+        opt_trial = self._get_optimizer(self.__parameters.params)
 
         n1 = self.__opt_params.params["n_trials"]
         print(f"Optimizing all motors together for {n1} trials.")
@@ -409,7 +409,7 @@ class AutoalignmentScript(GenericScript):
                                   plot_mode=self.__plot_mode,
                                   aspect_ratio=self.__aspect_ratio,
                                   color_map=self.__color_map,
-                                  **self.__params.params)
+                                  **self.__parameters.params)
 
             clean_up()
         else:

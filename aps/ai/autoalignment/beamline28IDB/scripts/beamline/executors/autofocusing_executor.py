@@ -279,15 +279,15 @@ class AutofocusingScript(GenericScript):
         if mocking_mode: "Autofocusing in Mocking Mode"
         else:
             if self._simulation_mode:
-                self.__sim_params = SimulationParameters()
+                self.__parameters = SimulationParameters()
                 print("Simulation parameters")
-                print(self.__sim_params.__dict__)
+                print(self.__parameters.__dict__)
                 self.__setup_work_dir()
                 clean_up()
 
                 # Initializing the focused beam from simulation
                 self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION,
-                                                                        implementor=self.__sim_params.params["implementor"],
+                                                                        implementor=self.__parameters.params["implementor"],
                                                                         bender=True)
 
                 self.__focusing_system.initialize(input_photon_beam=load_shadow_beam(input_beam_path),
@@ -295,6 +295,10 @@ class AutofocusingScript(GenericScript):
                                                   layout=Layout.AUTO_FOCUSING,
                                                   input_features=get_default_input_features(layout=Layout.AUTO_FOCUSING))
             else:
+                self.__parameters = HardwareParameters()
+                print("Hardware parameters")
+                print(self.__parameters.__dict__)
+
                 self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
                                                                         implementor=HW_Implementors.EPICS,
                                                                         measurement_directory=self.__data_directory,
@@ -324,85 +328,11 @@ class AutofocusingScript(GenericScript):
     def _get_script_name(self):
         return "Autofocusing"
 
-    def _execute_script_inner(self, **kwargs):
-        def get_optimizer(params):
-            opt_trial = OptunaOptimizer(
-                self.__focusing_system,
-                motor_types=list(self.__opt_params.move_motors_ranges.keys()),
-                loss_parameters=self.__opt_params.params["loss_parameters"],
-                reference_parameters_h_v=self.__opt_params.params["reference_parameters_h_v"],
-                multi_objective_optimization=self.__opt_params.params["multi_objective_optimization"],
-                **params,
-            )
-
-            # using the first beam as a safe moo thresold in case is not indicated
-            moo_thresholds = self.__opt_params.params["moo_thresholds"]
-            if 'log_weighted_sum_intensity' in loss_parameters and \
-                    ('log_weighted_sum_intensity' not in moo_thresholds):
-                moo_thresholds['log_weighted_sum_intensity'] = opt_trial.get_log_weighted_sum_intensity()
-            if 'negative_log_peak_intensity' in loss_parameters and \
-                    ('negative_log_peak_intensity' not in moo_thresholds):
-                moo_thresholds['negative_log_peak_intensity'] = opt_trial.get_negative_log_peak_intensity()
-
-            # Setting up the optimizer
-            constraints = {"sum_intensity": self.__opt_params.params["sum_intensity_soft_constraint"]}
-
-            opt_trial.set_optimizer_options(
-                motor_ranges=list(self.__opt_params.move_motors_ranges.values()),
-                raise_prune_exception=True,
-                use_discrete_space=True,
-                sum_intensity_threshold=self.__opt_params.params["sum_intensity_hard_constraint"],
-                constraints=constraints,
-                moo_thresholds=moo_thresholds
-            )
-
-            return opt_trial
-
-        def print_beam_attributes(hist, dw, title):
-            if OptimizationCriteria.PEAK_DISTANCE               in self.__opt_params.params["loss_parameters"]: print(title + f" system peak:     {opt_common._get_peak_distance_from_dw(dw):4.3e}")
-            if OptimizationCriteria.CENTROID                    in self.__opt_params.params["loss_parameters"]: print(title + f" system centroid: {opt_common._get_centroid_distance_from_dw(dw):4.3e}")
-            if OptimizationCriteria.SIGMA                       in self.__opt_params.params["loss_parameters"]: print(title + f" system sigma:    {opt_common._get_sigma_from_dw(dw):4.3e}")
-            if OptimizationCriteria.FWHM                        in self.__opt_params.params["loss_parameters"]: print(title + f" system fwhm:     {opt_common._get_fwhm_from_dw(dw):4.3e}")
-            if OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY in self.__opt_params.params["loss_parameters"]: print(title + f" system peak intensity: {opt_common._get_peak_intensity_from_dw(dw):8.1e}")
-            if OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY  in self.__opt_params.params["loss_parameters"]: print(title + f" system sum intensity:  {opt_common._get_weighted_sum_intensity_from_hist(hist):8.1e}")
-
-        def postprocess_optimization(trials):
-            for t in trials:
-                for td, tdval in t.distributions.items():
-                    tdval.step = None
-
-            if self.__opt_params.params["multi_objective_optimization"]:
-                study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]])  # For multiobjective optimization
-            else:
-                study = optuna.create_study(directions=["minimize"])
-
-            study.add_trials(opt_trial.study.trials)
-
-            if self.__opt_params.params["multi_objective_optimization"]:
-                # Generating the pareto front for the multiobjective optimization
-                optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
-                plt.tight_layout()
-                try:
-                    plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
-                except:
-                    print("Image not saved")
-                plt.show()
-
-            for i in range(len(self.__opt_params.params["loss_parameters"])):
-                optuna.visualization.matplotlib.plot_optimization_history(study,
-                                                                          target=lambda t: t.values[i],
-                                                                          target_name=self.__opt_params.params["loss_parameters"][i])
-                plt.tight_layout()
-                try:
-                    plt.savefig(os.path.join(self.__data_directory, "optimization_" + self.__opt_params.params["loss_parameters"][i] + ".png"))
-                except:
-                    print("Image not saved")
-                plt.show()
-
+    def _execute_script_inner(self, current_cycle, **kwargs):
         warnings.filterwarnings("ignore")
 
         if self._simulation_mode:
-            beam, hist, dw = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system, photon_beam=None, **self.__sim_params.params)
+            beam, hist, dw = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system, photon_beam=None, **self.__parameters.params)
 
             plot_distribution(
                 beam=beam,
@@ -410,7 +340,7 @@ class AutofocusingScript(GenericScript):
                 plot_mode=self.__plot_mode,
                 aspect_ratio=self.__aspect_ratio,
                 color_map=self.__color_map,
-                **self.__sim_params.params,
+                **self.__parameters.params,
             )
 
             motors = list(self.__opt_params.move_motors_ranges.keys())
@@ -422,10 +352,10 @@ class AutofocusingScript(GenericScript):
                 self.__focusing_system,
                 motor_types_and_ranges=self.__opt_params.move_motors_ranges,
                 intensity_sum_threshold=self.__opt_params.params["sum_intensity_hard_constraint"],
-                **self.__sim_params.params,
+                **self.__parameters.params,
             )
 
-            print_beam_attributes(hist_init, dw_init, "Perturbed")
+            self._print_beam_attributes(hist_init, dw_init, "Perturbed")
 
             plot_distribution(
                 beam=beam_init,
@@ -433,14 +363,9 @@ class AutofocusingScript(GenericScript):
                 plot_mode=self.__plot_mode,
                 aspect_ratio=self.__aspect_ratio,
                 color_map=self.__color_map,
-                **self.__sim_params.params,
+                **self.__parameters.params,
             )
-    
-            # Now the optimization
-            opt_trial = get_optimizer(self.__sim_params.params)
         else:
-            self.__hw_params = HardwareParameters()
-
             motors = list(self.__opt_params.move_motors_ranges.keys())
             initial_absolute_positions = {k: movers.get_absolute_positions(self.__focusing_system, k)[0] for k in motors}
 
@@ -450,9 +375,9 @@ class AutofocusingScript(GenericScript):
             # taking initial image of the beam
             beam, hist_init, dw_init = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system,
                                                                    photon_beam=None,
-                                                                   **self.__hw_params.params)
+                                                                   **self.__parameters)
 
-            print_beam_attributes(hist_init, dw_init, "Initial")
+            self._print_beam_attributes(hist_init, dw_init, "Initial")
 
             plot_2D(x_array=beam["h_coord"],
                     y_array=beam["v_coord"],
@@ -462,7 +387,7 @@ class AutofocusingScript(GenericScript):
                     aspect_ratio=self.__aspect_ratio,
                     save_image=True,
                     save_path=self.__data_directory)
-            if self.__hw_params.params["use_denoised"]:
+            if self.__parameters.params["use_denoised"]:
                 plot_2D(x_array=beam["h_coord"],
                         y_array=beam["v_coord"],
                         z_array=beam["image_denoised"],
@@ -472,7 +397,7 @@ class AutofocusingScript(GenericScript):
                         save_image=True,
                         save_path=self.__data_directory)
 
-            opt_trial = get_optimizer(self.__hw_params.params)
+        opt_trial = self._get_optimizer(self.__parameters)
 
         n1 = self.__opt_params.params["n_pitch_trans_motor_trials"]
         print(f"First optimizing only the pitch and translation motors for {n1} trials.")
@@ -502,7 +427,7 @@ class AutofocusingScript(GenericScript):
                 plot_mode=self.__plot_mode,
                 aspect_ratio=self.__aspect_ratio,
                 color_map=self.__color_map,
-                **self.__sim_params.params,
+                **self.__parameters.params,
             )
 
             clean_up()
@@ -515,7 +440,7 @@ class AutofocusingScript(GenericScript):
                     aspect_ratio=self.__aspect_ratio,
                     save_image=True,
                     save_path=self.__data_directory)
-            if self.__hw_params.params["use_denoised"]:
+            if self.__parameters.params["use_denoised"]:
                 plot_2D(x_array=beam["h_coord"],
                         y_array=beam["v_coord"],
                         z_array=opt_trial.beam_state.photon_beam["image_denoised"],
@@ -530,9 +455,82 @@ class AutofocusingScript(GenericScript):
         joblib.dump(opt_trial.study.trials, chkpt_name)
         print(f"Saving all trials in {chkpt_name}")
 
-        postprocess_optimization(opt_trial.study.trials)
+        self._postprocess_optimization(opt_trial.study.trials)
 
     def __setup_work_dir(self):
         os.chdir(os.path.join(self.__data_directory, "simulation"))
 
 
+    def _get_optimizer(self, params):
+        opt_trial = OptunaOptimizer(
+            self.__focusing_system,
+            motor_types=list(self.__opt_params.move_motors_ranges.keys()),
+            loss_parameters=self.__opt_params.params["loss_parameters"],
+            reference_parameters_h_v=self.__opt_params.params["reference_parameters_h_v"],
+            multi_objective_optimization=self.__opt_params.params["multi_objective_optimization"],
+            **params,
+        )
+
+        # using the first beam as a safe moo thresold in case is not indicated
+        moo_thresholds = self.__opt_params.params["moo_thresholds"]
+        if 'log_weighted_sum_intensity' in loss_parameters and \
+                ('log_weighted_sum_intensity' not in moo_thresholds):
+            moo_thresholds['log_weighted_sum_intensity'] = opt_trial.get_log_weighted_sum_intensity()
+        if 'negative_log_peak_intensity' in loss_parameters and \
+                ('negative_log_peak_intensity' not in moo_thresholds):
+            moo_thresholds['negative_log_peak_intensity'] = opt_trial.get_negative_log_peak_intensity()
+
+        # Setting up the optimizer
+        constraints = {"sum_intensity": self.__opt_params.params["sum_intensity_soft_constraint"]}
+
+        opt_trial.set_optimizer_options(
+            motor_ranges=list(self.__opt_params.move_motors_ranges.values()),
+            raise_prune_exception=True,
+            use_discrete_space=True,
+            sum_intensity_threshold=self.__opt_params.params["sum_intensity_hard_constraint"],
+            constraints=constraints,
+            moo_thresholds=moo_thresholds
+        )
+
+        return opt_trial
+
+    def _print_beam_attributes(self, hist, dw, title):
+        if OptimizationCriteria.PEAK_DISTANCE               in self.__opt_params.params["loss_parameters"]: print(title + f" system peak:     {opt_common._get_peak_distance_from_dw(dw):4.3e}")
+        if OptimizationCriteria.CENTROID                    in self.__opt_params.params["loss_parameters"]: print(title + f" system centroid: {opt_common._get_centroid_distance_from_dw(dw):4.3e}")
+        if OptimizationCriteria.SIGMA                       in self.__opt_params.params["loss_parameters"]: print(title + f" system sigma:    {opt_common._get_sigma_from_dw(dw):4.3e}")
+        if OptimizationCriteria.FWHM                        in self.__opt_params.params["loss_parameters"]: print(title + f" system fwhm:     {opt_common._get_fwhm_from_dw(dw):4.3e}")
+        if OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY in self.__opt_params.params["loss_parameters"]: print(title + f" system peak intensity: {opt_common._get_peak_intensity_from_dw(dw):8.1e}")
+        if OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY  in self.__opt_params.params["loss_parameters"]: print(title + f" system sum intensity:  {opt_common._get_weighted_sum_intensity_from_hist(hist):8.1e}")
+
+    def _postprocess_optimization(self, trials):
+        for t in trials:
+            for td, tdval in t.distributions.items():
+                tdval.step = None
+
+        if self.__opt_params.params["multi_objective_optimization"]:
+            study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]])  # For multiobjective optimization
+        else:
+            study = optuna.create_study(directions=["minimize"])
+
+        study.add_trials(trials)
+
+        if self.__opt_params.params["multi_objective_optimization"]:
+            # Generating the pareto front for the multiobjective optimization
+            optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
+            plt.tight_layout()
+            try:
+                plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
+            except:
+                print("Image not saved")
+            plt.show()
+
+        for i in range(len(self.__opt_params.params["loss_parameters"])):
+            optuna.visualization.matplotlib.plot_optimization_history(study,
+                                                                      target=lambda t: t.values[i],
+                                                                      target_name=self.__opt_params.params["loss_parameters"][i])
+            plt.tight_layout()
+            try:
+                plt.savefig(os.path.join(self.__data_directory, "optimization_" + self.__opt_params.params["loss_parameters"][i] + ".png"))
+            except:
+                print("Image not saved")
+            plt.show()
