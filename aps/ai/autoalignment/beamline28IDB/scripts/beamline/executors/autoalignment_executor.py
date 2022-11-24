@@ -308,16 +308,7 @@ class AutoalignmentScript(GenericScript):
     def _execute_script_inner(self, current_cycle, **kwargs):
         if not self._simulation_mode:
             self.__focusing_system.set_surface_actuators_to_baseline(baseline=500)
-
-            if current_cycle==1 and self.__get_new_reference:
-                reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
-
-                if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]:
-                    self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.CENTROID] = [reference_beam["centroid_h"], reference_beam["centroid_h"]]
-                if OptimizationCriteria.SIGMA in self.__opt_params.params["loss_parameters"]:
-                    self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.SIGMA]    = [reference_beam["width"], reference_beam["height"]]
-                if OptimizationCriteria.FWHM in self.__opt_params.params["loss_parameters"]:
-                    self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.FWHM]     = [reference_beam["width"], reference_beam["height"]]
+            if current_cycle == 1 and self.__get_new_reference: self._set_reference()
 
         warnings.filterwarnings("ignore")
         
@@ -432,6 +423,29 @@ class AutoalignmentScript(GenericScript):
 
     def __setup_work_dir(self):
         os.chdir(os.path.join(self.__data_directory, "simulation"))
+
+
+    def _set_reference(self):
+        reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
+
+        position = [reference_beam["centroid_h"], reference_beam["centroid_v"]]
+        size = [reference_beam["width"], reference_beam["height"]]
+
+        ini_file = get_registered_ini_instance(APPLICATION_NAME)
+
+        if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]:
+            self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.CENTROID] = position
+            ini_file.set_list_at_ini(section="Optimization-Parameters", key="Reference-Position", values_list=position)
+
+        if OptimizationCriteria.SIGMA in self.__opt_params.params["loss_parameters"]:
+            self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.SIGMA] = size
+            ini_file.set_list_at_ini(section="Optimization-Parameters", key="Reference-Size", values_list=size)
+
+        if OptimizationCriteria.FWHM in self.__opt_params.params["loss_parameters"]:
+            self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.FWHM] = size
+            ini_file.set_list_at_ini(section="Optimization-Parameters", key="Reference-Size", values_list=size)
+
+        ini_file.push()
 
 
     def _get_optimizer(self, params):
