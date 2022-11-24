@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os
-import datetime
+from datetime import datetime
 import numpy
 from matplotlib import pyplot as plt
 from matplotlib import cm
