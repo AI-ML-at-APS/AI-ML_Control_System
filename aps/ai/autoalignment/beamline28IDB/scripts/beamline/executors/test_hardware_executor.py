@@ -157,10 +157,10 @@ class TestHardwareScript(AbstractScript):
             # self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=-160.0, movement=Movement.ABSOLUTE)
 
             # AUTOALIGNMENT
-            self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=200, movement=Movement.ABSOLUTE)
-            self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=0.17189, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-            self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=-80.0, movement=Movement.ABSOLUTE)
-            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=-80.0, movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=170, movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=0.1717, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+            self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=-90.0, movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=-90.0, movement=Movement.ABSOLUTE)
 
             sys.exit(0)
 
