@@ -51,5 +51,7 @@ from aps.ai.autoalignment.beamline28IDB.util.beamline.default_values import Defa
 
 AA_28ID_BEAMLINE_SCRIPTS = "traffic-light"
 
-try: register_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS, common_directory=DefaultValues.ROOT_DIRECTORY)
+try: register_traffic_light_instance(application_name=AA_28ID_BEAMLINE_SCRIPTS,
+                                     common_directory=DefaultValues.ROOT_DIRECTORY,
+                                     max_wait_time=DefaultValues.TRAFFIC_LIGHT_MAX_WAIT_TIME)
 except AlreadyInitializedError: pass

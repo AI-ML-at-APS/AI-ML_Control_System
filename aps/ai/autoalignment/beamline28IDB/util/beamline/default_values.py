@@ -70,15 +70,18 @@ months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct"
 
 root_directory = "/data/Beamline28IDB_" + months[month] + str(year) + "/"
 
-_ROOT_DIRECTORY = ini_file.get_string_from_ini( section="Directories", key="Root-Directory", default=root_directory)
-_ENERGY         = ini_file.get_float_from_ini(  section="Execution",   key="Energy",         default=20000)
-_PERIOD         = ini_file.get_float_from_ini(  section="Execution",   key="Period",         default=30)
-_N_CYCLES       = ini_file.get_float_from_ini(  section="Execution",   key="N-Cycles",       default=100)
+_ROOT_DIRECTORY              = ini_file.get_string_from_ini( section="Directories", key="Root-Directory",              default=root_directory)
+_ENERGY                      = ini_file.get_float_from_ini(  section="Execution",   key="Energy",                      default=20000)
+_PERIOD                      = ini_file.get_float_from_ini(  section="Execution",   key="Period",                      default=30)
+_N_CYCLES                    = ini_file.get_float_from_ini(  section="Execution",   key="N-Cycles",                    default=100)
+_TRAFFIC_LIGHT_MAX_WAIT_TIME = ini_file.get_float_from_ini(  section="Execution",   key="Traffic-Light-Max-Wait-Time", default=120)
 
-ini_file.set_value_at_ini(section="Directories", key="Root-Directory", value=_ROOT_DIRECTORY)
-ini_file.set_value_at_ini(section="Execution",   key="Energy",         value=_ENERGY)
-ini_file.set_value_at_ini(section="Execution",   key="Period",         value=_PERIOD)
-ini_file.set_value_at_ini(section="Execution",   key="N-Cycles",       value=_N_CYCLES)
+ini_file.set_value_at_ini(section="Directories", key="Root-Directory",              value=_ROOT_DIRECTORY)
+ini_file.set_value_at_ini(section="Execution",   key="Energy",                      value=_ENERGY)
+ini_file.set_value_at_ini(section="Execution",   key="Period",                      value=_PERIOD)
+ini_file.set_value_at_ini(section="Execution",   key="N-Cycles",                    value=_N_CYCLES)
+ini_file.set_value_at_ini(section="Execution",   key="Traffic-Light-Max-Wait-Time", value=_TRAFFIC_LIGHT_MAX_WAIT_TIME)
+
 ini_file.push()
 
 class DefaultValues:
@@ -87,3 +90,4 @@ class DefaultValues:
     WAVELENGTH     = M2EV/_ENERGY
     PERIOD         = _PERIOD
     N_CYCLES       = _N_CYCLES
+    TRAFFIC_LIGHT_MAX_WAIT_TIME =_TRAFFIC_LIGHT_MAX_WAIT_TIME
