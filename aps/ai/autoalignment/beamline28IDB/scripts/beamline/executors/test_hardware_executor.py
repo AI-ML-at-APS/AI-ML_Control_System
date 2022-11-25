@@ -86,6 +86,15 @@ class HardwareTestParameters:
     test_detector = True
     use_denoised = True
     reset = True
+    h_pitch_reset_value = 0.1716
+    h_translation_reset_value = 0.0
+    h_bender_1_reset_value = -90.0
+    h_bender_2_reset_value = -90.0
+    v_translation_vo_reset_value = -0.54065
+    v_translation_do_reset_value = 0.54065
+    v_translation_di_reset_value = 0.54065
+    v_bender_reset_value = 170
+
 
 class PlotParameters(object):
     def __init__(self):
@@ -146,22 +155,23 @@ class TestHardwareScript(AbstractScript):
             from aps.ai.autoalignment.beamline28IDB.hardware.epics.focusing_optics import Motors
             self.__focusing_system.set_surface_actuators_to_baseline(baseline=500)
 
-            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_VO, -0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DO, 0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DI, 0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            self.__focusing_system.move_h_bendable_mirror_motor_translation(translation=0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system.move_h_bendable_mirror_motor_translation(translation=self.__hardware_test_parameters.h_translation_reset_value,
+                                                                            movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=self.__hardware_test_parameters.h_pitch_reset_value,
+                                                                      movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+            self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=self.__hardware_test_parameters.h_bender_1_reset_value,
+                                                                         movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=self.__hardware_test_parameters.h_bender_2_reset_value,
+                                                                         movement=Movement.ABSOLUTE)
 
-            # AUTOFOCUSING
-            # self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=400, movement=Movement.ABSOLUTE)
-            # self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=0.1723, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-            # self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=-160.0, movement=Movement.ABSOLUTE)
-            # self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=-160.0, movement=Movement.ABSOLUTE)
-
-            # AUTOALIGNMENT
-            self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=170, movement=Movement.ABSOLUTE)
-            self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=0.1717, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-            self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=-90.0, movement=Movement.ABSOLUTE)
-            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=-90.0, movement=Movement.ABSOLUTE)
+            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_VO, self.__hardware_test_parameters.v_translation_vo_reset_value,
+                                                             movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DO, self.__hardware_test_parameters.v_translation_do_reset_value,
+                                                             movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DI, self.__hardware_test_parameters.v_translation_di_reset_value,
+                                                             movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=self.__hardware_test_parameters.v_bender_reset_value,
+                                                                      movement=Movement.ABSOLUTE)
 
             sys.exit(0)
 
