@@ -86,6 +86,15 @@ class HardwareTestParameters:
     test_detector = True
     use_denoised = True
     reset = True
+    h_pitch_reset_value = 0.1716
+    h_translation_reset_value = 0.0
+    h_bender_1_reset_value = -90.0
+    h_bender_2_reset_value = -90.0
+    v_translation_vo_reset_value = -0.54065
+    v_translation_do_reset_value = 0.54065
+    v_translation_di_reset_value = 0.54065
+    v_bender_reset_value = 170
+
 
 class PlotParameters(object):
     def __init__(self):
@@ -144,15 +153,25 @@ class TestHardwareScript(AbstractScript):
 
         if self.__hardware_test_parameters.reset:
             from aps.ai.autoalignment.beamline28IDB.hardware.epics.focusing_optics import Motors
+            self.__focusing_system.set_surface_actuators_to_baseline(baseline=500)
 
-            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_VO, -0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DO, 0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DI, 0.54015, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=400, movement=Movement.ABSOLUTE)
-            self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=0.1723, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-            self.__focusing_system.move_h_bendable_mirror_motor_translation(translation=0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-            self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=-160.0, movement=Movement.ABSOLUTE)
-            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=-160.0, movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_h_bendable_mirror_motor_translation(translation=self.__hardware_test_parameters.h_translation_reset_value,
+                                                                            movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system.move_h_bendable_mirror_motor_pitch(angle=self.__hardware_test_parameters.h_pitch_reset_value,
+                                                                      movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+            self.__focusing_system.move_h_bendable_mirror_motor_1_bender(pos_upstream=self.__hardware_test_parameters.h_bender_1_reset_value,
+                                                                         movement=Movement.ABSOLUTE)
+            self.__focusing_system.move_h_bendable_mirror_motor_2_bender(pos_downstream=self.__hardware_test_parameters.h_bender_2_reset_value,
+                                                                         movement=Movement.ABSOLUTE)
+
+            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_VO, self.__hardware_test_parameters.v_translation_vo_reset_value,
+                                                             movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DO, self.__hardware_test_parameters.v_translation_do_reset_value,
+                                                             movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system._move_translational_motor(Motors.TRANSLATION_DI, self.__hardware_test_parameters.v_translation_di_reset_value,
+                                                             movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+            self.__focusing_system.move_v_bimorph_mirror_motor_bender(actuator_value=self.__hardware_test_parameters.v_bender_reset_value,
+                                                                      movement=Movement.ABSOLUTE)
 
             sys.exit(0)
 
@@ -312,7 +331,9 @@ class TestHardwareScript(AbstractScript):
 
         if self.__hardware_test_parameters.test_detector:
             print("\nTEST OF THE DETECTOR")
-            photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=True)
+
+            # photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=True) # Autofocusing
+            photon_beam = self.__focusing_system.get_photon_beam(from_raw_image=False, crop_threshold=None, crop_strip_width=50, debug=True) # Autoalignment
 
             if self.__hardware_test_parameters.use_denoised: image = photon_beam["image_denoised"]
             else:                                            image = photon_beam["image"]
@@ -326,7 +347,7 @@ class TestHardwareScript(AbstractScript):
 
             _, dictionary = get_info(x_array=photon_beam["h_coord"],
                                      y_array=photon_beam["v_coord"],
-                                     z_array=photon_beam["image"],
+                                     z_array=image,
                                      do_gaussian_fit=False)
 
             print("Beam Infos:")

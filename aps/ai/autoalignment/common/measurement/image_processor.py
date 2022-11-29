@@ -70,14 +70,15 @@ ini_file.push()
 class ImageProcessor(ImageProcessorCommon):
     def __init__(self, data_collection_directory):
         super(ImageProcessor, self).__init__(data_collection_directory=data_collection_directory,
+                                             simulated_mask_directory=None,
                                              energy=ENERGY,
                                              source_distance=[SOURCE_DISTANCE_H, SOURCE_DISTANCE_V],
                                              image_transfer_matrix=IMAGE_TRANSFER_MATRIX)
 
-
     def generate_simulated_mask(self, image_index_for_mask=1, verbose=False):
-        image_transfer_matrix = super(ImageProcessor, self).generate_simulated_mask(image_index_for_mask, verbose)
+        image_transfer_matrix, is_new_mask = super(ImageProcessor, self).generate_simulated_mask(image_index_for_mask, verbose)
 
-        ini_file = get_registered_ini_instance(APPLICATION_NAME)
-        ini_file.set_list_at_ini(section="Execution", key="Image-Transfer-Matrix", values_list=image_transfer_matrix)
-        ini_file.push()
+        if is_new_mask:
+            ini_file = get_registered_ini_instance(APPLICATION_NAME)
+            ini_file.set_list_at_ini(section="Execution", key="Image-Transfer-Matrix", values_list=image_transfer_matrix)
+            ini_file.push()

@@ -47,6 +47,7 @@
 import os
 import numpy
 from datetime import datetime
+import json
 import joblib
 import optuna
 import warnings
@@ -96,6 +97,10 @@ bound_hb_trans = ini_file.get_list_from_ini(section="Motor-Boundaries", key="Bou
 bound_vb_pitch = ini_file.get_list_from_ini(section="Motor-Boundaries", key="Boundaries-VKB-Pitch",       default=[-0.2, 0.2], type=float)  # in degrees
 bound_vb_trans = ini_file.get_list_from_ini(section="Motor-Boundaries", key="Boundaries-VKB-Translation", default=[-5.0, 5.0], type=float)  # in mm
 
+crop_threshold   = ini_file.get_float_from_ini(section="Hardware-Setup", key="Crop-Threshold",   default=None)
+crop_strip_width = ini_file.get_int_from_ini(  section="Hardware-Setup", key="Crop-Strip-Width", default=50)
+
+pitch_only                    = ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Pitch-Only",                    default=True)
 sum_intensity_soft_constraint = ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", default=7e3)
 sum_intensity_hard_constraint = ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", default=6.5e3)
 loss_parameters               = ini_file.get_list_from_ini(   section="Optimization-Parameters", key="Loss-Parameters",               default=[OptimizationCriteria.CENTROID], type=str)
@@ -120,6 +125,10 @@ ini_file.set_list_at_ini(section="Motor-Boundaries", key="Boundaries-HKB-Transla
 ini_file.set_list_at_ini(section="Motor-Boundaries", key="Boundaries-VKB-Pitch", values_list=bound_vb_pitch)
 ini_file.set_list_at_ini(section="Motor-Boundaries", key="Boundaries-VKB-Translation", values_list=bound_vb_trans)
 
+ini_file.set_value_at_ini(section="Hardware-Setup", key="Crop-Threshold",   value=crop_threshold)
+ini_file.set_value_at_ini(section="Hardware-Setup", key="Crop-Strip-Width", value=crop_strip_width)
+
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Pitch-Only", value=pitch_only)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Soft-Constraint", value=sum_intensity_soft_constraint)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Sum-Intensity-Hard-Constraint", value=sum_intensity_hard_constraint)
 ini_file.set_list_at_ini(section="Optimization-Parameters", key="Loss-Parameters", values_list=loss_parameters)
@@ -171,6 +180,7 @@ class OptimizationParameters:
                 moo_thresholds_dict[moo_threshold] = moo_threshold_size
 
         self.params = {
+            "pitch_only" : pitch_only,
             "sum_intensity_soft_constraint": sum_intensity_soft_constraint,
             "sum_intensity_hard_constraint": sum_intensity_hard_constraint,
             "reference_parameters_h_v": reference_parameters_h_v,
@@ -228,14 +238,15 @@ class HardwareParameters(PlotParameters):
     def __init__(self):
         super(HardwareParameters, self).__init__()
         self.params["execution_mode"] = ExecutionMode.HARDWARE
-        self.params["implementor"] = HW_Implementors.EPICS
+        self.params["implementor"]    = HW_Implementors.EPICS
         self.params["from_raw_image"] = False
+        self.params["use_denoised"]   = False
 
 input_beam_path = "primary_optics_system_beam.dat"
 
 class AutoalignmentScript(GenericScript):
 
-    def __init__(self, root_directory, energy, period, n_cycles, get_new_reference, mocking_mode, simulation_mode):
+    def __init__(self, root_directory, energy, period, n_cycles, get_new_reference, test_mode, mocking_mode, simulation_mode):
         super(AutoalignmentScript, self).__init__(root_directory, energy, period, n_cycles, mocking_mode, simulation_mode)
 
         self.__data_directory = os.path.join(self._root_directory, "AI", "autoalignment")
@@ -243,36 +254,45 @@ class AutoalignmentScript(GenericScript):
         self.__aspect_ratio = AspectRatio.AUTO
         self.__color_map = ColorMap.GRAY
         self.__get_new_reference = get_new_reference
+        self.__test_mode = test_mode
 
-        if self._simulation_mode:
-            self.__sim_params = SimulationParameters()
-            print("Simulation parameters")
-            print(self.__sim_params.__dict__)
-            self.__setup_work_dir()
-            clean_up()
-
-            # Initializing the focused beam from simulation
-            self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION,
-                                                                    implementor=self.__sim_params.params["implementor"],
-                                                                    bender=True)
-
-            self.__focusing_system.initialize(input_photon_beam=load_shadow_beam(input_beam_path),
-                                              rewrite_preprocessor_files=PreProcessorFiles.NO,
-                                              layout=Layout.AUTO_ALIGNMENT,
-                                              input_features=get_default_input_features(layout=Layout.AUTO_ALIGNMENT))
+        if mocking_mode: print("Autoalignment in Mocking Mode")
         else:
-            self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
-                                                                    implementor=HW_Implementors.EPICS,
-                                                                    measurement_directory=self.__data_directory)
-            self.__focusing_system.initialize()
+            if self._simulation_mode:
+                self.__parameters = SimulationParameters()
+                print("Simulation parameters")
+                print(self.__parameters.__dict__)
+                self.__setup_work_dir()
+                clean_up()
 
-        self.__opt_params = OptimizationParameters()
-        self.__opt_params.analyze_motor_ranges(self.__get_initial_positions())
+                # Initializing the focused beam from simulation
+                self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.SIMULATION,
+                                                                        implementor=self.__parameters.params["implementor"],
+                                                                        bender=True)
 
-        print("Motors and movement ranges")
-        print(self.__opt_params.move_motors_ranges)
-        print("Optimization parameters")
-        print(self.__opt_params.params)
+                self.__focusing_system.initialize(input_photon_beam=load_shadow_beam(input_beam_path),
+                                                  rewrite_preprocessor_files=PreProcessorFiles.NO,
+                                                  layout=Layout.AUTO_ALIGNMENT,
+                                                  input_features=get_default_input_features(layout=Layout.AUTO_ALIGNMENT))
+            else:
+                self.__parameters = HardwareParameters()
+                print("Hardware parameters")
+                print(self.__parameters.__dict__)
+
+                self.__focusing_system = focusing_optics_factory_method(execution_mode=ExecutionMode.HARDWARE,
+                                                                        implementor=HW_Implementors.EPICS,
+                                                                        measurement_directory=self.__data_directory,
+                                                                        crop_threshold=crop_threshold,
+                                                                        crop_strip_width=crop_strip_width)
+                self.__focusing_system.initialize()
+
+            self.__opt_params = OptimizationParameters()
+            self.__opt_params.analyze_motor_ranges(self.__get_initial_positions())
+
+            print("Motors and movement ranges")
+            print(self.__opt_params.move_motors_ranges)
+            print("Optimization parameters")
+            print(self.__opt_params.params)
 
     def __get_initial_positions(self):
         return {
@@ -285,58 +305,25 @@ class AutoalignmentScript(GenericScript):
     def _get_script_name(self):
         return "Autoalignment"
 
-    def _execute_script_inner(self, **kwargs):
-        if not self._simulation_mode and self.__get_new_reference:
-            reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
-
-            if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]:
-                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.CENTROID] = [reference_beam["centroid_h"], reference_beam["centroid_h"]]
-            if OptimizationCriteria.SIGMA in self.__opt_params.params["loss_parameters"]:
-                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.SIGMA]    = [reference_beam["width"], reference_beam["height"]]
-            if OptimizationCriteria.FWHM in self.__opt_params.params["loss_parameters"]:
-                self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.FWHM]     = [reference_beam["width"], reference_beam["height"]]
-
-        def get_optimizer(params):
-            opt_trial = OptunaOptimizer(
-                self.__focusing_system,
-                motor_types=list(self.__opt_params.move_motors_ranges.keys()),
-                loss_parameters=self.__opt_params.params["loss_parameters"],
-                reference_parameters_h_v=self.__opt_params.params["reference_parameters_h_v"],
-                multi_objective_optimization=self.__opt_params.params["multi_objective_optimization"],
-                **params,
-            )
-
-            # Setting up the optimizer
-            constraints = {"sum_intensity": self.__opt_params.params["sum_intensity_soft_constraint"]}
-
-            opt_trial.set_optimizer_options(
-                motor_ranges=list(self.__opt_params.move_motors_ranges.values()),
-                raise_prune_exception=True,
-                use_discrete_space=True,
-                sum_intensity_threshold=self.__opt_params.params["sum_intensity_hard_constraint"],
-                constraints=constraints,
-                moo_thresholds=moo_thresholds
-            )
-
-            return opt_trial
-
-        def print_beam_attributes(dw, title):
-            if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]: print(title + f" system centroid: {opt_common._get_centroid_distance_from_dw(dw):4.3e}")
-            if OptimizationCriteria.FWHM     in self.__opt_params.params["loss_parameters"]: print(title + f" system fwhm:     {opt_common._get_fwhm_from_dw(dw):4.3e}")
+    def _execute_script_inner(self, current_cycle, **kwargs):
+        if not self._simulation_mode:
+            self.__focusing_system.set_surface_actuators_to_baseline(baseline=500)
+            if current_cycle == 1 and self.__get_new_reference: self._set_reference()
 
         warnings.filterwarnings("ignore")
-
+        
         if self._simulation_mode:
-            beam, hist, dw = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system, photon_beam=None, **self.__sim_params.params)
-
-            plot_distribution(
-                beam=beam,
-                title="Initial Beam",
-                plot_mode=self.__plot_mode,
-                aspect_ratio=self.__aspect_ratio,
-                color_map=self.__color_map,
-                **self.__sim_params.params,
-            )
+            beam, hist, dw = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system, photon_beam=None, **self.__parameters.params)
+            
+            if self.__test_mode:
+                plot_distribution(
+                    beam=beam,
+                    title="Initial Beam",
+                    plot_mode=self.__plot_mode,
+                    aspect_ratio=self.__aspect_ratio,
+                    color_map=self.__color_map,
+                    **self.__parameters.params,
+                )
 
             motors = list(self.__opt_params.move_motors_ranges.keys())
             initial_absolute_positions = {k: movers.get_absolute_positions(self.__focusing_system, k)[0] for k in motors}
@@ -347,38 +334,35 @@ class AutoalignmentScript(GenericScript):
                 self.__focusing_system,
                 motor_types_and_ranges=self.__opt_params.move_motors_ranges,
                 intensity_sum_threshold=self.__opt_params.params["sum_intensity_hard_constraint"],
-                **self.__sim_params.params,
+                **self.__parameters.params,
             )
 
-            print_beam_attributes(dw_init, "Perturbed")
-
-            plot_distribution(
-                beam=beam_init,
-                title="Perturbed Beam",
-                plot_mode=self.__plot_mode,
-                aspect_ratio=self.__aspect_ratio,
-                color_map=self.__color_map,
-                **self.__sim_params.params,
-            )
-
-            # Now the optimization
-            opt_trial = get_optimizer(self.__sim_params.params)
+            self._print_beam_attributes(dw_init, "Perturbed")
+            
+            if self.__test_mode:
+                plot_distribution(
+                    beam=beam_init,
+                    title="Perturbed Beam",
+                    plot_mode=self.__plot_mode,
+                    aspect_ratio=self.__aspect_ratio,
+                    color_map=self.__color_map,
+                    **self.__parameters.params,
+                )
         else:
-            self.__hw_params = HardwareParameters()
-
             motors = list(self.__opt_params.move_motors_ranges.keys())
             initial_absolute_positions = {k: movers.get_absolute_positions(self.__focusing_system, k)[0] for k in motors}
 
             print("Initial absolute position are", initial_absolute_positions)
+            with open(os.path.join(self.__data_directory, "initial_motor_positions.json"), 'w') as fp: json.dump(initial_absolute_positions, fp)
 
             # taking initial image of the beam
 
             beam, hist_init, dw_init = opt_common.get_beam_hist_dw(focusing_system=self.__focusing_system,
                                                                    photon_beam=None,
-                                                                   **self.__hw_params.params)
+                                                                   **self.__parameters.params)
 
-            print_beam_attributes(dw_init, "Initial")
-
+            self._print_beam_attributes(dw_init, "Initial")
+            
             plot_2D(x_array=beam["h_coord"],
                     y_array=beam["v_coord"],
                     z_array=beam["image"],
@@ -386,14 +370,16 @@ class AutoalignmentScript(GenericScript):
                     color_map=self.__color_map,
                     aspect_ratio=self.__aspect_ratio,
                     save_image=True,
-                    save_path=self.__data_directory)
+                    save_path=self.__data_directory,
+                    plot=self.__test_mode)
 
-            opt_trial = get_optimizer(self.__hw_params.params)
-
+        opt_trial = self._get_optimizer(self.__parameters.params)
 
         n1 = self.__opt_params.params["n_trials"]
         print(f"Optimizing all motors together for {n1} trials.")
-        opt_trial.trials(n1)
+
+        if self.__opt_params.params["pitch_only"]: opt_trial.trials(n1, trial_motor_types=["hb_pitch", "vb_pitch"])
+        else:                                      opt_trial.trials(n1)
 
         print("Selecting the optimal parameters, with algorithm: " + self.__opt_params.params["selection_algorithm"])
         optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials, algorithm=self.__opt_params.params["selection_algorithm"])
@@ -408,40 +394,102 @@ class AutoalignmentScript(GenericScript):
         opt_trial.trials(1)
 
         if self._simulation_mode:
-            plot_distribution(
-                beam=opt_trial.beam_state.photon_beam,
-                title="Optimized beam",
-                plot_mode=self.__plot_mode,
-                aspect_ratio=self.__aspect_ratio,
-                color_map=self.__color_map,
-                **self.__sim_params.params,
-            )
+            if self.__test_mode:
+                plot_distribution(beam=opt_trial.beam_state.photon_beam,
+                                  title="Optimized beam",
+                                  plot_mode=self.__plot_mode,
+                                  aspect_ratio=self.__aspect_ratio,
+                                  color_map=self.__color_map,
+                                  **self.__parameters.params)
 
             clean_up()
         else:
             plot_2D(x_array=opt_trial.beam_state.photon_beam["h_coord"],
                     y_array=opt_trial.beam_state.photon_beam["v_coord"],
                     z_array=opt_trial.beam_state.photon_beam["image"],
-                    title="Optimized beam",
+                    title="Optimized Beam",
                     color_map=self.__color_map,
                     aspect_ratio=self.__aspect_ratio,
                     save_image=True,
-                    save_path=self.__data_directory)
-
+                    save_path=self.__data_directory,
+                    plot=self.__test_mode)
+        
         datetime_str = datetime.strftime(datetime.now(), "%Y-%m-%d_%H:%M")
         chkpt_name = f"optimization_final_{n1}_{datetime_str}.gz"
         joblib.dump(opt_trial.study.trials, chkpt_name)
         print(f"Saving all trials in {chkpt_name}")
+
+        if self.__test_mode: self._postprocess_optimization(opt_trial.study.trials)
+
+    def __setup_work_dir(self):
+        os.chdir(os.path.join(self.__data_directory, "simulation"))
+
+
+    def _set_reference(self):
+        reference_beam = self.__focusing_system.get_photon_beam(from_raw_image=False)
+
+        position = [reference_beam["centroid_h"], reference_beam["centroid_v"]]
+        size = [reference_beam["width"], reference_beam["height"]]
+
+        ini_file = get_registered_ini_instance(APPLICATION_NAME)
+
+        if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]:
+            self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.CENTROID] = position
+            ini_file.set_list_at_ini(section="Optimization-Parameters", key="Reference-Position", values_list=position)
+
+        if OptimizationCriteria.SIGMA in self.__opt_params.params["loss_parameters"]:
+            self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.SIGMA] = size
+            ini_file.set_list_at_ini(section="Optimization-Parameters", key="Reference-Size", values_list=size)
+
+        if OptimizationCriteria.FWHM in self.__opt_params.params["loss_parameters"]:
+            self.__opt_params.params["reference_parameters_h_v"][OptimizationCriteria.FWHM] = size
+            ini_file.set_list_at_ini(section="Optimization-Parameters", key="Reference-Size", values_list=size)
+
+        ini_file.push()
+
+
+    def _get_optimizer(self, params):
+        opt_trial = OptunaOptimizer(
+            self.__focusing_system,
+            motor_types=list(self.__opt_params.move_motors_ranges.keys()),
+            loss_parameters=self.__opt_params.params["loss_parameters"],
+            reference_parameters_h_v=self.__opt_params.params["reference_parameters_h_v"],
+            multi_objective_optimization=self.__opt_params.params["multi_objective_optimization"],
+            **params,
+        )
+
+        # Setting up the optimizer
+        constraints = {"sum_intensity": self.__opt_params.params["sum_intensity_soft_constraint"]}
+
+        opt_trial.set_optimizer_options(
+            motor_ranges=list(self.__opt_params.move_motors_ranges.values()),
+            raise_prune_exception=True,
+            use_discrete_space=True,
+            sum_intensity_threshold=self.__opt_params.params["sum_intensity_hard_constraint"],
+            constraints=constraints,
+            moo_thresholds=moo_thresholds
+        )
+
+        return opt_trial
+
+    def _print_beam_attributes(self, dw, title):
+        if OptimizationCriteria.CENTROID in self.__opt_params.params["loss_parameters"]: print(title + f" system centroid: {opt_common._get_centroid_distance_from_dw(dw):4.3e}")
+        if OptimizationCriteria.FWHM     in self.__opt_params.params["loss_parameters"]: print(title + f" system fwhm:     {opt_common._get_fwhm_from_dw(dw):4.3e}")
+
+    def _postprocess_optimization(self, trials):
+        for t in trials:
+            for td, tdval in t.distributions.items():
+                tdval.step = None
 
         if self.__opt_params.params["multi_objective_optimization"]:
             study = optuna.create_study(directions=["minimize" for m in self.__opt_params.params["loss_parameters"]])  # For multiobjective optimization
         else:
             study = optuna.create_study(directions=["minimize"])
 
-        study.add_trials(opt_trial.study.trials)
+        study.add_trials(trials)
 
-        # Generating the pareto front for the multiobjective optimization
         if self.__opt_params.params["multi_objective_optimization"]:
+            # Generating the pareto front for the multiobjective optimization
             optuna.visualization.matplotlib.plot_pareto_front(study, target_names=self.__opt_params.params["loss_parameters"])
             plt.tight_layout()
             try:    plt.savefig(os.path.join(self.__data_directory, "pareto_front.png"))
@@ -456,8 +504,3 @@ class AutoalignmentScript(GenericScript):
             try:    plt.savefig(os.path.join(self.__data_directory, "optimization_" + self.__opt_params.params["loss_parameters"][i] + ".png"))
             except: print("Image not saved")
             plt.show()
-
-    def __setup_work_dir(self):
-        os.chdir(os.path.join(self.__data_directory, "simulation"))
-
-

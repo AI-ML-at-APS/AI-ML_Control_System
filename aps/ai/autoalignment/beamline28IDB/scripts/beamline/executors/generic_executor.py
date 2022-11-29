@@ -77,10 +77,10 @@ class GenericScript(AbstractScript):
                 print("Running " + self._get_script_name() + " #" + str(cycles))
 
                 if self.__mocking_mode:
-                    print("Mocking Mode: do nothing and wait 5 second")
-                    time.sleep(5)
+                    print("Mocking Mode: do nothing and wait 10 second")
+                    time.sleep(10)
                 else:
-                    self._execute_script_inner(**kwargs)
+                    self._execute_script_inner(current_cycle=cycles, **kwargs)
 
                 self.__traffic_light.set_green_light()
 
@@ -103,5 +103,5 @@ class GenericScript(AbstractScript):
         try:    self.__traffic_light.set_green_light()
         except: pass
 
-    def _execute_script_inner(self, **kwargs): raise NotImplementedError()
+    def _execute_script_inner(self, current_cycle, **kwargs): raise NotImplementedError()
     def _get_script_name(self): raise NotImplementedError()

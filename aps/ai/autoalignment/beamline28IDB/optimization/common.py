@@ -210,6 +210,7 @@ def get_beam_hist_dw(
     nbins_v: int = 256,
     do_gaussian_fit: bool = False,
     use_denoised = True,
+    from_raw_image=True,
     execution_mode = ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -217,6 +218,7 @@ def get_beam_hist_dw(
     if execution_mode == ExecutionMode.SIMULATION:
         photon_beam = check_beam_out_of_bounds(focusing_system=focusing_system, photon_beam=photon_beam, **kwargs)
     else:
+        kwargs["from_raw_image"] = from_raw_image
         photon_beam = check_input_for_beam(focusing_system=focusing_system, photon_beam=photon_beam, **kwargs)
 
     if photon_beam is None:
@@ -248,12 +250,14 @@ def get_peak_intensity(
     nbins_v: int = 256,
     do_gaussian_fit: bool = False,
     use_denoised = True,
+    from_raw_image=True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
         execution_mode=execution_mode,
+        implementor=implementor,
         focusing_system=focusing_system,
         photon_beam=photon_beam,
         random_seed=random_seed,
@@ -263,7 +267,7 @@ def get_peak_intensity(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
-        implementor=implementor,
+        from_raw_image=from_raw_image
     )
     peak = _get_peak_intensity_from_dw(dw, do_gaussian_fit, no_beam_value)
     return BeamParameterOutput(peak, photon_beam, hist, dw)
@@ -297,7 +301,7 @@ def get_weighted_sum_intensity(
     nbins_v: int = 256,
     radial_weight_power: float = 0,
     do_gaussian_fit: bool = False,
-    use_denoised = True,
+    use_denoised = True, from_raw_image=True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -316,6 +320,7 @@ def get_weighted_sum_intensity(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
+        from_raw_image=from_raw_image
     )
     sum_intensity = _get_weighted_sum_intensity_from_hist(hist, radial_weight_power, no_beam_value)
     return BeamParameterOutput(sum_intensity, photon_beam, hist, dw)
@@ -412,6 +417,7 @@ def get_peak_distance(
     reference_v: float = 0,
     do_gaussian_fit: bool = False,
     use_denoised = True,
+    from_raw_image=True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -428,6 +434,7 @@ def get_peak_distance(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
+        from_raw_image=from_raw_image
     )
     peak_distance = _get_peak_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
 
@@ -447,6 +454,7 @@ def get_centroid_distance(
     reference_v: float = 0,
     do_gaussian_fit: bool = False,
     use_denoised = True,
+    from_raw_image=True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -462,7 +470,8 @@ def get_centroid_distance(
         nbins_h=nbins_h,
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
-        use_denoised=use_denoised
+        use_denoised=use_denoised,
+        from_raw_image=from_raw_image
     )
     centroid_distance = _get_centroid_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
 
@@ -527,6 +536,7 @@ def get_fwhm(
     reference_v: float = 0,
     do_gaussian_fit: bool = False,
     use_denoised = True,
+    from_raw_image=True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -541,6 +551,7 @@ def get_fwhm(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
+        from_raw_image=from_raw_image,
         execution_mode=execution_mode,
         implementor=implementor,
     )
@@ -562,6 +573,7 @@ def get_sigma(
     reference_v: float = 0,
     do_gaussian_fit: bool = False,
     use_denoised = True,
+    from_raw_image=True,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -576,6 +588,7 @@ def get_sigma(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
+        from_raw_image=from_raw_image,
         execution_mode=execution_mode,
         implementor=implementor,
     )
@@ -694,7 +707,8 @@ class OptimizationCommon(abc.ABC):
         nbins_h: int = 256,
         nbins_v: int = 256,
         do_gaussian_fit: bool = False,
-        use_denoised=True,
+        use_denoised=False,
+        from_raw_image=True,
         no_beam_loss: float = 1e4,
         intensity_no_beam_loss: float = 0,
         multi_objective_optimization: bool = False,
@@ -738,6 +752,7 @@ class OptimizationCommon(abc.ABC):
         self._nbins_v = nbins_v
         self._do_gaussian_fit = do_gaussian_fit
         self._use_denoised = use_denoised
+        self._from_raw_image = from_raw_image
         self._execution_mode = execution_mode
         self._implementor = implementor
 
@@ -772,6 +787,7 @@ class OptimizationCommon(abc.ABC):
             nbins_v=self._nbins_v,
             do_gaussian_fit=self._do_gaussian_fit,
             use_denoised=self._use_denoised,
+            from_raw_image=self._from_raw_image,
             execution_mode=self._execution_mode,
             implementor=self._implementor,
         )
@@ -809,27 +825,6 @@ class OptimizationCommon(abc.ABC):
         else:
             log_weighted_sum_intensity = np.log(weighted_sum_intensity)
         return log_weighted_sum_intensity
-
-    # ----------------------------------------
-    # ----------------------------------------
-    # ----------------------------------------
-
-    def get_weighted_sum_intensity_cropped(self) -> float:
-        return _get_weighted_sum_intensity_from_hist(self.beam_state.hist, 2, self._intensity_no_beam_loss, crop_distance=0.25)
-
-    def get_log_weighted_sum_intensity_cropped(self) -> float:
-        weighted_sum_intensity = self.get_weighted_sum_intensity_cropped()
-        if weighted_sum_intensity == 0:
-            log_weighted_sum_intensity = self._no_beam_loss
-        else:
-            log_weighted_sum_intensity = np.log(weighted_sum_intensity)
-        return log_weighted_sum_intensity
-
-    # ----------------------------------------
-    # ----------------------------------------
-    # ----------------------------------------
-    # ----------------------------------------
-
 
     def get_peak_distance(self) -> float:
         return _get_peak_distance_from_dw(
