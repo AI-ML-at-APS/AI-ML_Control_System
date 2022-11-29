@@ -69,7 +69,6 @@ from aps.ai.autoalignment.common.util.shadow.common import (
 )
 
 
-
 class OptimizationCriteria:
     CENTROID                    = "centroid"
     PEAK_DISTANCE               = "peak_distance"
@@ -78,17 +77,11 @@ class OptimizationCriteria:
     NEGATIVE_LOG_PEAK_INTENSITY = "negative_log_peak_intensity"
     LOG_WEIGHTED_SUM_INTENSITY  = "log_weighted_sum_intensity"
 
-class MooThresholds:
-    CENTROID       = "centroid"
-    PEAK_DISTANCE  = "peak_distance"
-    FWHM           = "fwhm"
-    SIGMA          = "sigma"
-    PEAK_INTENSITY = "peak_intensity"
-    SUM_INTENSITY  = "sum_intensity"
 
 class SelectionAlgorithm:
     TOPSIS           = "topsis"
     NASH_EQUILIBRIUM = "nash-equilibrium"
+
 
 def get_distribution_info(
     execution_mode=ExecutionMode.SIMULATION,
@@ -329,7 +322,9 @@ def get_weighted_sum_intensity(
 
 
 def _get_weighted_sum_intensity_from_hist(
-    hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0, crop_distance: float = 0.0,
+        hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0, crop_distance: float = 0.0,
+        threshold_value: float = 0,
+        verbose: bool = False
 ) -> float:
     if hist is None: return no_beam_value
 
@@ -341,11 +336,16 @@ def _get_weighted_sum_intensity_from_hist(
     else:
         cursor_h = numpy.where(numpy.logical_and(hist.hh >= -crop_distance, hist.hh <= crop_distance))
         cursor_v = numpy.where(numpy.logical_and(hist.vv >= -crop_distance, hist.vv <= crop_distance))
-
+        if verbose:
+            print(f"New size is h {hist.hh[cursor_h].size} v {hist.vv[cursor_v].size}")
         mesh = np.meshgrid(hist.hh[cursor_h], hist.vv[cursor_v])
         radius = (mesh[0] ** 2 + mesh[1] ** 2) ** 0.5
         weight = radius ** radial_weight_power
-        weighted_hist = hist.data_2D[tuple(numpy.meshgrid(cursor_h, cursor_v))] * weight
+
+        data_2D = hist.data_2D[tuple(numpy.meshgrid(cursor_h, cursor_v))]
+        if threshold_value > 0:
+            data_2D[data_2D < threshold_value] = 0
+        weighted_hist =  data_2D * weight
 
     return weighted_hist.sum()
 

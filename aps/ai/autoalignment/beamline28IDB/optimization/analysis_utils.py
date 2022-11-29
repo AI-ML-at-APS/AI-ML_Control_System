@@ -24,9 +24,22 @@ def create_study_from_trials(fname: Union[str, Path], n_objectives: int = 2,
                 raise ValueError("Direction should be minimize or maximize.")
 
     trials = joblib.load(fname)
+    dist_mins = {}
+    dist_maxes = {}
     for t in trials:
         for td, tdval in t.distributions.items():
+            dist_mins.setdefault(td, tdval.low)
+            dist_maxes.setdefault(td, tdval.high)
+            dist_mins[td] = np.minimum(dist_mins[td], t.params[td])
+
+            dist_maxes[td] = np.maximum(dist_maxes[td], t.params[td])
+
+    for t in trials:
+        for td, tdval in t.distributions.items():
+            #print(td, tdval, t.params[td])
             tdval.step = None
+            tdval.high = dist_maxes[td]
+            tdval.low = dist_mins[td]
 
     study = optuna.create_study(directions=directions)
     study.add_trials(trials)
@@ -147,12 +160,14 @@ def _dominates(
     return all(v0 <= v1 for v0, v1 in zip(normalized_values0, normalized_values1))
 
 
-def calculate_weighted_sum(hist: Histogram, power: float = 2, threshold: float = 500, crop: int = 700):
+def calculate_weighted_sum(hist: Histogram, power: float = 2, threshold: float = 500, crop: int = 700,
+                           apply_filter: bool = False):
     img = hist.data_2D.T
     if crop > 0:
         img = img[crop:-crop, crop:-crop]
-    #img[img < threshold] = 0
-    img_filtered = scipy.ndimage.median_filter(img, 3)
+    img_filtered = img.copy()
+    if apply_filter:
+        img_filtered = scipy.ndimage.median_filter(img_filtered, 3)
     img_filtered[img_filtered < threshold] = 0
 
     hh, vv = hist.hh, hist.vv
@@ -161,3 +176,33 @@ def calculate_weighted_sum(hist: Histogram, power: float = 2, threshold: float =
         vv = hist.vv[crop:-crop]
     radii = (hh ** 2 + vv[:, None] ** 2) ** 0.5
     return img_filtered.sum(), (img_filtered * radii ** power).sum()
+
+
+def get_pareto_dataframe_from_study(study, loss_parameters):
+    par_names = ['h_peak', 'v_peak', 'h_fwhm', 'v_fwhm', 'peak_intensity']
+    pars = {}
+    for k in par_names:
+        if k == 'gaussian_fit':
+            continue
+        pars_this = []
+        for t in study.trials:
+            pars_this.append(t.user_attrs['dw'].get_parameter(k))
+        pars[k] = pars_this
+
+    df = study.trials_dataframe()
+    df1 = df[['number']].copy()
+    for idx, l in enumerate(loss_parameters):
+        df1[l] = df[f'values_{idx}'].copy()
+    for k, v in pars.items():
+        df1[k] = v.copy()
+
+    best_nums = [t.number for t in study.best_trials]
+    mask = df1['number'].isin(best_nums)
+    df2 = df1[mask]
+    return df2
+
+
+
+
+
+
