@@ -276,7 +276,7 @@ class AutofocusingScript(GenericScript):
         self.__aspect_ratio   = AspectRatio.AUTO
         self.__color_map      = ColorMap.GRAY
 
-        if mocking_mode: "Autofocusing in Mocking Mode"
+        if mocking_mode: print("Autofocusing in Mocking Mode")
         else:
             if self._simulation_mode:
                 self.__parameters = SimulationParameters()

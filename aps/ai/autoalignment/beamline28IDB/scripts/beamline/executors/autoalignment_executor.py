@@ -256,7 +256,7 @@ class AutoalignmentScript(GenericScript):
         self.__get_new_reference = get_new_reference
         self.__test_mode = test_mode
 
-        if mocking_mode: "Autoalignment in Mocking Mode"
+        if mocking_mode: print("Autoalignment in Mocking Mode")
         else:
             if self._simulation_mode:
                 self.__parameters = SimulationParameters()
