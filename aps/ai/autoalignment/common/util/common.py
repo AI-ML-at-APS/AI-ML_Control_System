@@ -60,6 +60,18 @@ class Histogram():
         self.vv = vv
         self.data_2D = data_2D
 
+def calculate_projections_over_noise(hh):
+    noise_level = numpy.average(hh[0:10, 0:10])
+
+    hh_on = numpy.copy(hh)
+    hh_on[numpy.where(hh < 1.5 * noise_level)] = 0
+    hh_on[numpy.where(hh >= 1.5 * noise_level)] -= noise_level
+
+    hh_h = hh_on.sum(axis=1)
+    hh_v = hh_on.sum(axis=0)
+
+    return hh_on, hh_h, hh_v
+
 def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fit=False, calculate_over_noise=False):
     ticket = {'error': 0}
     ticket['nbins_h'] = len(x_array)
@@ -76,12 +88,11 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
     yy = y_array[cursor_y]
     hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))].T
 
-    if calculate_over_noise: noise_level = numpy.average(z_array[0:10, 0:10])
-    else: noise_level = 0
-    hh[numpy.where(hh<1.5*noise_level)] = 0
-
-    hh_h = hh.sum(axis=1)
-    hh_v = hh.sum(axis=0)
+    if calculate_over_noise:
+        _, hh_h, hh_v = calculate_projections_over_noise(hh)
+    else:
+        hh_h = hh.sum(axis=1)
+        hh_v = hh.sum(axis=0)
 
     fwhm_h, fwhm_quote_h, fwhm_coordinates_h = get_fwhm(hh_h, xx)
     sigma_h = get_sigma(hh_h, xx)
@@ -173,13 +184,7 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
     hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))].T
 
     if calculate_over_noise:
-        noise_level = numpy.average(hh[0:10, 0:10])
-
-        hh_on = numpy.copy(hh)
-        hh_on[numpy.where(hh < 1.5 * noise_level)] = 0
-
-        hh_h = hh_on.sum(axis=1)
-        hh_v = hh_on.sum(axis=0)
+        _, hh_h, hh_v = calculate_projections_over_noise(hh)
     else:
         hh_h = hh.sum(axis=1)
         hh_v = hh.sum(axis=0)

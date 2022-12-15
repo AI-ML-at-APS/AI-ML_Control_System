@@ -59,7 +59,7 @@ from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 import scipy.constants as codata
 
-from aps.ai.autoalignment.common.util.common import get_peak_location_2D, plot_2D, Flip, PlotMode, AspectRatio, ColorMap, Histogram
+from aps.ai.autoalignment.common.util.common import get_peak_location_2D, plot_2D, Flip, PlotMode, AspectRatio, ColorMap, Histogram, calculate_projections_over_noise
 from aps.ai.autoalignment.common.util.gaussian_fit import calculate_2D_gaussian_fit
 from aps.common.ml.data_structures import DictionaryWrapper
 from aps.common.ml.mocks import MockWidget
@@ -103,18 +103,16 @@ class HybridFailureException(Exception):
     def __init__(self, oe="OE"):
         super().__init__("Hybrid Algorithm failed for " + oe)
 
-
 def __generate_noise(hh, noise):
     fluctuation = 0.1*noise
-    hh += noise + 0.5*fluctuation -  fluctuation*numpy.random.random(hh.shape)
+    hh += noise + 0.5*fluctuation - fluctuation*numpy.random.random(hh.shape)
 
 def __get_arrays(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, add_noise=False, noise=None):
     ticket = shadow_beam._beam.histo2(var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=0)
 
-    hh = ticket["histogram"]
-    if add_noise: __generate_noise(hh, noise)
+    if add_noise: __generate_noise(ticket["histogram"], noise)
 
-    return ticket['bin_h_center'], ticket['bin_v_center'], hh
+    return ticket['bin_h_center'], ticket['bin_v_center'], ticket["histogram"]
 
 def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False,
                                    add_noise=False, noise=None, calculate_over_noise=False):
@@ -128,24 +126,19 @@ def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins
         __generate_noise(hh, noise)
 
         if calculate_over_noise:
-            noise_level = numpy.average(hh[0:10, 0:10])
-
-            hh_on = numpy.copy(hh)
-            hh_on[numpy.where(hh < 1.5 * noise_level)] = 0
-
-            hh_h = hh_on.sum(axis=1)
-            hh_v = hh_on.sum(axis=0)
+            _, hh_h, hh_v = calculate_projections_over_noise(hh)
         else:
             hh_h = hh.sum(axis=1)
             hh_v = hh.sum(axis=0)
+
         fwhm_h, _, _ = get_fwhm(hh_h, xx)
         fwhm_v, _, _ = get_fwhm(hh_v, yy)
-        intensity = hh.sum()
+        intensity    = hh.sum()
     else:
-        hh_h   = ticket['histogram_h']
-        hh_v   = ticket['histogram_v']
-        fwhm_h = ticket['fwhm_h']
-        fwhm_v = ticket['fwhm_v']
+        hh_h      = ticket['histogram_h']
+        hh_v      = ticket['histogram_v']
+        fwhm_h    = ticket['fwhm_h']
+        fwhm_v    = ticket['fwhm_v']
         intensity = ticket['intensity']
 
     peak_h, peak_v = get_peak_location_2D(xx, yy, hh)
