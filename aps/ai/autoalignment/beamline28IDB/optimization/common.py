@@ -111,6 +111,7 @@ def get_distribution_info(
             nbins_h=nbins_h,
             nbins_v=nbins_v,
             do_gaussian_fit=do_gaussian_fit,
+            **kwargs
         )
     elif execution_mode == ExecutionMode.HARDWARE:
         if len(beam.keys()) > 4:
@@ -228,8 +229,7 @@ def get_beam_hist_dw(
         kwargs["from_raw_image"] = from_raw_image
         photon_beam = check_input_for_beam(focusing_system=focusing_system, photon_beam=photon_beam, **kwargs)
 
-    if photon_beam is None:
-        return BeamState(None, None, None)
+    if photon_beam is None: return BeamState(None, None, None)
 
     hist, dw = get_distribution_info(
         execution_mode=execution_mode,
@@ -241,6 +241,7 @@ def get_beam_hist_dw(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
+        **kwargs
     )
 
     return BeamState(photon_beam, hist, dw)

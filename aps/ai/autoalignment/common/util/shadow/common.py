@@ -104,19 +104,39 @@ class HybridFailureException(Exception):
         super().__init__("Hybrid Algorithm failed for " + oe)
 
 
-def __get_arrays(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None):
+def __generate_noise(hh, noise):
+    fluctuation = 0.1*noise
+    hh += noise + 0.5*fluctuation -  fluctuation*numpy.random.random(hh.shape)
+
+def __get_arrays(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, add_noise=False, noise=None):
     ticket = shadow_beam._beam.histo2(var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=0)
 
-    return ticket['bin_h_center'], ticket['bin_v_center'], ticket["histogram"]
+    hh = ticket["histogram"]
+    if add_noise: __generate_noise(hh, noise)
 
-def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
+    return ticket['bin_h_center'], ticket['bin_v_center'], hh
+
+def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False, add_noise=False, noise=None):
     ticket = shadow_beam._beam.histo2(var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=1)
 
     hh   = ticket["histogram"]
     xx   = ticket['bin_h_center']
     yy   = ticket['bin_v_center']
-    hh_h = ticket['histogram_h']
-    hh_v = ticket['histogram_v']
+
+    if add_noise:
+        __generate_noise(hh, noise)
+        hh_h = hh.sum(axis=1)
+        hh_v = hh.sum(axis=0)
+        fwhm_h = get_fwhm(hh_h, xx)
+        fwhm_v = get_fwhm(hh_v, yy)
+        intensity = hh.sum()
+    else:
+        hh_h   = ticket['histogram_h']
+        hh_v   = ticket['histogram_v']
+        fwhm_h = ticket['fwhm_h']
+        fwhm_v = ticket['fwhm_v']
+        intensity = ticket['intensity']
+
     peak_h, peak_v = get_peak_location_2D(xx, yy, hh)
 
     if do_gaussian_fit:
@@ -130,35 +150,37 @@ def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins
     return Histogram(hh=xx, vv=yy, data_2D=hh), \
            DictionaryWrapper(
                h_sigma=get_sigma(hh_h, xx),
-               h_fwhm=ticket['fwhm_h'],
+               h_fwhm=fwhm_h,
                h_centroid=get_average(hh_h, xx),
                h_peak=peak_h,
                v_sigma=get_sigma(hh_v, yy),
-               v_fwhm=ticket['fwhm_v'],
+               v_fwhm=fwhm_v,
                v_centroid=get_average(hh_v, yy),
                v_peak=peak_v,
-               integral_intensity=ticket['intensity'],
+               integral_intensity=intensity,
                peak_intensity=numpy.average(hh[numpy.where(hh >= numpy.max(hh) * 0.95)]),
                gaussian_fit=gaussian_fit
     )
 
-def __plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
+def __plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None,
+                                    plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, add_noise=False, noise=None):
     if plot_mode in [PlotMode.INTERNAL, PlotMode.BOTH]:
-        x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins_h, nbins_v, nolost, xrange, yrange)
+        x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins_h, nbins_v, nolost, xrange, yrange, add_noise, noise)
 
-        plot_2D(x_array, y_array, z_array, title, None, None, int_um="", peak_um="", flip=Flip.VERTICAL, aspect_ratio=aspect_ratio, color_map=color_map)
+        plot_2D(x_array, y_array, z_array, title, None, None,
+                int_um="", peak_um="", flip=Flip.VERTICAL, aspect_ratio=aspect_ratio, color_map=color_map)
 
     if plot_mode in [PlotMode.NATIVE, PlotMode.BOTH]:
         Shadow.ShadowTools.plotxy(shadow_beam._beam, var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
 
-def get_shadow_beam_spatial_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
-    return __get_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, xrange, yrange, do_gaussian_fit)
+def get_shadow_beam_spatial_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False, add_noise=False, noise=None):
+    return __get_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, xrange, yrange, do_gaussian_fit, add_noise, noise)
 
 def get_shadow_beam_divergence_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
     return __get_shadow_beam_distribution(shadow_beam, 4, 6, nbins_h, nbins_v, nolost, xrange, yrange, do_gaussian_fit)
 
-def plot_shadow_beam_spatial_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
-    __plot_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
+def plot_shadow_beam_spatial_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, add_noise=False, noise=None):
+    __plot_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map, add_noise, noise)
 
 def plot_shadow_beam_divergence_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, title="X',Z'", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
     __plot_shadow_beam_distribution(shadow_beam, 4, 6, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)

@@ -123,6 +123,8 @@ n_all_motor_trials                   =  ini_file.get_int_from_ini(    section="O
 save_images                          =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Save-Images",                   default=False)
 every_n_images                       =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="Every-N-Images",                default=5)
 use_denoised                         =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Use-Denoised-Image",            default=True)
+add_noise                            =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Add-Noise",                     default=False)
+noise                                =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Noise",                         default=None)
 
 ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-1",                  values_list=hb_1     )
 ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-2",                  values_list=hb_2     )
@@ -160,6 +162,8 @@ ini_file.set_value_at_ini(section="Optimization-Parameters", key="N-All-Motor-Tr
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Save-Images",                   value=save_images)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Every-N-Images",                value=every_n_images)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Use-Denoised-Image",            value=use_denoised)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Add-Noise",                     value=add_noise)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Noise",                         value=noise)
 
 ini_file.push()
 
@@ -254,7 +258,9 @@ class SimulationParameters(PlotParameters):
         self.params["execution_mode"] = ExecutionMode.SIMULATION
         self.params["implementor"]    = Sim_Implementors.SHADOW
         self.params["random_seed"]    = DEFAULT_RANDOM_SEED
-        self.params["use_denoised"]   = False
+        self.params["use_denoised"]   = use_denoised
+        self.params["add_noise"]      = add_noise
+        self.params["noise"]          = noise
 
 class HardwareParameters(PlotParameters):
     def __init__(self):
