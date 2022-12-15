@@ -48,7 +48,6 @@
 import abc
 from typing import Dict, List, NamedTuple, NoReturn, Tuple, Union
 
-import numpy
 import numpy as np
 
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import (
@@ -100,6 +99,9 @@ def get_distribution_info(
     nbins_v=201,
     do_gaussian_fit=False,
     use_denoised=True,
+    add_noise=False,
+    noise=None,
+    calculate_over_noise = False,
     **kwargs,
 ):
     if execution_mode == ExecutionMode.SIMULATION:
@@ -111,6 +113,9 @@ def get_distribution_info(
             nbins_h=nbins_h,
             nbins_v=nbins_v,
             do_gaussian_fit=do_gaussian_fit,
+            add_noise=add_noise,
+            noise=noise,
+            calculate_over_noise=calculate_over_noise,
             **kwargs
         )
     elif execution_mode == ExecutionMode.HARDWARE:
@@ -127,8 +132,8 @@ def get_distribution_info(
                 gaussian_fit=None,
             )
         else:
-            if use_denoised: return get_info(x_array=beam["h_coord"], y_array=beam["v_coord"], z_array=beam["image_denoised"], do_gaussian_fit=do_gaussian_fit)
-            else:            return get_info(x_array=beam["h_coord"], y_array=beam["v_coord"], z_array=beam["image"], do_gaussian_fit=do_gaussian_fit)
+            if use_denoised: return get_info(x_array=beam["h_coord"], y_array=beam["v_coord"], z_array=beam["image_denoised"], do_gaussian_fit=do_gaussian_fit, calculate_over_noise=calculate_over_noise)
+            else:            return get_info(x_array=beam["h_coord"], y_array=beam["v_coord"], z_array=beam["image"],          do_gaussian_fit=do_gaussian_fit, calculate_over_noise=calculate_over_noise)
     else:
         raise ValueError("Executione Mode not valid")
 
@@ -219,6 +224,9 @@ def get_beam_hist_dw(
     do_gaussian_fit: bool = False,
     use_denoised = True,
     from_raw_image=True,
+    add_noise=False,
+    noise=None,
+    calculate_over_noise = False,
     execution_mode = ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -241,6 +249,9 @@ def get_beam_hist_dw(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
+        add_noise=add_noise,
+        noise=noise,
+        calculate_over_noise=calculate_over_noise,
         **kwargs
     )
 
@@ -259,13 +270,14 @@ def get_peak_intensity(
     do_gaussian_fit: bool = False,
     use_denoised = True,
     from_raw_image=True,
+    add_noise=False,
+    noise=None,
+    calculate_over_noise = False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
-        execution_mode=execution_mode,
-        implementor=implementor,
         focusing_system=focusing_system,
         photon_beam=photon_beam,
         random_seed=random_seed,
@@ -275,7 +287,12 @@ def get_peak_intensity(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
-        from_raw_image=from_raw_image
+        from_raw_image=from_raw_image,
+        add_noise = add_noise,
+        noise = noise,
+        calculate_over_noise = calculate_over_noise,
+        execution_mode=execution_mode,
+        implementor=implementor
     )
     peak = _get_peak_intensity_from_dw(dw, do_gaussian_fit, no_beam_value)
     return BeamParameterOutput(peak, photon_beam, hist, dw)
@@ -309,7 +326,11 @@ def get_weighted_sum_intensity(
     nbins_v: int = 256,
     radial_weight_power: float = 0,
     do_gaussian_fit: bool = False,
-    use_denoised = True, from_raw_image=True,
+    use_denoised = True,
+    from_raw_image=True,
+    add_noise=False,
+    noise=None,
+    calculate_over_noise=False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -317,8 +338,6 @@ def get_weighted_sum_intensity(
     if do_gaussian_fit:
         raise NotImplementedError
     photon_beam, hist, dw = get_beam_hist_dw(
-        execution_mode=execution_mode,
-        implementor=implementor,
         focusing_system=focusing_system,
         photon_beam=photon_beam,
         random_seed=random_seed,
@@ -328,7 +347,13 @@ def get_weighted_sum_intensity(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
-        from_raw_image=from_raw_image
+        from_raw_image=from_raw_image,
+        add_noise=add_noise,
+        noise=noise,
+        calculate_over_noise=calculate_over_noise,
+        execution_mode=execution_mode,
+        implementor=implementor,
+        **kwargs
     )
     sum_intensity = _get_weighted_sum_intensity_from_hist(hist, radial_weight_power, no_beam_value)
     return BeamParameterOutput(sum_intensity, photon_beam, hist, dw)
@@ -410,13 +435,14 @@ def get_peak_distance(
     do_gaussian_fit: bool = False,
     use_denoised = True,
     from_raw_image=True,
+    add_noise=False,
+    noise=None,
+    calculate_over_noise=False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
-        execution_mode=execution_mode,
-        implementor=implementor,
         focusing_system=focusing_system,
         photon_beam=photon_beam,
         random_seed=random_seed,
@@ -426,7 +452,13 @@ def get_peak_distance(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
-        from_raw_image=from_raw_image
+        from_raw_image=from_raw_image,
+        add_noise=add_noise,
+        noise=noise,
+        calculate_over_noise=calculate_over_noise,
+        execution_mode=execution_mode,
+        implementor=implementor,
+        **kwargs
     )
     peak_distance = _get_peak_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
 
@@ -447,13 +479,14 @@ def get_centroid_distance(
     do_gaussian_fit: bool = False,
     use_denoised = True,
     from_raw_image=True,
+    add_noise=False,
+    noise=None,
+    calculate_over_noise=False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
 ) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(
-        execution_mode=execution_mode,
-        implementor=implementor,
         focusing_system=focusing_system,
         photon_beam=photon_beam,
         random_seed=random_seed,
@@ -463,7 +496,13 @@ def get_centroid_distance(
         nbins_v=nbins_v,
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
-        from_raw_image=from_raw_image
+        from_raw_image=from_raw_image,
+        add_noise=add_noise,
+        noise=noise,
+        calculate_over_noise=calculate_over_noise,
+        execution_mode=execution_mode,
+        implementor=implementor,
+        **kwargs
     )
     centroid_distance = _get_centroid_distance_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
 
@@ -529,6 +568,9 @@ def get_fwhm(
     do_gaussian_fit: bool = False,
     use_denoised = True,
     from_raw_image=True,
+    add_noise=False,
+    noise=None,
+    calculate_over_noise=False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -544,8 +586,12 @@ def get_fwhm(
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
         from_raw_image=from_raw_image,
+        add_noise=add_noise,
+        noise=noise,
+        calculate_over_noise=calculate_over_noise,
         execution_mode=execution_mode,
         implementor=implementor,
+        **kwargs
     )
     fwhm = _get_fwhm_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
 
@@ -566,6 +612,9 @@ def get_sigma(
     do_gaussian_fit: bool = False,
     use_denoised = True,
     from_raw_image=True,
+    add_noise=False,
+    noise=None,
+    calculate_over_noise=False,
     execution_mode=ExecutionMode.SIMULATION,
     implementor: int = Implementors.SHADOW,
     **kwargs,
@@ -581,8 +630,12 @@ def get_sigma(
         do_gaussian_fit=do_gaussian_fit,
         use_denoised=use_denoised,
         from_raw_image=from_raw_image,
-        execution_mode=execution_mode,
-        implementor=implementor,
+        add_noise=add_noise,
+        noise=noise,
+        calculate_over_noise=calculate_over_noise,
+        execution_mode = execution_mode,
+        implementor = implementor,
+        **kwargs
     )
     sigma = _get_sigma_from_dw(dw, reference_h, reference_v, do_gaussian_fit, no_beam_value)
 
@@ -701,6 +754,9 @@ class OptimizationCommon(abc.ABC):
         do_gaussian_fit: bool = False,
         use_denoised=False,
         from_raw_image=True,
+        add_noise=False,
+        noise=None,
+        calculate_over_noise=False,
         no_beam_loss: float = 1e4,
         intensity_no_beam_loss: float = 0,
         multi_objective_optimization: bool = False,
@@ -759,6 +815,9 @@ class OptimizationCommon(abc.ABC):
         self._do_gaussian_fit = do_gaussian_fit
         self._use_denoised = use_denoised
         self._from_raw_image = from_raw_image
+        self._add_noise=add_noise
+        self._noise=noise
+        self._calculate_over_noise=calculate_over_noise
         self._execution_mode = execution_mode
         self._implementor = implementor
 
@@ -783,8 +842,11 @@ class OptimizationCommon(abc.ABC):
             do_gaussian_fit=self._do_gaussian_fit,
             use_denoised=self._use_denoised,
             from_raw_image=self._from_raw_image,
+            add_noise=self._add_noise,
+            noise=self._noise,
+            calculate_over_noise=self._calculate_over_noise,
             execution_mode=self._execution_mode,
-            implementor=self._implementor,
+            implementor=self._implementor
         )
 
         if current_hist is None:

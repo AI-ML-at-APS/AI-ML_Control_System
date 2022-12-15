@@ -60,7 +60,7 @@ class Histogram():
         self.vv = vv
         self.data_2D = data_2D
 
-def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fit=False):
+def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fit=False, calculate_over_noise=False):
     ticket = {'error': 0}
     ticket['nbins_h'] = len(x_array)
     ticket['nbins_v'] = len(y_array)
@@ -75,6 +75,11 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
     xx = x_array[cursor_x]
     yy = y_array[cursor_y]
     hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))].T
+
+    if calculate_over_noise: noise_level = numpy.average(z_array[0:10, 0:10])
+    else: noise_level = 0
+    hh[numpy.where(hh<1.5*noise_level)] = 0
+
     hh_h = hh.sum(axis=1)
     hh_v = hh.sum(axis=0)
 
@@ -156,7 +161,7 @@ class ColorMap:
 
 def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
             int_um="$ph/s/0.1\%BW$", peak_um="$ph/s/mm^2/0.1\%BW$",
-            flip=Flip.NO, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, save_image=False, save_path=os.curdir, plot=True):
+            flip=Flip.NO, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, calculate_over_noise=False, save_image=False, save_path=os.curdir, plot=True):
     if xrange is None: xrange = [x_array[0], x_array[-1]]
     if yrange is None: yrange = [y_array[0], y_array[-1]]
 
@@ -166,8 +171,18 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
     xx = x_array[cursor_x]
     yy = y_array[cursor_y]
     hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))].T
-    hh_h = hh.sum(axis=1)
-    hh_v = hh.sum(axis=0)
+
+    if calculate_over_noise:
+        noise_level = numpy.average(hh[0:10, 0:10])
+
+        hh_on = numpy.copy(hh)
+        hh_on[numpy.where(hh < 1.5 * noise_level)] = 0
+
+        hh_h = hh_on.sum(axis=1)
+        hh_v = hh_on.sum(axis=0)
+    else:
+        hh_h = hh.sum(axis=1)
+        hh_v = hh.sum(axis=0)
 
     fwhm_h, _, _ = get_fwhm(hh_h, xx)
     sigma_h = get_sigma(hh_h, xx)

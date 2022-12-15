@@ -124,7 +124,8 @@ save_images                          =  ini_file.get_boolean_from_ini(section="O
 every_n_images                       =  ini_file.get_int_from_ini(    section="Optimization-Parameters", key="Every-N-Images",                default=5)
 use_denoised                         =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Use-Denoised-Image",            default=True)
 add_noise                            =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Add-Noise",                     default=False)
-noise                                =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Noise",                         default=None)
+noise                                =  ini_file.get_float_from_ini(  section="Optimization-Parameters", key="Noise",                         default=None)
+calculate_over_noise                 =  ini_file.get_boolean_from_ini(section="Optimization-Parameters", key="Calculate-Over-Noise",          default=True)
 
 ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-1",                  values_list=hb_1     )
 ini_file.set_list_at_ini( section="Motor-Ranges", key="HKB-Bender-2",                  values_list=hb_2     )
@@ -164,6 +165,7 @@ ini_file.set_value_at_ini(section="Optimization-Parameters", key="Every-N-Images
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Use-Denoised-Image",            value=use_denoised)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Add-Noise",                     value=add_noise)
 ini_file.set_value_at_ini(section="Optimization-Parameters", key="Noise",                         value=noise)
+ini_file.set_value_at_ini(section="Optimization-Parameters", key="Calculate-Over-Noise",          value=calculate_over_noise)
 
 ini_file.push()
 
@@ -255,20 +257,22 @@ class PlotParameters(object):
 class SimulationParameters(PlotParameters):
     def __init__(self):
         super(SimulationParameters, self).__init__()
-        self.params["execution_mode"] = ExecutionMode.SIMULATION
-        self.params["implementor"]    = Sim_Implementors.SHADOW
-        self.params["random_seed"]    = DEFAULT_RANDOM_SEED
-        self.params["use_denoised"]   = use_denoised
-        self.params["add_noise"]      = add_noise
-        self.params["noise"]          = noise
+        self.params["execution_mode"]       = ExecutionMode.SIMULATION
+        self.params["implementor"]          = Sim_Implementors.SHADOW
+        self.params["random_seed"]          = DEFAULT_RANDOM_SEED
+        self.params["use_denoised"]         = use_denoised
+        self.params["add_noise"]            = add_noise
+        self.params["noise"]                = noise
+        self.params["calculate_over_noise"] = calculate_over_noise
 
 class HardwareParameters(PlotParameters):
     def __init__(self):
         super(HardwareParameters, self).__init__()
-        self.params["execution_mode"] = ExecutionMode.HARDWARE
-        self.params["implementor"]    = HW_Implementors.EPICS
-        self.params["from_raw_image"] = True
-        self.params["use_denoised"]   = use_denoised
+        self.params["execution_mode"]       = ExecutionMode.HARDWARE
+        self.params["implementor"]          = HW_Implementors.EPICS
+        self.params["from_raw_image"]       = True
+        self.params["use_denoised"]         = use_denoised
+        self.params["calculate_over_noise"] = calculate_over_noise
 
 input_beam_path = "primary_optics_system_beam.dat"
 
@@ -403,7 +407,7 @@ class AutofocusingScript(GenericScript):
                         save_image=True,
                         save_path=self.__data_directory)
 
-        opt_trial = self._get_optimizer(self.__parameters)
+        opt_trial = self._get_optimizer(self.__parameters.params)
 
         n1 = self.__opt_params.params["n_pitch_trans_motor_trials"]
         print(f"First optimizing only the pitch and translation motors for {n1} trials.")
@@ -479,11 +483,9 @@ class AutofocusingScript(GenericScript):
 
         # using the first beam as a safe moo thresold in case is not indicated
         moo_thresholds = self.__opt_params.params["moo_thresholds"]
-        if 'log_weighted_sum_intensity' in loss_parameters and \
-                ('log_weighted_sum_intensity' not in moo_thresholds):
+        if 'log_weighted_sum_intensity' in loss_parameters and  ('log_weighted_sum_intensity' not in moo_thresholds):
             moo_thresholds['log_weighted_sum_intensity'] = opt_trial.get_log_weighted_sum_intensity()
-        if 'negative_log_peak_intensity' in loss_parameters and \
-                ('negative_log_peak_intensity' not in moo_thresholds):
+        if 'negative_log_peak_intensity' in loss_parameters and  ('negative_log_peak_intensity' not in moo_thresholds):
             moo_thresholds['negative_log_peak_intensity'] = opt_trial.get_negative_log_peak_intensity()
 
         # Setting up the optimizer
