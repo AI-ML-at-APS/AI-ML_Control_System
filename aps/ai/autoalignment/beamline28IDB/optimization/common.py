@@ -139,12 +139,16 @@ def get_distribution_info(cp: CalculationParameters, **kwargs):
             do_gaussian_fit=cp.do_gaussian_fit,
             add_noise=cp.add_noise,
             noise=cp.noise,
+            percentage_fluctuation=cp.percentage_fluctuation,
             calculate_over_noise=cp.calculate_over_noise,
+            noise_threshold=cp.noise_threshold,
             **kwargs
         )
     elif cp.execution_mode == ExecutionMode.HARDWARE:
         if len(cp.photon_beam.keys()) > 4:
-            return Histogram(hh=cp.photon_beam["h_coord"], vv=cp.photon_beam["v_coord"], data_2D=cp.photon_beam["image"]), \
+            return Histogram(hh=cp.photon_beam["h_coord"],
+                             vv=cp.photon_beam["v_coord"],
+                             data_2D=cp.photon_beam["image"]), \
                    DictionaryWrapper(h_sigma=cp.photon_beam["width"],
                                      h_fwhm=cp.photon_beam["width"],
                                      h_centroid=cp.photon_beam["centroid_h"],
@@ -155,12 +159,12 @@ def get_distribution_info(cp: CalculationParameters, **kwargs):
                                      peak_intensity=np.max(cp.photon_beam["image"]),
                                      gaussian_fit=None)
         else:
-            if cp.use_denoised:
-                return get_info(x_array=cp.photon_beam["h_coord"], y_array=cp.photon_beam["v_coord"], z_array=cp.photon_beam["image_denoised"],
-                                do_gaussian_fit=cp.do_gaussian_fit, calculate_over_noise=cp.calculate_over_noise)
-            else:
-                return get_info(x_array=cp.photon_beam["h_coord"], y_array=cp.photon_beam["v_coord"], z_array=cp.photon_beam["image"],
-                                do_gaussian_fit=cp.do_gaussian_fit, calculate_over_noise=cp.calculate_over_noise)
+            return get_info(x_array=cp.photon_beam["h_coord"],
+                            y_array=cp.photon_beam["v_coord"],
+                            z_array=cp.photon_beam["image_denoised"] if cp.use_denoised else cp.photon_beam["image"],
+                            do_gaussian_fit=cp.do_gaussian_fit,
+                            calculate_over_noise=cp.calculate_over_noise,
+                            noise_threshold=cp.noise_threshold)
     else:
         raise ValueError("Executione Mode not valid")
 

@@ -103,19 +103,19 @@ class HybridFailureException(Exception):
     def __init__(self, oe="OE"):
         super().__init__("Hybrid Algorithm failed for " + oe)
 
-def __generate_noise(hh, noise):
-    fluctuation = 0.1*noise
+def __generate_noise(hh, noise, percentage_fluctuation):
+    fluctuation = percentage_fluctuation*noise
     hh += noise + 0.5*fluctuation - fluctuation*numpy.random.random(hh.shape)
 
-def __get_arrays(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, add_noise=False, noise=None):
+def __get_arrays(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, add_noise=False, noise=None, percentage_fluctuation=0.1):
     ticket = shadow_beam._beam.histo2(var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=0)
 
-    if add_noise: __generate_noise(ticket["histogram"], noise)
+    if add_noise: __generate_noise(ticket["histogram"], noise, percentage_fluctuation)
 
     return ticket['bin_h_center'], ticket['bin_v_center'], ticket["histogram"]
 
 def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False,
-                                   add_noise=False, noise=None, calculate_over_noise=False):
+                                   add_noise=False, noise=None,  percentage_fluctuation=0.1, calculate_over_noise=False, noise_threshold=1.5):
     ticket = shadow_beam._beam.histo2(var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, xrange=xrange, yrange=yrange, calculate_widths=1)
 
     hh   = ticket["histogram"]
@@ -123,10 +123,10 @@ def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins
     yy   = ticket['bin_v_center']
 
     if add_noise:
-        __generate_noise(hh, noise)
+        __generate_noise(hh, noise, percentage_fluctuation)
 
         if calculate_over_noise:
-            _, hh_h, hh_v = calculate_projections_over_noise(hh)
+            _, hh_h, hh_v = calculate_projections_over_noise(hh, noise_threshold)
         else:
             hh_h = hh.sum(axis=1)
             hh_v = hh.sum(axis=0)
@@ -168,28 +168,29 @@ def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins
 
 def __plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None,
                                     plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW,
-                                    add_noise=False, noise=None, calculate_over_noise=False):
+                                    add_noise=False, noise=None, percentage_fluctuation=0.1, calculate_over_noise=False, noise_threshold=1.5):
     if plot_mode in [PlotMode.INTERNAL, PlotMode.BOTH]:
-        x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins_h, nbins_v, nolost, xrange, yrange, add_noise, noise)
+        x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins_h, nbins_v, nolost, xrange, yrange, add_noise, noise, percentage_fluctuation)
 
         plot_2D(x_array, y_array, z_array, title, None, None,
                 int_um="", peak_um="", flip=Flip.VERTICAL, aspect_ratio=aspect_ratio, color_map=color_map,
-                calculate_over_noise=calculate_over_noise)
+                calculate_over_noise=calculate_over_noise,
+                noise_threshold=noise_threshold)
 
     if plot_mode in [PlotMode.NATIVE, PlotMode.BOTH]:
         Shadow.ShadowTools.plotxy(shadow_beam._beam, var_1, var_2, nbins_h=nbins_h, nbins_v=nbins_v, nolost=nolost, title=title, xrange=xrange, yrange=yrange)
 
 def get_shadow_beam_spatial_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False,
-                                         add_noise=False, noise=None, calculate_over_noise=False):
-    return __get_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, xrange, yrange, do_gaussian_fit, add_noise, noise, calculate_over_noise)
+                                         add_noise=False, noise=None, percentage_fluctuation=0.1, calculate_over_noise=False, noise_threshold=1.5):
+    return __get_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, xrange, yrange, do_gaussian_fit, add_noise, noise, percentage_fluctuation, calculate_over_noise, noise_threshold)
 
 def get_shadow_beam_divergence_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, xrange=None, yrange=None, do_gaussian_fit=False):
     return __get_shadow_beam_distribution(shadow_beam, 4, 6, nbins_h, nbins_v, nolost, xrange, yrange, do_gaussian_fit)
 
 def plot_shadow_beam_spatial_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None,
                                           plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW,
-                                          add_noise=False, noise=None, calculate_over_noise=False):
-    __plot_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map, add_noise, noise, calculate_over_noise)
+                                          add_noise=False, noise=None, percentage_fluctuation=0.1, calculate_over_noise=False, noise_threshold=1.5):
+    __plot_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map, add_noise, noise, percentage_fluctuation, calculate_over_noise, noise_threshold)
 
 def plot_shadow_beam_divergence_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, title="X',Z'", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
     __plot_shadow_beam_distribution(shadow_beam, 4, 6, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
