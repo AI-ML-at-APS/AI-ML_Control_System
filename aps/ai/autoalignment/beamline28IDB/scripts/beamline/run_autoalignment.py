@@ -133,8 +133,7 @@ def run_script(sys_argv):
                                  get_new_reference=get_new_reference,
                                  test_mode=test_mode,
                                  mocking_mode=mocking_mode,
-                                 simulation_mode=simulation_mode
-                                 )
+                                 simulation_mode=simulation_mode)
     register_running_script_instance(script)
 
     script.execute_script()

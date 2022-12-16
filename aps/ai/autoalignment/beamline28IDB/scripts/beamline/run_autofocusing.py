@@ -66,6 +66,7 @@ def __get_input_parameters(sys_argv):
     energy          = ini_file.get_float_from_ini(  section="Execution",   key="Energy",         default=DefaultValues.ENERGY)
     period          = ini_file.get_float_from_ini(  section="Execution",   key="Period",         default=DefaultValues.PERIOD)
     n_cycles        = ini_file.get_float_from_ini(  section="Execution",   key="N-Cycles",       default=DefaultValues.N_CYCLES)
+    test_mode       = ini_file.get_boolean_from_ini(section="Execution",   key="Test-Mode",      default=False)
     simulation_mode = False
     mocking_mode    = False
     regenerate_ini  = False
@@ -75,6 +76,7 @@ def __get_input_parameters(sys_argv):
         for i in range(2, len(sys_argv)):
             if "-pd"     == sys_argv[i][:3]: period = int(sys_argv[i][3:])
             elif "-nc"   == sys_argv[i][:3]: n_cycles = int(sys_argv[i][3:])
+            elif "-tm"   == sys_argv[i][:3]: test_mode = int(sys_argv[i][3:])==1
             elif "-ri"   == sys_argv[i][:3]: exit_script = regenerate_ini   = True
             elif "-sim"  == sys_argv[i][:4]: simulation_mode = True
             elif "-mock" == sys_argv[i][:5]: mocking_mode = True
@@ -82,6 +84,7 @@ def __get_input_parameters(sys_argv):
                 print("Run Autofocusing\n\npython -m aps.ai.autolignment 28ID AF <options>\n\n" +
                       "Options: -pd <period in minutes (int)>\n" +
                       "         -nc <number of cycles>\n" +
+                      "         -tm <test mode 0(No)/1(Yes)>\n" +
                       "         -sim (run optimizer on simulation)\n" +
                       "         -mock (fake execution, for test purposes)\n" +
                       "         -ri (to regenerate ini file with default value)>")
@@ -93,6 +96,7 @@ def __get_input_parameters(sys_argv):
         ini_file.set_value_at_ini(section="Execution",   key="Energy",          value=DefaultValues.ENERGY)
         ini_file.set_value_at_ini(section="Execution",   key="Period",          value=DefaultValues.PERIOD)
         ini_file.set_value_at_ini(section="Execution",   key="N-Cycles",        value=DefaultValues.N_CYCLES)
+        ini_file.set_value_at_ini(section="Execution",   key="Test-Mode",         value=False)
 
         print("File ini regenerated with default values in\n" + os.path.abspath(os.curdir))
     else:
@@ -100,6 +104,7 @@ def __get_input_parameters(sys_argv):
         ini_file.set_value_at_ini(section="Execution",   key="Energy",         value=energy)
         ini_file.set_value_at_ini(section="Execution",   key="Period",         value=period)
         ini_file.set_value_at_ini(section="Execution",   key="N-Cycles",       value=n_cycles)
+        ini_file.set_value_at_ini(section="Execution",   key="Test-Mode",      value=test_mode)
 
     ini_file.push()
 
@@ -108,21 +113,21 @@ def __get_input_parameters(sys_argv):
 
     if exit_script: sys.exit(0)
 
-    return root_directory, energy, period, n_cycles, mocking_mode, simulation_mode
+    return root_directory, energy, period, n_cycles, test_mode, mocking_mode, simulation_mode
 
 
 def run_script(sys_argv):
     if "linux" in sys.platform: os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
-    root_directory, energy, period, n_cycles, mocking_mode, simulation_mode = __get_input_parameters(sys_argv)
+    root_directory, energy, period, n_cycles, test_mode, mocking_mode, simulation_mode = __get_input_parameters(sys_argv)
 
     script = AutofocusingScript(root_directory=root_directory,
                                 energy=energy,
                                 period=period,
                                 n_cycles=n_cycles,
+                                test_mode=test_mode,
                                 mocking_mode=mocking_mode,
-                                simulation_mode=simulation_mode
-                                )
+                                simulation_mode=simulation_mode)
     register_running_script_instance(script)
 
     script.execute_script()
