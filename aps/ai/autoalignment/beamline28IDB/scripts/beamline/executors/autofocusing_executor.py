@@ -208,10 +208,7 @@ class AutofocusingScript(GenericScript):
         if 'negative_log_peak_intensity' in loss_parameters and  ('negative_log_peak_intensity' not in moo_thresholds):
             moo_thresholds['negative_log_peak_intensity'] = opt_trial.get_negative_log_peak_intensity()
 
-        # Setting up the optimizer
-        constraints = {"sum_intensity": self._optimization_parameters.params["sum_intensity_soft_constraint"]}
-
-        return moo_thresholds, constraints
+        return moo_thresholds, {"sum_intensity": self._optimization_parameters.params["sum_intensity_soft_constraint"]}
 
     def _run_optimization(self, opt_trial):
         n1 = self._optimization_parameters.params["n_pitch_trans_motor_trials"]
