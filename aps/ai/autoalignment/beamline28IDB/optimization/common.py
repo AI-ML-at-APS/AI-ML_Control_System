@@ -238,18 +238,18 @@ def check_input_for_beam(focusing_system: AbstractFocusingOptics, photon_beam: o
 def check_beam_out_of_bounds(focusing_system: AbstractFocusingOptics, photon_beam, **kwargs) -> object:
     try:
         photon_beam = check_input_for_beam(focusing_system=focusing_system, photon_beam=photon_beam, **kwargs)
-    except Exception as exc:
+    except Exception as exception:
         if (
-            isinstance(exc, EmptyBeamException)
-            or (isinstance(exc, HybridFailureException))
-            or "Diffraction plane is set on Z, but the beam has no extention in that direction" in str(exc)
+            isinstance(exception, EmptyBeamException)
+            or (isinstance(exception, HybridFailureException))
+            or "Diffraction plane is set on Z, but the beam has no extention in that direction" in str(exception)
         ):
             # Assuming that the beam is outside the screen and returning the default out of bounds value.
             photon_beam = None
-        elif isinstance(exc, ValueError) and "array must not contain infs or NaNs" in str(exc):
+        elif isinstance(exception, ValueError) and "array must not contain infs or NaNs" in str(exception):
             photon_beam = None
         else:
-            raise exc
+            raise exception
 
     return photon_beam
 
