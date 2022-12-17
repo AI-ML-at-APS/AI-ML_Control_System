@@ -217,7 +217,8 @@ class GenericScript(AbstractScript):
 
         self._optimization_parameters = None
         self._parameters              = None
-
+        self._focusing_system         = None
+        
         self._data_directory = os.path.join(self._root_directory, "AI", self._get_script_name().lower())
         
         self._plot_mode    = PlotMode.INTERNAL
@@ -297,10 +298,10 @@ class GenericScript(AbstractScript):
         self._run_preliminary_operations(current_cycle)
 
         if self._simulation_mode:
-            beam, hist, dw = opt_common.get_beam_hist_dw(self._parameters.params, **kwargs)
+            photon_beam, hist, dw = opt_common.get_beam_hist_dw(cp=self._parameters.params, focusing_system=self._focusing_system, photon_beam=None, **kwargs)
 
             if self._test_mode:
-                plot_distribution(beam=beam,
+                plot_distribution(beam=photon_beam,
                                   title="Initial Beam",
                                   plot_mode=self._plot_mode,
                                   aspect_ratio=self._aspect_ratio,
@@ -308,12 +309,13 @@ class GenericScript(AbstractScript):
                                   **self._parameters.as_kwargs())
 
             motors = list(self._optimization_parameters.move_motors_ranges.keys())
-            initial_absolute_positions = {k: movers.get_absolute_positions(self._parameters.params.focusing_system, k)[0] for k in motors}
+            initial_absolute_positions = {k: movers.get_absolute_positions(self._focusing_system, k)[0] for k in motors}
             print("Focused absolute position are", initial_absolute_positions)
 
             # Adding random perturbation to the motor values
-            initial_movement, self._parameters.params.focusing_system, (beam_init, hist_init, dw_init) = \
+            initial_movement, self._focusing_system, (beam_init, hist_init, dw_init) = \
                 opt_common.get_random_init(cp=self._parameters.params,
+                                           focusing_system=self._focusing_system,
                                            motor_types_and_ranges=self._optimization_parameters.move_motors_ranges,
                                            intensity_sum_threshold=self._optimization_parameters.params["sum_intensity_hard_constraint"],
                                            **kwargs)
@@ -329,38 +331,28 @@ class GenericScript(AbstractScript):
                                   **self._parameters.as_kwargs())
         else:
             motors = list(self._optimization_parameters.move_motors_ranges.keys())
-            initial_absolute_positions = {k: movers.get_absolute_positions(self._parameters.params.focusing_system, k)[0] for k in motors}
+            initial_absolute_positions = {k: movers.get_absolute_positions(self._focusing_system, k)[0] for k in motors}
 
             print("Focused absolute position are", initial_absolute_positions)
             with open(os.path.join(self._data_directory, "initial_motor_positions.json"), 'w') as fp: json.dump(initial_absolute_positions, fp)
 
             # taking initial image of the beam
-            beam, hist_init, dw_init = opt_common.get_beam_hist_dw(cp=self._parameters.params, **kwargs)
+            beam_init, hist_init, dw_init = opt_common.get_beam_hist_dw(cp=self._parameters.params, focusing_system=self._focusing_system, photon_beam=None, **kwargs)
 
             self._print_beam_attributes(hist_init, dw_init, "Initial")
 
             if self._test_mode:
-                plot_2D(x_array=beam["h_coord"],
-                        y_array=beam["v_coord"],
-                        z_array=beam["image"],
-                        title="Initial beam",
+                plot_2D(x_array=beam_init["h_coord"],
+                        y_array=beam_init["v_coord"],
+                        z_array=beam_init["image_denoised" if self._parameters.params.use_denoised else "image"],
+                        title="Initial beam denoised" if self._parameters.params.use_denoised else "Initial beam",
                         color_map=self._color_map,
                         aspect_ratio=self._aspect_ratio,
                         save_image=True,
                         save_path=self._data_directory)
-                if self._parameters.params.use_denoised:
-                    plot_2D(x_array=beam["h_coord"],
-                            y_array=beam["v_coord"],
-                            z_array=beam["image_denoised"],
-                            title="Initial beam denoised",
-                            color_map=self._color_map,
-                            aspect_ratio=self._aspect_ratio,
-                            save_image=True,
-                            save_path=self._data_directory)
 
-        opt_trial = self._get_optimizer(self._parameters.params)
-
-        n_trials = self._run_optimization(opt_trial)
+        opt_trial = self._get_optimizer()
+        n_trials  = self._run_optimization(opt_trial)
 
         print("Selecting the optimal parameters, with algorithm: " + self._optimization_parameters.params["selection_algorithm"])
         optimal_params, values = opt_trial.select_best_trial_params(opt_trial.study.best_trials, algorithm=self._optimization_parameters.params["selection_algorithm"])
@@ -388,21 +380,12 @@ class GenericScript(AbstractScript):
             if self._test_mode:
                 plot_2D(x_array=opt_trial.beam_state.photon_beam["h_coord"],
                         y_array=opt_trial.beam_state.photon_beam["v_coord"],
-                        z_array=opt_trial.beam_state.photon_beam["image"],
-                        title="Optimized beam",
+                        z_array=opt_trial.beam_state.photon_beam["image_denoised" if self._parameters.params.use_denoised else "image"],
+                        title="Optimized beam denoised" if self._parameters.params.use_denoised else "Optimized beam",
                         color_map=self._color_map,
                         aspect_ratio=self._aspect_ratio,
                         save_image=True,
                         save_path=self._data_directory)
-                if self._parameters.params.use_denoised:
-                    plot_2D(x_array=beam["h_coord"],
-                            y_array=beam["v_coord"],
-                            z_array=opt_trial.beam_state.photon_beam["image_denoised"],
-                            title="Optimized beam denoised",
-                            color_map=self._color_map,
-                            aspect_ratio=self._aspect_ratio,
-                            save_image=True,
-                            save_path=self._data_directory)
 
         datetime_str = datetime.strftime(datetime.now(), "%Y-%m-%d_%H:%M")
         chkpt_name = f"optimization_final_{n_trials}_{datetime_str}.gz"
@@ -441,14 +424,14 @@ class GenericScript(AbstractScript):
         clean_up()
 
         # Initializing the focused beam from simulation
-        self._parameters.params.focusing_system = focusing_optics_factory_method(execution_mode=self._parameters.params.execution_mode,
-                                                                                 implementor=self._parameters.params.implementor,
-                                                                                 bender=True)
+        self._focusing_system = focusing_optics_factory_method(execution_mode=self._parameters.params.execution_mode,
+                                                               implementor=self._parameters.params.implementor,
+                                                               bender=True)
 
-        self._parameters.params.focusing_system.initialize(input_photon_beam=load_shadow_beam(input_beam_path),
-                                                           rewrite_preprocessor_files=PreProcessorFiles.NO,
-                                                           layout=layout,
-                                                           input_features=get_default_input_features(layout=layout))
+        self._focusing_system.initialize(input_photon_beam=load_shadow_beam(input_beam_path),
+                                         rewrite_preprocessor_files=PreProcessorFiles.NO,
+                                         layout=layout,
+                                         input_features=get_default_input_features(layout=layout))
 
     def _initialize_hardware_parameters(self,
                                         save_images,
@@ -465,23 +448,23 @@ class GenericScript(AbstractScript):
         print("Hardware parameters")
         print(self._parameters.as_kwargs())
 
-        self._parameters.params.focusing_system = focusing_optics_factory_method(execution_mode=self._parameters.params.execution_mode,
-                                                                                 implementor=self._parameters.params.execution_mode,
-                                                                                 measurement_directory=self._data_directory,
-                                                                                 **kwargs)
-        self._parameters.params.focusing_system.initialize()
+        self._focusing_system = focusing_optics_factory_method(execution_mode=self._parameters.params.execution_mode,
+                                                               implementor=self._parameters.params.execution_mode,
+                                                               measurement_directory=self._data_directory,
+                                                               **kwargs)
+        self._focusing_system.initialize()
 
     def _get_initial_positions(self):
         initial_positions = {}
 
         for motor in self._optimization_parameters.move_motors_ranges.keys():
-            if motor == "hb1":         initial_positions[motor] = self._parameters.params.focusing_system.get_h_bendable_mirror_motor_1_bender()
-            elif motor == "hb2":       initial_positions[motor] = self._parameters.params.focusing_system.get_h_bendable_mirror_motor_2_bender()
-            elif motor == "hb_pitch":  initial_positions[motor] = self._parameters.params.focusing_system.get_h_bendable_mirror_motor_pitch(units=AngularUnits.DEGREES)
-            elif motor == "hb_trans":  initial_positions[motor] = self._parameters.params.focusing_system.get_h_bendable_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)
-            elif motor == "vb_bender": initial_positions[motor] = self._parameters.params.focusing_system.get_v_bimorph_mirror_motor_bender()
-            elif motor == "vb_pitch":  initial_positions[motor] = self._parameters.params.focusing_system.get_v_bimorph_mirror_motor_pitch(units=AngularUnits.DEGREES)
-            elif motor == "vb_trans":  initial_positions[motor] = self._parameters.params.focusing_system.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)
+            if   motor == "hb_1":      initial_positions[motor] = self._focusing_system.get_h_bendable_mirror_motor_1_bender()
+            elif motor == "hb_2":      initial_positions[motor] = self._focusing_system.get_h_bendable_mirror_motor_2_bender()
+            elif motor == "hb_pitch":  initial_positions[motor] = self._focusing_system.get_h_bendable_mirror_motor_pitch(units=AngularUnits.DEGREES)
+            elif motor == "hb_trans":  initial_positions[motor] = self._focusing_system.get_h_bendable_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)
+            elif motor == "vb_bender": initial_positions[motor] = self._focusing_system.get_v_bimorph_mirror_motor_bender()
+            elif motor == "vb_pitch":  initial_positions[motor] = self._focusing_system.get_v_bimorph_mirror_motor_pitch(units=AngularUnits.DEGREES)
+            elif motor == "vb_trans":  initial_positions[motor] = self._focusing_system.get_v_bimorph_mirror_motor_translation(units=DistanceUnits.MILLIMETERS)
 
         return initial_positions
 
@@ -493,16 +476,16 @@ class GenericScript(AbstractScript):
         if OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY in self._optimization_parameters.params["loss_parameters"]: print(title + f" system peak intensity: {opt_common._get_peak_intensity_from_dw(dw):8.1e}")
         if OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY  in self._optimization_parameters.params["loss_parameters"]: print(title + f" system sum intensity:  {opt_common._get_weighted_sum_intensity_from_hist(hist):8.1e}")
 
-    def _get_optimizer(self, params, **kwargs):
-        opt_trial = OptunaOptimizer(calculation_parameters=params,
+    def _get_optimizer(self, **kwargs):
+        opt_trial = OptunaOptimizer(calculation_parameters=self._parameters.params,
+                                    focusing_system=self._focusing_system,
                                     motor_types=list(self._optimization_parameters.move_motors_ranges.keys()),
                                     loss_parameters=self._optimization_parameters.params["loss_parameters"],
                                     reference_parameters_h_v=self._optimization_parameters.params["reference_parameters_h_v"],
                                     multi_objective_optimization=self._optimization_parameters.params["multi_objective_optimization"],
                                     **kwargs)
-
-
-        moo_thresholds, constraints = self._get_optimizer_moo_thresholds_and_contraints()
+        
+        moo_thresholds, constraints = self._get_optimizer_moo_thresholds_and_contraints(opt_trial)
 
         opt_trial.set_optimizer_options(
             motor_ranges=list(self._optimization_parameters.move_motors_ranges.values()),
@@ -514,8 +497,6 @@ class GenericScript(AbstractScript):
         )
 
         return opt_trial
-
-
 
     def _postprocess_optimization(self, trials):
         for t in trials:

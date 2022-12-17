@@ -79,6 +79,7 @@ class OptunaOptimizer(OptimizationCommon):
 
     def __init__(self,
                  calculation_parameters : CalculationParameters,
+                 focusing_system : AbstractFocusingOptics,
                  motor_types: List[str],
                  loss_parameters: List[str] = "centroid",
                  log_parameters_weight = 0.25,
@@ -89,6 +90,7 @@ class OptunaOptimizer(OptimizationCommon):
                  multi_objective_optimization: bool = False,
                  **kwargs):
         super().__init__(calculation_parameters=calculation_parameters,
+                         focusing_system=focusing_system,
                          motor_types=motor_types,
                          loss_parameters=loss_parameters,
                          reference_parameters_h_v=reference_parameters_h_v,
