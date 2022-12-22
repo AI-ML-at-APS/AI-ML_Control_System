@@ -54,13 +54,13 @@ from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 
 from aps.ai.autoalignment.common.util.shadow.common import TTYInibitor, HybridFailureException, PreProcessorFiles, write_reflectivity_file, write_dabam_file, get_hybrid_input_parameters, plot_shadow_beam_spatial_distribution
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, MotorResolutionRegistry
-from aps.ai.autoalignment.common.simulation.shadow.focusing_optics import ShadowFocusingOptics
+from aps.ai.autoalignment.common.simulation.shadow.focusing_optics import AbstractShadowFocusingOptics
 
 from aps.ai.autoalignment.beamline34IDC.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features
 
-class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics):
+class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulatedFocusingOptics):
     def __init__(self):
-        super(FocusingOpticsCommon, self).__init__()
+        super(FocusingOpticsCommonAbstract, self).__init__()
 
         self._slits_beam = None
         self._vkb_beam = None
@@ -70,7 +70,7 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
         self._hkb = None
 
     def initialize(self, **kwargs):
-        super(FocusingOpticsCommon, self).initialize(**kwargs)
+        super(FocusingOpticsCommonAbstract, self).initialize(**kwargs)
 
         try:    self._input_features = kwargs["input_features"]
         except: self._input_features = get_default_input_features()

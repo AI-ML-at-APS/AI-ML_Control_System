@@ -48,7 +48,7 @@ import numpy
 
 from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits, AngularUnits, MotorResolutionRegistry
 from aps.ai.autoalignment.common.util.srw.common import write_dabam_file, plot_srw_wavefront_spatial_distribution
-from aps.ai.autoalignment.common.simulation.srw.focusing_optics import SRWFocusingOptics
+from aps.ai.autoalignment.common.simulation.srw.focusing_optics import AbstractSRWFocusingOptics
 
 from aps.ai.autoalignment.beamline34IDC.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features
 
@@ -73,7 +73,7 @@ def srw_focusing_optics_factory_method(**kwargs):
         else:                        return __IdealFocusingOptics()
     except: return __IdealFocusingOptics()
 
-class _FocusingOpticsCommon(SRWFocusingOptics, AbstractSimulatedFocusingOptics):
+class _FocusingOpticsCommon(AbstractSRWFocusingOptics, AbstractSimulatedFocusingOptics):
     def __init__(self):
         super(_FocusingOpticsCommon, self).__init__()
 

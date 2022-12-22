@@ -51,7 +51,7 @@ import Shadow
 
 from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement, ShadowBeam
 
-from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon
+from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommonAbstract
 
 from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.calibrated_bender import TwoMotorsCalibratedBenderManager, OneMotorCalibratedBenderManager, HKBMockWidget
 from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import get_default_input_features
@@ -59,7 +59,7 @@ from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits
 
 from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl.bendable_ellipsoid_mirror_bl import apply_bender_surface
 
-class BendableFocusingOptics(FocusingOpticsCommon):
+class BendableFocusingOptics(FocusingOpticsCommonAbstract):
     def __init__(self):
         super(BendableFocusingOptics, self).__init__()
 

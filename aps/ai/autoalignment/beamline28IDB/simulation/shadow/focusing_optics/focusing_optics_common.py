@@ -49,13 +49,13 @@ import numpy
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 
 from aps.ai.autoalignment.common.util.shadow.common import TTYInibitor, PreProcessorFiles, write_reflectivity_file, plot_shadow_beam_spatial_distribution
-from aps.ai.autoalignment.common.simulation.shadow.focusing_optics import ShadowFocusingOptics
+from aps.ai.autoalignment.common.simulation.shadow.focusing_optics import AbstractShadowFocusingOptics
 from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features, Layout
 from aps.ai.autoalignment.common.facade.parameters import MotorResolutionRegistry
 
-class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics):
+class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulatedFocusingOptics):
     def __init__(self):
-        super(FocusingOpticsCommon, self).__init__()
+        super(FocusingOpticsCommonAbstract, self).__init__()
 
         self._h_bendable_mirror_beam = None
         self._v_bimorph_mirror_beam = None
@@ -63,7 +63,7 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
         self._v_bimorph_mirror = None
 
     def initialize(self, **kwargs):
-        super(FocusingOpticsCommon, self).initialize(**kwargs)
+        super(FocusingOpticsCommonAbstract, self).initialize(**kwargs)
 
         try:    self._input_features = kwargs["input_features"]
         except: self._input_features = get_default_input_features()

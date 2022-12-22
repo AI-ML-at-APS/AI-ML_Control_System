@@ -57,7 +57,7 @@ from aps.common.measurment.beamline.image_collector import ImageCollector
 
 from aps.ai.autoalignment.common.measurement.image_processor import ImageProcessor
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
-from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptics
+from aps.ai.autoalignment.common.hardware.epics.focusing_optics import AbstractEpicsOptics
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics, DISTANCE_V_MOTORS
 
 

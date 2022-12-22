@@ -51,9 +51,9 @@ import Shadow
 from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement
 
 from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits, DistanceUnits
-from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon, Layout
+from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommonAbstract, Layout
 
-class IdealFocusingOptics(FocusingOpticsCommon):
+class IdealFocusingOptics(FocusingOpticsCommonAbstract):
 
     def __init__(self):
         super(IdealFocusingOptics, self).__init__()

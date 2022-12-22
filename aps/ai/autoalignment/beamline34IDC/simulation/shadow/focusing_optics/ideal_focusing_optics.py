@@ -55,9 +55,9 @@ from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 from aps.ai.autoalignment.common.util.shadow.common import HybridFailureException, rotate_axis_system, get_hybrid_input_parameters
 from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits, DistanceUnits
 
-from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon
+from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommonAbstract
 
-class IdealFocusingOptics(FocusingOpticsCommon):
+class IdealFocusingOptics(FocusingOpticsCommonAbstract):
     def __init__(self):
         super(IdealFocusingOptics, self).__init__()
 

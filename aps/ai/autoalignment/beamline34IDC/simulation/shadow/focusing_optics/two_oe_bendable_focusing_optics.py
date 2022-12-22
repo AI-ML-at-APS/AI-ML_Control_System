@@ -55,15 +55,15 @@ from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 from aps.ai.autoalignment.common.util.shadow.common import HybridFailureException, rotate_axis_system, get_hybrid_input_parameters
 from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits, DistanceUnits
 
-from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon
+from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommonAbstract
 from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.calibrated_bender import CalibratedBenderManager, HKBMockWidget, VKBMockWidget
 from aps.ai.autoalignment.beamline34IDC.simulation.facade.focusing_optics_interface import get_default_input_features
 
 from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl.double_rod_bendable_ellispoid_mirror_bl import apply_bender_surface
 
-class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
+class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
     def __init__(self):
-        super(FocusingOpticsCommon, self).__init__()
+        super(FocusingOpticsCommonAbstract, self).__init__()
 
     def initialize(self, **kwargs):
         super(TwoOEBendableFocusingOptics, self).initialize(**kwargs)
