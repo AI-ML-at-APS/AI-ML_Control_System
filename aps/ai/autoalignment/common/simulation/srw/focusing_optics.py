@@ -62,10 +62,8 @@ class SRWFocusingOptics(AbstractSimulatedFocusingOptics):
         self._beamline = None
         self._modified_elements = None
 
-    def initialize(self,
-                   input_photon_beam,
-                   input_features: DictionaryWrapper,
-                   **kwargs):
+    def initialize(self, **kwargs):
+        input_photon_beam = kwargs["input_photon_beam"]
 
         self._input_wavefront          = input_photon_beam.duplicate()
         self.__initial_input_wavefront = input_photon_beam.duplicate()

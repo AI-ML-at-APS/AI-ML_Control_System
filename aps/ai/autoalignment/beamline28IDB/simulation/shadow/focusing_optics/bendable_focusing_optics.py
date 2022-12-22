@@ -63,23 +63,19 @@ class BendableFocusingOptics(FocusingOpticsCommon):
     def __init__(self):
         super(BendableFocusingOptics, self).__init__()
 
-    def initialize(self,
-                   input_photon_beam,
-                   input_features=get_default_input_features(),
-                   **kwargs):
-
-        super().initialize(input_photon_beam, input_features, **kwargs)
+    def initialize(self, **kwargs):
+        super(BendableFocusingOptics, self).initialize(**kwargs)
 
         self.__hkb_bender_manager = TwoMotorsCalibratedBenderManager(kb_upstream=HKBMockWidget(self._h_bendable_mirror[0], verbose=True, label="Upstream"),
                                                                      kb_downstream=HKBMockWidget(self._h_bendable_mirror[1], verbose=True, label="Downstream"))
         self.__hkb_bender_manager.load_calibration("H-KB")
-        self.__hkb_bender_manager.set_voltages(input_features.get_parameter("h_bendable_mirror_motor_1_bender_voltage"),
-                                               input_features.get_parameter("h_bendable_mirror_motor_2_bender_voltage"))
+        self.__hkb_bender_manager.set_voltages(self._input_features.get_parameter("h_bendable_mirror_motor_1_bender_voltage"),
+                                               self._input_features.get_parameter("h_bendable_mirror_motor_2_bender_voltage"))
         self.__hkb_bender_manager.remove_bender_files()
 
         self.__vkb_bender_manager = OneMotorCalibratedBenderManager(shadow_oe=self._v_bimorph_mirror)
         self.__vkb_bender_manager.load_calibration("V-KB")
-        self.__vkb_bender_manager.set_voltage(input_features.get_parameter("v_bimorph_mirror_motor_bender_voltage"))
+        self.__vkb_bender_manager.set_voltage(self._input_features.get_parameter("v_bimorph_mirror_motor_bender_voltage"))
 
     def _initialize_mirrors(self, input_features, reflectivity_file, h_bendable_mirror_error_profile_file):
         h_bendable_mirror_motor_pitch_angle              = input_features.get_parameter("h_bendable_mirror_motor_pitch_angle")

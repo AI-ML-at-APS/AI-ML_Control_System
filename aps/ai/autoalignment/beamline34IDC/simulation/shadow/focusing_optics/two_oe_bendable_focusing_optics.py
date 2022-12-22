@@ -65,25 +65,21 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommon):
     def __init__(self):
         super(FocusingOpticsCommon, self).__init__()
 
-    def initialize(self,
-                   input_photon_beam,
-                   input_features=get_default_input_features(),
-                   **kwargs):
-
-        super().initialize(input_photon_beam, input_features, **kwargs)
+    def initialize(self, **kwargs):
+        super(TwoOEBendableFocusingOptics, self).initialize(**kwargs)
 
         self.__vkb_bender_manager = CalibratedBenderManager(kb_upstream=VKBMockWidget(self._vkb[0], verbose=True, label="Upstream"),
                                                             kb_downstream=VKBMockWidget(self._vkb[1], verbose=True, label="Downstream"))
         self.__vkb_bender_manager.load_calibration("V-KB", power=kwargs["power"])
-        self.__vkb_bender_manager.set_positions(input_features.get_parameter("vkb_motor_1_bender_position"),
-                                                input_features.get_parameter("vkb_motor_2_bender_position"))
+        self.__vkb_bender_manager.set_positions(self._input_features.get_parameter("vkb_motor_1_bender_position"),
+                                                self._input_features.get_parameter("vkb_motor_2_bender_position"))
         self.__vkb_bender_manager.remove_bender_files()
 
         self.__hkb_bender_manager = CalibratedBenderManager(kb_upstream=HKBMockWidget(self._hkb[0], verbose=True, label="Upstream"),
                                                             kb_downstream=HKBMockWidget(self._hkb[1], verbose=True, label="Downstream"))
         self.__hkb_bender_manager.load_calibration("H-KB", power=kwargs["power"])
-        self.__hkb_bender_manager.set_positions(input_features.get_parameter("hkb_motor_1_bender_position"),
-                                                input_features.get_parameter("hkb_motor_2_bender_position"))
+        self.__hkb_bender_manager.set_positions(self._input_features.get_parameter("hkb_motor_1_bender_position"),
+                                                self._input_features.get_parameter("hkb_motor_2_bender_position"))
         self.__hkb_bender_manager.remove_bender_files()
 
     def _initialize_kb(self, input_features, reflectivity_file, vkb_error_profile_file, hkb_error_profile_file):

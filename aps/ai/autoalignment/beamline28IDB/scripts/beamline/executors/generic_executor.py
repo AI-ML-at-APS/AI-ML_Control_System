@@ -229,22 +229,28 @@ class GenericScript(AbstractScript):
         if mocking_mode: print(self._get_script_name() + " in Mocking Mode")
         else:
             if self._simulation_mode:
-                self._initialize_simulation_parameters(save_images,
-                                                       every_n_images,
-                                                       use_denoised,
-                                                       add_noise,
-                                                       noise,
-                                                       percentage_fluctutation,
-                                                       calculate_over_noise,
-                                                       noise_threshold,
-                                                       layout)
+                factory_parameters, init_parameters = self._initialize_simulation_parameters(save_images,
+                                                                                             every_n_images,
+                                                                                             use_denoised,
+                                                                                             add_noise,
+                                                                                             noise,
+                                                                                             percentage_fluctutation,
+                                                                                             calculate_over_noise,
+                                                                                             noise_threshold,
+                                                                                             layout)
             else:
-                self._initialize_hardware_parameters(save_images,
-                                                     every_n_images,
-                                                     use_denoised,
-                                                     calculate_over_noise,
-                                                     noise_threshold,
-                                                     **kwargs)
+                factory_parameters, init_parameters = self._initialize_hardware_parameters(save_images,
+                                                                                           every_n_images,
+                                                                                           use_denoised,
+                                                                                           calculate_over_noise,
+                                                                                           noise_threshold,
+                                                                                           **kwargs)
+
+            self._focusing_system = focusing_optics_factory_method(execution_mode=self._parameters.params.execution_mode,
+                                                                   implementor=self._parameters.params.implementor,
+                                                                   **factory_parameters)
+            self._focusing_system.initialize(**init_parameters)
+
             self._parameters.params.photon_beam = None
 
             self._optimization_parameters = self._get_optimization_parameters()
@@ -423,15 +429,16 @@ class GenericScript(AbstractScript):
         self.__setup_work_dir()
         clean_up()
 
-        # Initializing the focused beam from simulation
-        self._focusing_system = focusing_optics_factory_method(execution_mode=self._parameters.params.execution_mode,
-                                                               implementor=self._parameters.params.implementor,
-                                                               bender=True)
+        factory_parameters = {}
+        factory_parameters["bender"] = True
 
-        self._focusing_system.initialize(input_photon_beam=load_shadow_beam(input_beam_path),
-                                         rewrite_preprocessor_files=PreProcessorFiles.NO,
-                                         layout=layout,
-                                         input_features=get_default_input_features(layout=layout))
+        init_parameters = {}
+        init_parameters["input_photon_beam"] = load_shadow_beam(input_beam_path)
+        init_parameters["rewrite_preprocessor_files"] = PreProcessorFiles.NO
+        init_parameters["layout"] = layout
+        init_parameters["input_features"] = get_default_input_features(layout=layout)
+
+        return factory_parameters, init_parameters
 
     def _initialize_hardware_parameters(self,
                                         save_images,
@@ -448,11 +455,11 @@ class GenericScript(AbstractScript):
         print("Hardware parameters")
         print(self._parameters.as_kwargs())
 
-        self._focusing_system = focusing_optics_factory_method(execution_mode=self._parameters.params.execution_mode,
-                                                               implementor=self._parameters.params.execution_mode,
-                                                               measurement_directory=self._data_directory,
-                                                               **kwargs)
-        self._focusing_system.initialize()
+        factory_parameters = {}
+        factory_parameters["measurement_directory"] = self._data_directory
+        factory_parameters.update(kwargs)
+
+        return factory_parameters, {}
 
     def _get_initial_positions(self):
         initial_positions = {}

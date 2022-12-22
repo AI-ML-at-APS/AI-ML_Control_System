@@ -62,12 +62,11 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
         self._h_bendable_mirror = None
         self._v_bimorph_mirror = None
 
-    def initialize(self,
-                   input_photon_beam,
-                   input_features=get_default_input_features(),
-                   **kwargs):
+    def initialize(self, **kwargs):
+        super(FocusingOpticsCommon, self).initialize(**kwargs)
 
-        super(FocusingOpticsCommon, self).initialize(input_photon_beam, input_features, **kwargs)
+        try:    self._input_features = kwargs["input_features"]
+        except: self._input_features = get_default_input_features()
 
         try:    layout = kwargs["layout"]
         except: layout = Layout.AUTO_ALIGNMENT
@@ -84,13 +83,13 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
         energies     = ShadowPhysics.getEnergyFromShadowK(self._input_beam._beam.rays[:, 10])
         energy_range = [numpy.min(energies), numpy.max(energies)]
 
-        if rewrite_preprocessor_files   == PreProcessorFiles.YES_FULL_RANGE:     reflectivity_file = write_reflectivity_file()
+        if rewrite_preprocessor_files   == PreProcessorFiles.YES_FULL_RANGE:   reflectivity_file = write_reflectivity_file()
         elif rewrite_preprocessor_files == PreProcessorFiles.YES_SOURCE_RANGE: reflectivity_file = write_reflectivity_file(energy_range=energy_range)
         elif rewrite_preprocessor_files == PreProcessorFiles.NO:               reflectivity_file = "Pt.dat"
 
         h_bendable_mirror_error_profile_file = "H-Bendable-Mirror_shadow.dat"
 
-        self._initialize_mirrors(input_features, reflectivity_file, h_bendable_mirror_error_profile_file)
+        self._initialize_mirrors(self._input_features, reflectivity_file, h_bendable_mirror_error_profile_file)
 
         self._modified_elements = [self._h_bendable_mirror, self._v_bimorph_mirror]
 

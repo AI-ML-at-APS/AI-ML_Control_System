@@ -69,13 +69,11 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
         self._vkb = None
         self._hkb = None
 
+    def initialize(self, **kwargs):
+        super(FocusingOpticsCommon, self).initialize(**kwargs)
 
-    def initialize(self,
-                   input_photon_beam,
-                   input_features=get_default_input_features(),
-                   **kwargs):
-
-        super(FocusingOpticsCommon, self).initialize(input_photon_beam, input_features, **kwargs)
+        try:    self._input_features = kwargs["input_features"]
+        except: self._input_features = get_default_input_features()
 
         self._motor_resolution = MotorResolutionRegistry.getInstance().get_motor_resolution_set("34-ID-C")
 
@@ -108,10 +106,10 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
         coherence_slits.F_SCREEN = 1
         coherence_slits.I_SLIT = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         coherence_slits.N_SCREEN = 1
-        coherence_slits.CX_SLIT = numpy.array([input_features.get_parameter("coh_slits_h_center"), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        coherence_slits.CZ_SLIT = numpy.array([input_features.get_parameter("coh_slits_v_center"), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        coherence_slits.RX_SLIT = numpy.array([input_features.get_parameter("coh_slits_h_aperture"), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        coherence_slits.RZ_SLIT = numpy.array([input_features.get_parameter("coh_slits_v_aperture"), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        coherence_slits.CX_SLIT = numpy.array([self._input_features.get_parameter("coh_slits_h_center"), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        coherence_slits.CZ_SLIT = numpy.array([self._input_features.get_parameter("coh_slits_v_center"), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        coherence_slits.RX_SLIT = numpy.array([self._input_features.get_parameter("coh_slits_h_aperture"), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        coherence_slits.RZ_SLIT = numpy.array([self._input_features.get_parameter("coh_slits_v_aperture"), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         coherence_slits.T_IMAGE = 0.0
         coherence_slits.T_INCIDENCE = 0.0
         coherence_slits.T_REFLECTION = 180.0
@@ -119,7 +117,7 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
 
         self._coherence_slits = ShadowOpticalElement(coherence_slits)
 
-        self._initialize_kb(input_features, reflectivity_file, vkb_error_profile_file, hkb_error_profile_file)
+        self._initialize_kb(self._input_features, reflectivity_file, vkb_error_profile_file, hkb_error_profile_file)
 
         self._modified_elements = [self._coherence_slits, self._vkb, self._hkb]
 

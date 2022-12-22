@@ -49,7 +49,6 @@ from aps.common.ml.data_structures import DictionaryWrapper
 from aps.ai.autoalignment.common.facade.focusing_optics_interface import AbstractFocusingOptics
 
 class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
-    def initialize(self, input_photon_beam, input_features: DictionaryWrapper, **kwargs):raise NotImplementedError()
     def perturbate_input_photon_beam(self, shift_h=None, shift_v=None, rotation_h=None, rotation_v=None): raise  NotImplementedError()
     def restore_input_photon_beam(self): raise NotImplementedError()
 

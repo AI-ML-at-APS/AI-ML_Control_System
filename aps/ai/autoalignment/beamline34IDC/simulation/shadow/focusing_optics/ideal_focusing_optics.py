@@ -63,7 +63,6 @@ class IdealFocusingOptics(FocusingOpticsCommon):
 
     def _initialize_kb(self, input_features, reflectivity_file, vkb_error_profile_file, hkb_error_profile_file):
         # V-KB
-
         vkb_motor_3_pitch_angle = input_features.get_parameter("vkb_motor_3_pitch_angle")
         vkb_pitch_angle_shadow = 90 - numpy.degrees(vkb_motor_3_pitch_angle)
         vkb_motor_3_delta_pitch_angle = input_features.get_parameter("vkb_motor_3_delta_pitch_angle")
