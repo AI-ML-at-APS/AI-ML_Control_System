@@ -225,7 +225,6 @@ class GenericScript(AbstractScript):
         self._aspect_ratio = AspectRatio.AUTO
         self._color_map    = ColorMap.GRAY
 
-
         if mocking_mode: print(self._get_script_name() + " in Mocking Mode")
         else:
             if self._simulation_mode:
