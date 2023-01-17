@@ -48,7 +48,7 @@ import numpy
 
 from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits, AngularUnits, MotorResolutionRegistry
 from aps.ai.autoalignment.common.util.srw.common import write_dabam_file, plot_srw_wavefront_spatial_distribution
-from aps.ai.autoalignment.common.simulation.srw.focusing_optics import SRWFocusingOptics
+from aps.ai.autoalignment.common.simulation.srw.focusing_optics import AbstractSRWFocusingOptics
 
 from aps.ai.autoalignment.beamline34IDC.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features
 
@@ -73,7 +73,7 @@ def srw_focusing_optics_factory_method(**kwargs):
         else:                        return __IdealFocusingOptics()
     except: return __IdealFocusingOptics()
 
-class _FocusingOpticsCommon(SRWFocusingOptics, AbstractSimulatedFocusingOptics):
+class _FocusingOpticsCommon(AbstractSRWFocusingOptics, AbstractSimulatedFocusingOptics):
     def __init__(self):
         super(_FocusingOpticsCommon, self).__init__()
 
@@ -91,8 +91,11 @@ class _FocusingOpticsCommon(SRWFocusingOptics, AbstractSimulatedFocusingOptics):
         self._vkb = None
         self._hkb = None
 
-    def initialize(self, input_photon_beam, input_features=get_default_input_features(), **kwargs):
-        super(_FocusingOpticsCommon, self).initialize(input_photon_beam, input_features, **kwargs)
+    def initialize(self, **kwargs):
+        super(_FocusingOpticsCommon, self).initialize(**kwargs)
+
+        try:    self._input_features = kwargs["input_features"]
+        except: self._input_features = get_default_input_features()
 
         try:    rewrite_height_error_profile_files = kwargs["rewrite_height_error_profile_files"]
         except: rewrite_height_error_profile_files = False
@@ -105,10 +108,10 @@ class _FocusingOpticsCommon(SRWFocusingOptics, AbstractSimulatedFocusingOptics):
             hkb_error_profile_file = "HKB-LTP_srw.dat"
 
         # Coherence Slits
-        width    = input_features.get_parameter("coh_slits_h_aperture") * 1e-3 # m
-        height   = input_features.get_parameter("coh_slits_v_aperture") * 1e-3
-        h_center = input_features.get_parameter("coh_slits_h_center") * 1e-3
-        v_center = input_features.get_parameter("coh_slits_v_center") * 1e-3
+        width    = self._input_features.get_parameter("coh_slits_h_aperture") * 1e-3 # m
+        height   = self._input_features.get_parameter("coh_slits_v_aperture") * 1e-3
+        h_center = self._input_features.get_parameter("coh_slits_h_center") * 1e-3
+        v_center = self._input_features.get_parameter("coh_slits_v_center") * 1e-3
 
         self._coherence_slits = SRWAperture(boundary_shape=Rectangle(x_left=-0.5 * width + h_center,
                                                                      x_right=0.5 * width + h_center,
@@ -140,7 +143,7 @@ class _FocusingOpticsCommon(SRWFocusingOptics, AbstractSimulatedFocusingOptics):
                                                                                    vertical_resolution_modification_factor_at_resizing    = 2.0
                                                                                ))
 
-        self._initialize_kb(input_features, vkb_error_profile_file, hkb_error_profile_file)
+        self._initialize_kb(self._input_features, vkb_error_profile_file, hkb_error_profile_file)
 
         self._modified_elements = [self._coherence_slits, self._vkb, self._hkb]
 

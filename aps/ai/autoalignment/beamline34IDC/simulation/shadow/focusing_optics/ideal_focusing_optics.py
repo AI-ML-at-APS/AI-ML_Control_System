@@ -55,15 +55,14 @@ from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 from aps.ai.autoalignment.common.util.shadow.common import HybridFailureException, rotate_axis_system, get_hybrid_input_parameters
 from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits, DistanceUnits
 
-from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommon
+from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommonAbstract
 
-class IdealFocusingOptics(FocusingOpticsCommon):
+class IdealFocusingOptics(FocusingOpticsCommonAbstract):
     def __init__(self):
         super(IdealFocusingOptics, self).__init__()
 
     def _initialize_kb(self, input_features, reflectivity_file, vkb_error_profile_file, hkb_error_profile_file):
         # V-KB
-
         vkb_motor_3_pitch_angle = input_features.get_parameter("vkb_motor_3_pitch_angle")
         vkb_pitch_angle_shadow = 90 - numpy.degrees(vkb_motor_3_pitch_angle)
         vkb_motor_3_delta_pitch_angle = input_features.get_parameter("vkb_motor_3_delta_pitch_angle")

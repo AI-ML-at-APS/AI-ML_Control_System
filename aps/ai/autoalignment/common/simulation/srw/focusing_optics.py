@@ -55,17 +55,15 @@ from wofrysrw.beamline.srw_beamline import SRWBeamline
 from wofrysrw.beamline.optical_elements.srw_optical_element import SRWOpticalElementDisplacement
 from wofrysrw.beamline.optical_elements.mirrors.srw_mirror import Orientation
 
-class SRWFocusingOptics(AbstractSimulatedFocusingOptics):
+class AbstractSRWFocusingOptics(AbstractSimulatedFocusingOptics):
     def __init__(self):
         self._input_wavefront = None
         self.__initial_input_wavefront = None
         self._beamline = None
         self._modified_elements = None
 
-    def initialize(self,
-                   input_photon_beam,
-                   input_features: DictionaryWrapper,
-                   **kwargs):
+    def initialize(self, **kwargs):
+        input_photon_beam = kwargs["input_photon_beam"]
 
         self._input_wavefront          = input_photon_beam.duplicate()
         self.__initial_input_wavefront = input_photon_beam.duplicate()
@@ -151,7 +149,6 @@ class SRWFocusingOptics(AbstractSimulatedFocusingOptics):
                                                                      rotation_y=element.displacement.rotation_y)
         else:
             raise ValueError("Movement not recognized")
-
 
     @classmethod
     def _change_shape(cls, element, q_distance, movement=Movement.ABSOLUTE):

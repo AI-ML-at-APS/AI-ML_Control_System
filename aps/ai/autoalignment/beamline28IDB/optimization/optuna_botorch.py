@@ -57,8 +57,7 @@ import joblib
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import ExecutionMode
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 from aps.ai.autoalignment.beamline28IDB.optimization import configs
-
-from aps.ai.autoalignment.beamline28IDB.optimization.common import SelectionAlgorithm, OptimizationCriteria, OptimizationCommon
+from aps.ai.autoalignment.beamline28IDB.optimization.common import SelectionAlgorithm, OptimizationCriteria, CalculationParameters, OptimizationCommon, MooThresholds
 from aps.ai.autoalignment.beamline28IDB.optimization.analysis_utils import select_nash_equil_trial_from_pareto_front
 from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration import (
     BoTorchSampler,
@@ -88,52 +87,28 @@ class OptunaOptimizer(OptimizationCommon):
         "qnehvi": qnehvi_candidates_func,
     }
 
-    def __init__(
-        self,
-        focusing_system: AbstractFocusingOptics,
-        motor_types: List[str],
-        random_seed: int = None,
-        loss_parameters: List[str] = "centroid",
-        log_parameters_weight = 0.25,
-        reference_parameters_h_v: Dict[str, Tuple] = None,
-        loss_min_value: float = None,
-        xrange: List[float] = None,
-        yrange: List[float] = None,
-        nbins_h: int = 256,
-        nbins_v: int = 256,
-        do_gaussian_fit: bool = False,
-        from_raw_image = True,
-        use_denoised: bool = True,
-        no_beam_loss: float = 1e4,
-        intensity_no_beam_loss: float = 0,
-        multi_objective_optimization: bool = False,
-        execution_mode: int = ExecutionMode.SIMULATION,
-        implementor: int = Implementors.SHADOW,
-        save_images: bool = False,
-        every_n_images: int = 5,
-        **kwargs,
-    ):
-        super().__init__(
-            focusing_system,
-            motor_types,
-            random_seed,
-            loss_parameters,
-            reference_parameters_h_v,
-            loss_min_value,
-            xrange,
-            yrange,
-            nbins_h,
-            nbins_v,
-            do_gaussian_fit,
-            from_raw_image,
-            use_denoised,
-            no_beam_loss,
-            intensity_no_beam_loss,
-            multi_objective_optimization,
-            execution_mode,
-            implementor,
-            **kwargs,
-        )
+    def __init__(self,
+                 calculation_parameters : CalculationParameters,
+                 focusing_system : AbstractFocusingOptics,
+                 motor_types: List[str],
+                 loss_parameters: List[str] = "centroid",
+                 log_parameters_weight = 0.25,
+                 reference_parameters_h_v: Dict[str, Tuple] = None,
+                 loss_min_value: float = None,
+                 no_beam_loss: float = 1e4,
+                 intensity_no_beam_loss: float = 0,
+                 multi_objective_optimization: bool = False,
+                 **kwargs):
+        super().__init__(calculation_parameters=calculation_parameters,
+                         focusing_system=focusing_system,
+                         motor_types=motor_types,
+                         loss_parameters=loss_parameters,
+                         reference_parameters_h_v=reference_parameters_h_v,
+                         loss_min_value=loss_min_value,
+                         no_beam_loss=no_beam_loss,
+                         intensity_no_beam_loss=intensity_no_beam_loss,
+                         multi_objective_optimization=multi_objective_optimization,
+                         **kwargs)
         self.best_params = None
         self.motor_ranges = None
         self.study = None
@@ -144,11 +119,8 @@ class OptunaOptimizer(OptimizationCommon):
         self._sum_intensity_threshold = None
         self._loss_fn_this = None
         self._use_discrete_space = None
-        self._save_images = save_images
-        self._every_n_images = every_n_images
         self._dump_directory = os.path.join(os.curdir, "dump")
-        if not os.path.exists(self._dump_directory):
-            os.mkdir(self._dump_directory)
+        if not os.path.exists(self._dump_directory): os.mkdir(self._dump_directory)
 
     def set_optimizer_options(
         self,
@@ -180,15 +152,14 @@ class OptunaOptimizer(OptimizationCommon):
                 acquisition_function = self.acquisition_functions["qnei"]
 
         elif isinstance(acquisition_function, str):
-            if acquisition_function not in self.acquisition_functions:
-                raise ValueError
+            if acquisition_function not in self.acquisition_functions: raise ValueError
             acquisition_function = self.acquisition_functions[acquisition_function]
 
         # Setting up the constraints
         self._constraints = OptunaOptimizer._check_constraints(constraints)
 
         # Initializing the sampler
-        seed = self.random_seed if botorch_seed is None else botorch_seed
+        seed = self.cp.random_seed if botorch_seed is None else botorch_seed
         if base_sampler is None:
             sampler_extra_options = {}
             if self._constraints is not None:
@@ -212,59 +183,54 @@ class OptunaOptimizer(OptimizationCommon):
         self.best_params = {k: 0.0 for k in self.motor_types}
 
     def _check_directions(self, directions: Dict) -> List:
-        if directions is None:
-            return ["minimize" for k in self.loss_parameters]
+        if directions is None: return ["minimize" for k in self.loss_parameters]
         directions_list = []
         for k in self.loss_parameters:
-            if k not in directions:
-                raise ValueError
-            if directions[k] not in ["minimize", "maximize"]:
-                raise ValueError
+            if k not in directions: raise ValueError
+            if directions[k] not in ["minimize", "maximize"]: raise ValueError
             directions_list.append(directions[k])
         return directions_list
 
     def _check_thresholds(self, thresholds: Dict, directions_list: List) -> Union[List, None]:
-        if thresholds is None or len(thresholds) == 0:
-            return None
+        if thresholds is None or len(thresholds) == 0: return None
 
         thresholds_list = []
         for i, k in enumerate(self.loss_parameters):
-            if k not in thresholds:
-                raise ValueError
+            if k not in thresholds: raise ValueError
             v = np.abs(thresholds[k])
-            if directions_list[i] == "minimize":
-                v *= -1
+            if directions_list[i] == "minimize": v *= -1
             thresholds_list.append(v)
+
         return thresholds_list
 
     @staticmethod
     def _check_constraints(constraints: Dict):
-        if constraints is None:
-            return None
+        if constraints is None: return None
         for constraint in constraints:
-            if constraint not in configs.DEFAULT_CONSTRAINT_OPTIONS:
-                raise ValueError
+            if constraint not in configs.DEFAULT_CONSTRAINT_OPTIONS: raise ValueError
         return constraints
 
     def _constraints_func(self, trial):
         constraint_vals = []
-        for constraint_type in self._constraints:
-            constraint_vals.append(trial.user_attrs[f"{constraint_type}_constraint"])
+        for constraint_type in self._constraints: constraint_vals.append(trial.user_attrs[f"{constraint_type}_constraint"])
+
         return constraint_vals
 
     def _set_trial_constraints(self, trial: Trial) -> NoReturn:
-        if self._constraints is None:
-            return
+        if self._constraints is None: return
+
         minimize_constraint_fns = {
             Constraints.CENTROID:      self.get_centroid_distance,
             Constraints.SIGMA:         self.get_sigma,
             Constraints.FWHM:          self.get_fwhm,
             Constraints.PEAK_DISTANCE: self.get_peak_distance,
         }
+
         maximize_constraint_fns = {
             Constraints.SUM_INTENSITY:  self.get_sum_intensity,
             Constraints.PEAK_INTENSITY: self.get_peak_intensity,
         }
+
         for constraint, threshold in self._constraints.items():
             if constraint in minimize_constraint_fns:
                 x = minimize_constraint_fns[constraint]()
@@ -273,7 +239,7 @@ class OptunaOptimizer(OptimizationCommon):
                 x = maximize_constraint_fns[constraint]()
                 value = -2 * (x > threshold) + 1
             trial.set_user_attr(f"{constraint}_constraint", value)
-        return
+
 
     def _prune_trial(self, params):
         print("Pruning trial with parameters", params)
@@ -292,60 +258,50 @@ class OptunaOptimizer(OptimizationCommon):
 
         loss = self._loss_fn_this(current_params)
 
-        if self._save_images:
-            if trial.number % self._every_n_images == 0:
-                joblib.dump(
-                    value=self.beam_state.hist,
-                    filename=os.path.join(self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".gz"),
-                )
+        if self.cp.save_images:
+            if trial.number % self.cp.every_n_images == 0:
+                joblib.dump(value=self.beam_state.hist,
+                            filename=os.path.join(self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".gz"))
 
         self._set_trial_constraints(trial)
         if self._multi_objective_optimization:
             if np.nan in np.atleast_1d(loss):
-                if self._raise_prune_exception:
-                    self._prune_trial(current_params)
+                if self._raise_prune_exception: self._prune_trial(current_params)
                 loss[np.isnan(loss)] = 1e4
 
             if self._sum_intensity_threshold is not None:
                 if self.beam_state.hist.data_2D.sum() < self._sum_intensity_threshold:
-                    if self._raise_prune_exception:
-                        self._prune_trial(current_params)
-                    else:
-                        return [1e4] * len(self._loss_function_list)
+                    if self._raise_prune_exception: self._prune_trial(current_params)
+                    else: return [1e4] * len(self._loss_function_list)
 
             for k in [OptimizationCriteria.SIGMA, OptimizationCriteria.FWHM]:
                 if k in self.loss_parameters:
                     width_idx = self.loss_parameters.index(k)
-                    if loss[width_idx] == 0:
-                        loss[width_idx] = 1e4
+                    if loss[width_idx] == 0:loss[width_idx] = 1e4
+
             loss = list(loss)
         else:
             if np.isnan(loss):
-                if self._raise_prune_exception:
-                    self._prune_trial(current_params)
+                if self._raise_prune_exception: self._prune_trial(current_params)
                 loss = 1e4
 
             if self._sum_intensity_threshold is not None:
                 if self.beam_state.hist.data_2D.sum() < self._sum_intensity_threshold:
-                    if self._raise_prune_exception:
-                        self._prune_trial(current_params)
-                    else:
-                        return 1e4
+                    if self._raise_prune_exception: self._prune_trial(current_params)
+                    else: return 1e4
 
             for k in [OptimizationCriteria.SIGMA, OptimizationCriteria.FWHM]:
-                if k in self.loss_parameters:
-                    if loss == 0:
-                        loss = 1e4
+                if k in self.loss_parameters and loss == 0: loss = 1e4
 
         trial.set_user_attr("dw", deepcopy(self.beam_state.dw))
         trial.set_user_attr("ws", self.get_weighted_sum_intensity())
+
         return loss
 
     def trials(self, n_trials: int, trial_motor_types: list = None, step_scale: float = 1):
         obj_this = lambda t: self._objective(t, step_scale=step_scale)
 
-        if trial_motor_types is None:
-            self.study.optimize(obj_this, n_trials)
+        if trial_motor_types is None: self.study.optimize(obj_this, n_trials)
         else:
             fixed_params = {k: self.best_params[k] for k in self.best_params if k not in trial_motor_types}
             partial_sampler = optuna.samplers.PartialFixedSampler(fixed_params, self._base_sampler)
@@ -382,12 +338,5 @@ class OptunaOptimizer(OptimizationCommon):
 
         return trials[idx].params, trials[idx].values
 
+    def _optimize(self) -> NoReturn: pass
 
-    # def trials(self, n_guesses = 1, verbose: bool = False, accept_all_solutions: bool = False):
-    #    pass
-
-    def _optimize(self) -> NoReturn:
-        pass
-
-    # def set_optimizer_options(self):
-    #    pass

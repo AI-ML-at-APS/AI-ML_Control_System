@@ -60,7 +60,19 @@ class Histogram():
         self.vv = vv
         self.data_2D = data_2D
 
-def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fit=False):
+def calculate_projections_over_noise(hh, noise_threshold):
+    noise_level = numpy.average(hh[0:10, 0:10])
+
+    hh_on = numpy.copy(hh)
+    hh_on[numpy.where(hh < noise_threshold * noise_level)] = 0
+    hh_on[numpy.where(hh >= noise_threshold * noise_level)] -= noise_level
+
+    hh_h = hh_on.sum(axis=1)
+    hh_v = hh_on.sum(axis=0)
+
+    return hh_on, hh_h, hh_v
+
+def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fit=False, calculate_over_noise=False, noise_threshold=1.5):
     ticket = {'error': 0}
     ticket['nbins_h'] = len(x_array)
     ticket['nbins_v'] = len(y_array)
@@ -75,16 +87,20 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
     xx = x_array[cursor_x]
     yy = y_array[cursor_y]
     hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))].T
-    hh_h = hh.sum(axis=1)
-    hh_v = hh.sum(axis=0)
+
+    if calculate_over_noise:
+        _, hh_h, hh_v = calculate_projections_over_noise(hh, noise_threshold)
+    else:
+        hh_h = hh.sum(axis=1)
+        hh_v = hh.sum(axis=0)
 
     fwhm_h, fwhm_quote_h, fwhm_coordinates_h = get_fwhm(hh_h, xx)
-    sigma_h = get_sigma(hh_h, xx)
+    sigma_h                                  = get_sigma(hh_h, xx)
     fwhm_v, fwhm_quote_v, fwhm_coordinates_v = get_fwhm(hh_v, yy)
-    sigma_v = get_sigma(hh_v, yy)
-    centroid_h = get_average(hh_h, xx)
-    centroid_v = get_average(hh_v, yy)
-    peak_h, peak_v = get_peak_location_2D(xx, yy, hh)
+    sigma_v                                  = get_sigma(hh_v, yy)
+    centroid_h                               = get_average(hh_h, xx)
+    centroid_v                               = get_average(hh_v, yy)
+    peak_h, peak_v                           = get_peak_location_2D(xx, yy, hh)
 
     ticket['xrange'] = xrange
     ticket['yrange'] = yrange
@@ -156,7 +172,7 @@ class ColorMap:
 
 def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
             int_um="$ph/s/0.1\%BW$", peak_um="$ph/s/mm^2/0.1\%BW$",
-            flip=Flip.NO, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, save_image=False, save_path=os.curdir, plot=True):
+            flip=Flip.NO, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, calculate_over_noise=False, noise_threshold=1.5, save_image=False, save_path=os.curdir, plot=True):
     if xrange is None: xrange = [x_array[0], x_array[-1]]
     if yrange is None: yrange = [y_array[0], y_array[-1]]
 
@@ -166,15 +182,19 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
     xx = x_array[cursor_x]
     yy = y_array[cursor_y]
     hh = z_array[tuple(numpy.meshgrid(cursor_x, cursor_y))].T
-    hh_h = hh.sum(axis=1)
-    hh_v = hh.sum(axis=0)
 
-    fwhm_h, _, _ = get_fwhm(hh_h, xx)
-    sigma_h = get_sigma(hh_h, xx)
-    fwhm_v, _, _ = get_fwhm(hh_v, yy)
-    sigma_v = get_sigma(hh_v, yy)
-    centroid_h = get_average(hh_h, xx)
-    centroid_v = get_average(hh_v, yy)
+    if calculate_over_noise:
+        _, hh_h, hh_v = calculate_projections_over_noise(hh, noise_threshold)
+    else:
+        hh_h = hh.sum(axis=1)
+        hh_v = hh.sum(axis=0)
+
+    fwhm_h, _, _   = get_fwhm(hh_h, xx)
+    sigma_h        = get_sigma(hh_h, xx)
+    fwhm_v, _, _   = get_fwhm(hh_v, yy)
+    sigma_v        = get_sigma(hh_v, yy)
+    centroid_h     = get_average(hh_h, xx)
+    centroid_v     = get_average(hh_v, yy)
     peak_h, peak_v = get_peak_location_2D(xx, yy, hh, smooth=True)
 
     integral_intensity = numpy.sum(hh) * (1 if int_um=="" else (xx[1] - xx[0]) * (yy[1] - yy[0]))

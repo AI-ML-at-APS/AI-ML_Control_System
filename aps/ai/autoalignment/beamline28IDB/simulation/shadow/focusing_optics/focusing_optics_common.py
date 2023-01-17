@@ -49,25 +49,24 @@ import numpy
 from orangecontrib.shadow.util.shadow_util import ShadowPhysics
 
 from aps.ai.autoalignment.common.util.shadow.common import TTYInibitor, PreProcessorFiles, write_reflectivity_file, plot_shadow_beam_spatial_distribution
-from aps.ai.autoalignment.common.simulation.shadow.focusing_optics import ShadowFocusingOptics
+from aps.ai.autoalignment.common.simulation.shadow.focusing_optics import AbstractShadowFocusingOptics
 from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics, get_default_input_features, Layout
 from aps.ai.autoalignment.common.facade.parameters import MotorResolutionRegistry
 
-class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics):
+class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulatedFocusingOptics):
     def __init__(self):
-        super(FocusingOpticsCommon, self).__init__()
+        super(FocusingOpticsCommonAbstract, self).__init__()
 
         self._h_bendable_mirror_beam = None
         self._v_bimorph_mirror_beam = None
         self._h_bendable_mirror = None
         self._v_bimorph_mirror = None
 
-    def initialize(self,
-                   input_photon_beam,
-                   input_features=get_default_input_features(),
-                   **kwargs):
+    def initialize(self, **kwargs):
+        super(FocusingOpticsCommonAbstract, self).initialize(**kwargs)
 
-        super(FocusingOpticsCommon, self).initialize(input_photon_beam, input_features, **kwargs)
+        try:    self._input_features = kwargs["input_features"]
+        except: self._input_features = get_default_input_features()
 
         try:    layout = kwargs["layout"]
         except: layout = Layout.AUTO_ALIGNMENT
@@ -84,13 +83,13 @@ class FocusingOpticsCommon(ShadowFocusingOptics, AbstractSimulatedFocusingOptics
         energies     = ShadowPhysics.getEnergyFromShadowK(self._input_beam._beam.rays[:, 10])
         energy_range = [numpy.min(energies), numpy.max(energies)]
 
-        if rewrite_preprocessor_files   == PreProcessorFiles.YES_FULL_RANGE:     reflectivity_file = write_reflectivity_file()
+        if rewrite_preprocessor_files   == PreProcessorFiles.YES_FULL_RANGE:   reflectivity_file = write_reflectivity_file()
         elif rewrite_preprocessor_files == PreProcessorFiles.YES_SOURCE_RANGE: reflectivity_file = write_reflectivity_file(energy_range=energy_range)
         elif rewrite_preprocessor_files == PreProcessorFiles.NO:               reflectivity_file = "Pt.dat"
 
         h_bendable_mirror_error_profile_file = "H-Bendable-Mirror_shadow.dat"
 
-        self._initialize_mirrors(input_features, reflectivity_file, h_bendable_mirror_error_profile_file)
+        self._initialize_mirrors(self._input_features, reflectivity_file, h_bendable_mirror_error_profile_file)
 
         self._modified_elements = [self._h_bendable_mirror, self._v_bimorph_mirror]
 

@@ -54,16 +54,15 @@ from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits
 from aps.ai.autoalignment.common.util.shadow.common import EmptyBeamException
 from aps.ai.autoalignment.common.simulation.facade.focusing_optics_interface import AbstractSimulatedFocusingOptics
 
-class ShadowFocusingOptics(AbstractSimulatedFocusingOptics):
+class AbstractShadowFocusingOptics(AbstractSimulatedFocusingOptics):
     def __init__(self):
         self._input_beam = None
         self.__initial_input_beam = None
         self._modified_elements = None
 
-    def initialize(self,
-                   input_photon_beam,
-                   input_features: DictionaryWrapper,
-                   **kwargs):
+    def initialize(self, **kwargs):
+        input_photon_beam = kwargs["input_photon_beam"]
+
         self._input_beam          = input_photon_beam.duplicate()
         self.__initial_input_beam = input_photon_beam.duplicate()
 

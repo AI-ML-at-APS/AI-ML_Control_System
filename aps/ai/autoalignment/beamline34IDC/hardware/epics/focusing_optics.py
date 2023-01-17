@@ -54,7 +54,7 @@ from aps.common.initializer import register_ini_instance, IniMode
 from aps.ai.autoalignment.common.facade.parameters import AngularUnits, DistanceUnits, Movement
 from aps.ai.autoalignment.common.hardware.facade.parameters import Beamline, Directions
 
-from aps.ai.autoalignment.common.hardware.epics.optics import AbstractEpicsOptics
+from aps.ai.autoalignment.common.hardware.epics.focusing_optics import AbstractEpicsOptics
 from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import AbstractFocusingOptics
 
 def epics_focusing_optics_factory_method(**kwargs):

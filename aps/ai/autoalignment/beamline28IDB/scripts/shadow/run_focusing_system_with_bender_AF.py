@@ -47,6 +47,8 @@
 import os
 import sys
 
+import numpy
+
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
 from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import get_default_input_features, Layout
@@ -56,6 +58,8 @@ from aps.ai.autoalignment.common.util.common import PlotMode, AspectRatio, Color
 from aps.ai.autoalignment.common.util.wrappers import plot_distribution, load_beam
 from aps.ai.autoalignment.common.util.shadow.common import PreProcessorFiles
 from aps.ai.autoalignment.common.util import clean_up
+
+from aps.ai.autoalignment.common.util.wrappers import EXPERIMENTAL_NOISE_TO_SIGNAL_RATIO
 
 if __name__ == "__main__":
     verbose = False
@@ -73,6 +77,9 @@ if __name__ == "__main__":
     x_range = [-detector_x/2, detector_x/2]
     y_range = [-detector_y/2, detector_y/2]
 
+    add_noise = True
+    noise     = EXPERIMENTAL_NOISE_TO_SIGNAL_RATIO * 70
+
     os.chdir("../../../../../../work_directory/28-ID")
 
     clean_up()
@@ -86,6 +93,8 @@ if __name__ == "__main__":
                                input_features=get_default_input_features(layout=Layout.AUTO_FOCUSING),
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                layout=Layout.AUTO_FOCUSING)
+
+    print("Nr Shadow Rays: " + str(len(input_beam._beam.rays[numpy.where(input_beam._beam.rays[:, 9]==1)])))
 
     # ----------------------------------------------------------------
     # perturbation of the incident beam to make adjustements necessary
@@ -103,7 +112,7 @@ if __name__ == "__main__":
     plot_distribution(Implementors.SHADOW, output_beam,
                       xrange=x_range, yrange=y_range, nbins_h=nbins_h, nbins_v=nbins_v,
                       title="Initial Beam",
-                      plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
+                      plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map, add_noise=add_noise, noise=noise)
 
     sys.exit(0)
     #--------------------------------------------------
