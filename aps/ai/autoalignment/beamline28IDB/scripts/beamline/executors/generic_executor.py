@@ -56,7 +56,7 @@ import joblib
 from optuna.visualization.matplotlib import plot_pareto_front, plot_optimization_history
 from matplotlib import pyplot as plt
 
-from aps.common.scripts.abstract_script import AbstractScript
+from aps.common.scripts.abstract_command_line_script import AbstractCMDScript
 from aps.common.traffic_light import get_registered_traffic_light_instance
 from aps.common.measurment.beamline.image_processor import IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
 
@@ -186,7 +186,7 @@ class HardwareParameters(PlotParameters):
 
 input_beam_path = "primary_optics_system_beam.dat"
 
-class GenericScript(AbstractScript):
+class GenericScript(AbstractCMDScript):
     def __init__(self,
                  root_directory,
                  energy, period,

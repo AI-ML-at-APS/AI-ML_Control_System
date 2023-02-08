@@ -51,7 +51,7 @@ import time
 import numpy
 
 from aps.common.measurment.beamline.image_processor import IMAGE_SIZE_PIXEL_HxV, PIXEL_SIZE
-from aps.common.scripts.abstract_script import AbstractScript
+from aps.common.scripts.abstract_command_line_script import AbstractCMDScript
 
 from aps.ai.autoalignment.common.util.common import AspectRatio, ColorMap, get_info, plot_2D
 from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
@@ -120,7 +120,7 @@ class PlotParameters(object):
             "do_gaussian_fit": False
         }
 
-class TestHardwareScript(AbstractScript):
+class TestHardwareScript(AbstractCMDScript):
 
     def __init__(self, root_directory, energy, hardware_test_parameters : HardwareTestParameters):
         self.__root_directory           = root_directory
