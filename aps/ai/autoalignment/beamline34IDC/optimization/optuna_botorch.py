@@ -62,7 +62,7 @@ from botorch.sampling.samplers import SobolQMCNormalSampler
 from botorch.utils.transforms import normalize, unnormalize
 from gpytorch.mlls import ExactMarginalLogLikelihood
 
-from aps_ai.beamline34IDC.optimization import common, configs, movers
+from aps.ai.autoalignment.beamline34IDC.optimization import common, configs, movers
 
 
 def qnei_candidates_func(
