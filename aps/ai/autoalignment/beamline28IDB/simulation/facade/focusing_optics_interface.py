@@ -72,12 +72,12 @@ def get_default_input_features(**kwargs): # units: mm, mrad and micron for the b
                                  h_bendable_mirror_motor_2_bender_voltage=-90
                                  )
     elif layout == Layout.AUTO_FOCUSING:
-        return DictionaryWrapper(v_bimorph_mirror_q_distance=2500.0,
+        return DictionaryWrapper(v_bimorph_mirror_q_distance=2290.0,
                                  v_bimorph_mirror_motor_translation=0.0,
                                  v_bimorph_mirror_motor_pitch_angle=0.003,
                                  v_bimorph_mirror_motor_pitch_delta_angle=0.0,
                                  v_bimorph_mirror_motor_bender_voltage=419.0,
-                                 h_bendable_mirror_q_distance=3330.0,
+                                 h_bendable_mirror_q_distance=3095.0,
                                  h_bendable_mirror_motor_translation=0.0,
                                  h_bendable_mirror_motor_pitch_angle=0.003,
                                  h_bendable_mirror_motor_pitch_delta_angle=0.0,
