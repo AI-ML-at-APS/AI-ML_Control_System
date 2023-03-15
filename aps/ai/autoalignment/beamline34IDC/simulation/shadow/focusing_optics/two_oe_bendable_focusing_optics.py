@@ -70,14 +70,14 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
 
         self.__vkb_bender_manager = CalibratedBenderManager(kb_upstream=VKBMockWidget(self._vkb[0], verbose=True, label="Upstream"),
                                                             kb_downstream=VKBMockWidget(self._vkb[1], verbose=True, label="Downstream"))
-        self.__vkb_bender_manager.load_calibration("V-KB", power=kwargs["power"])
+        self.__vkb_bender_manager.load_calibration("V-KB")
         self.__vkb_bender_manager.set_positions(self._input_features.get_parameter("vkb_motor_1_bender_position"),
                                                 self._input_features.get_parameter("vkb_motor_2_bender_position"))
         self.__vkb_bender_manager.remove_bender_files()
 
         self.__hkb_bender_manager = CalibratedBenderManager(kb_upstream=HKBMockWidget(self._hkb[0], verbose=True, label="Upstream"),
                                                             kb_downstream=HKBMockWidget(self._hkb[1], verbose=True, label="Downstream"))
-        self.__hkb_bender_manager.load_calibration("H-KB", power=kwargs["power"])
+        self.__hkb_bender_manager.load_calibration("H-KB")
         self.__hkb_bender_manager.set_positions(self._input_features.get_parameter("hkb_motor_1_bender_position"),
                                                 self._input_features.get_parameter("hkb_motor_2_bender_position"))
         self.__hkb_bender_manager.remove_bender_files()

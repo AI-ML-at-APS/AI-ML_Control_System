@@ -54,6 +54,8 @@ from aps.ai.autoalignment.beamline34IDC.simulation.facade.focusing_optics_interf
 from aps.ai.autoalignment.common.util.shadow.common import plot_shadow_beam_spatial_distribution, get_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from aps.ai.autoalignment.common.util import clean_up
 from aps.ai.autoalignment.common.util.wrappers import PlotMode
+from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
+
 
 if __name__ == "__main__":
     verbose = False
@@ -89,7 +91,6 @@ if __name__ == "__main__":
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                input_features=input_features,
-                               power=1,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
@@ -118,7 +119,7 @@ if __name__ == "__main__":
 
     print("Initial Sigma (HxV): ", round(dict.get_parameter("h_sigma")*1e6, 0), " x ", round(dict.get_parameter("v_sigma")*1e6, 0), " nm")
 
-    sys.exit(0)
+    #sys.exit(0)
 
     #--------------------------------------------------
     # interaction with the beamline

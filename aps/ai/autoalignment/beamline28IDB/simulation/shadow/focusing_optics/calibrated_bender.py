@@ -75,13 +75,13 @@ class OneMotorCalibratedBenderManager():
         return self._shadow_oe._oe.SIMAG
 
     def get_voltage(self):
-        return (1/(self._shadow_oe._oe.SIMAG*1e-3) - self.__P1)/self.__P0
+        return (1/(self._shadow_oe._oe.SIMAG) - self.__P1)/self.__P0
 
     def get_voltage_for_focus(self, q_distance):
-        return (1/(q_distance*1e-3) - self.__P1)/self.__P0
+        return (1/(q_distance) - self.__P1)/self.__P0
 
     def set_voltage(self, voltage):
-        self._shadow_oe._oe.SIMAG = (1e3 / (self.__P0 * voltage + self.__P1))
+        self._shadow_oe._oe.SIMAG = (1 / (self.__P0 * voltage + self.__P1))
 
     def remove_bender_file(self):
         if os.path.exists(self._shadow_oe.output_file_name_full):   os.remove(self._shadow_oe.output_file_name_full)
@@ -115,16 +115,16 @@ class TwoMotorsCalibratedBenderManager():
         return self._kb_upstream.get_q_distance(), self._kb_downstream.get_q_distance()
 
     def get_voltages(self):
-            return (1/(self._kb_upstream.get_q_distance()*1e-3)   - self.__P1_upstream)/self.__P0_upstream, \
-                   (1/(self._kb_downstream.get_q_distance()*1e-3) - self.__P1_downstream)/self.__P0_downstream
+        return (1/self._kb_upstream.get_q_distance()   - self.__P1_upstream)/self.__P0_upstream, \
+               (1/self._kb_downstream.get_q_distance() - self.__P1_downstream)/self.__P0_downstream
 
     def get_voltages_for_focus(self, q_distance):
-        return (1/(q_distance*1e-3) - self.__P1_upstream)/self.__P0_upstream, \
-               (1/(q_distance*1e-3) - self.__P1_downstream)/self.__P0_downstream
+        return (1/q_distance - self.__P1_upstream)/self.__P0_upstream, \
+               (1/q_distance - self.__P1_downstream)/self.__P0_downstream
 
     def set_voltages(self, pos_upstream, pos_downstream):
-        self._kb_upstream.set_q_distance(1e3/(self.__P0_upstream * pos_upstream + self.__P1_upstream))
-        self._kb_downstream.set_q_distance(1e3/(self.__P0_downstream * pos_downstream + self.__P1_downstream))
+        self._kb_upstream.set_q_distance(1/(self.__P0_upstream * pos_upstream + self.__P1_upstream))
+        self._kb_downstream.set_q_distance(1/(self.__P0_downstream * pos_downstream + self.__P1_downstream))
 
         if not self._kb_raytracing is None: self._kb_raytracing.set_q_distance(0.5*(self._kb_upstream.get_q_distance() + self._kb_downstream.get_q_distance()))
 
