@@ -348,6 +348,7 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
                                                                              diffraction_plane=2,  # Tangential
                                                                              calcType=3,  # Diffraction by Mirror Size + Errors
                                                                              nf=1,
+                                                                             image_distance=self._vkb[0]._oe.T_IMAGE + self._hkb[0]._oe.T_SOURCE + self._hkb[0]._oe.T_IMAGE,
                                                                              verbose=verbose,
                                                                              random_seed=None if random_seed is None else (random_seed + increment))).nf_beam
             except Exception:

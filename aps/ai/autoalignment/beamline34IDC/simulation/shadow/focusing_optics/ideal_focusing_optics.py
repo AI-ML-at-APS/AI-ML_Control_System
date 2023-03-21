@@ -216,12 +216,13 @@ class IdealFocusingOptics(FocusingOpticsCommonAbstract):
                                                                          verbose=verbose,
                                                                          random_seed=None if random_seed is None else (random_seed + 200))).ff_beam
             else:
-                output_beam = hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                                diffraction_plane=2,  # Tangential
-                                                                                calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                                nf=1,
-                                                                                verbose=verbose,
-                                                                                random_seed=None if random_seed is None else (random_seed + 200))).nf_beam
+                return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                         diffraction_plane=2,  # Tangential
+                                                                         calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                         nf=1,
+                                                                         image_distance=self._vkb._oe.T_IMAGE + self._hkb._oe.T_SOURCE + self._hkb._oe.T_IMAGE,
+                                                                         verbose=verbose,
+                                                                         random_seed=None if random_seed is None else (random_seed + 200))).nf_beam
         except Exception:
             raise HybridFailureException(oe="V-KB")
 
