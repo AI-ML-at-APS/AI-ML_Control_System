@@ -188,7 +188,7 @@ class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulat
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._slits_beam, title="Coherence Slits", xrange=None, yrange=None)
 
             if run_all or self._vkb in self._modified_elements:
-                self._vkb_beam = self._trace_vkb(random_seed, remove_lost_rays, verbose)
+                self._vkb_beam = self._trace_vkb(False, random_seed, remove_lost_rays, verbose)
                 output_beam    = self._vkb_beam
 
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._vkb_beam, title="VKB", xrange=None, yrange=None)
@@ -232,6 +232,6 @@ class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulat
         except Exception:
             raise HybridFailureException(oe="Coherence Slits")
 
-    def _trace_vkb(self, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
+    def _trace_vkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
     def _trace_hkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
     def _initialize_kb(self, input_features, reflectivity_file, vkb_error_profile_file, hkb_error_profile_file): raise NotImplementedError()
