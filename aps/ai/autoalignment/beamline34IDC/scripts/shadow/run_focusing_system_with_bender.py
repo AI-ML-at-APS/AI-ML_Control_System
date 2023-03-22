@@ -239,8 +239,8 @@ if __name__ == "__main__":
 
     print("Case: +5")
 
-    focusing_system.move_vkb_motor_1_bender(pos_upstream=+3.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
-    focusing_system.move_vkb_motor_2_bender(pos_downstream=+3.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_1_bender(pos_upstream=+4, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_2_bender(pos_downstream=+4, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
     focusing_system.move_hkb_motor_1_bender(pos_upstream=+3.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
     focusing_system.move_hkb_motor_2_bender(pos_downstream=+3.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
