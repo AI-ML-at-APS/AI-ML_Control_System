@@ -52,6 +52,8 @@ import numpy
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
 from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import get_default_input_features, Layout
+from aps.ai.autoalignment.beamline28IDB.hardware.epics.focusing_optics import DISTANCE_V_MOTORS
+
 from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits, DistanceUnits
 
 from aps.ai.autoalignment.common.util.common import PlotMode, AspectRatio, ColorMap
@@ -61,11 +63,18 @@ from aps.ai.autoalignment.common.util import clean_up
 
 from aps.ai.autoalignment.common.util.wrappers import EXPERIMENTAL_NOISE_TO_SIGNAL_RATIO
 
+def get_v_bimorph_mirror_motor_pitch(di, do, u):
+    return numpy.degrees(numpy.arcsin((di - get_v_bimorph_mirror_motor_translation(do, u)) /
+                                      (0.5 * DISTANCE_V_MOTORS)))
+
+def get_v_bimorph_mirror_motor_translation(do, u):
+    return 0.5 * (u + do)
+
 if __name__ == "__main__":
     verbose = False
 
     plot_mode = PlotMode.INTERNAL
-    aspect_ratio = AspectRatio.AUTO
+    aspect_ratio = AspectRatio.CARTESIAN
     color_map = ColorMap.VIRIDIS
 
     nbins_h = 2160
@@ -77,7 +86,7 @@ if __name__ == "__main__":
     x_range = [-detector_x/2, detector_x/2]
     y_range = [-detector_y/2, detector_y/2]
 
-    add_noise = True
+    add_noise = False #True
     noise     = EXPERIMENTAL_NOISE_TO_SIGNAL_RATIO * 70
 
     os.chdir("../../../../../../work_directory/28-ID")
@@ -112,14 +121,15 @@ if __name__ == "__main__":
     vb pitch (deg):0.17229
     vb trans (deg):-0.0177
     '''
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-170, movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-160, movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_pitch(      0.17189, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_h_bendable_mirror_motor_translation(-0.0216, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-180, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-135, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_pitch(      0.17224, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    focusing_system.move_h_bendable_mirror_motor_translation(0.02, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
     focusing_system.move_v_bimorph_mirror_motor_bender(384, movement=Movement.ABSOLUTE) # vertical focus
-    focusing_system.move_v_bimorph_mirror_motor_pitch(      0.17229, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_v_bimorph_mirror_motor_translation(-0.0177, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+    #focusing_system.move_v_bimorph_mirror_motor_pitch(      get_v_bimorph_mirror_motor_pitch(0.50965, 0.50965, -0.57885), movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    #focusing_system.move_v_bimorph_mirror_motor_translation(0.05,         movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
     print(focusing_system.get_h_bendable_mirror_q_distance(), focusing_system.get_v_bimorph_mirror_q_distance())
 
