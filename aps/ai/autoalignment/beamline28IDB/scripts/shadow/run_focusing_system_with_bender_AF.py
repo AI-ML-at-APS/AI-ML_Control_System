@@ -112,15 +112,16 @@ if __name__ == "__main__":
     vb pitch (deg):0.17229
     vb trans (deg):-0.0177
     '''
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-155, movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-170, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-170, movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-160, movement=Movement.ABSOLUTE)
     focusing_system.move_h_bendable_mirror_motor_pitch(      0.17189, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
     focusing_system.move_h_bendable_mirror_motor_translation(-0.0216, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
-    focusing_system.move_v_bimorph_mirror_motor_bender(425, movement=Movement.ABSOLUTE) # vertical focus
+    focusing_system.move_v_bimorph_mirror_motor_bender(384, movement=Movement.ABSOLUTE) # vertical focus
     focusing_system.move_v_bimorph_mirror_motor_pitch(      0.17229, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
     focusing_system.move_v_bimorph_mirror_motor_translation(-0.0177, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
+    print(focusing_system.get_h_bendable_mirror_q_distance(), focusing_system.get_v_bimorph_mirror_q_distance())
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, debug_mode=False, random_seed=random_seed)
 
