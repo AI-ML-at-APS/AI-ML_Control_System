@@ -61,8 +61,8 @@ def load_beam(implementor, file_name, **kwargs):
     if implementor == Implementors.SRW: return load_srw_wavefront(file_name)
     elif implementor == Implementors.SHADOW:
         try:
-            if kwargs["which_beam"] == "source": return load_source_beam(file_name)
-            else:                                return load_shadow_beam(file_name)
+            if kwargs.get("which_beam") == "source": return load_source_beam(file_name)
+            else:                                    return load_shadow_beam(file_name)
         except: return load_shadow_beam(file_name)
 
 def save_beam(beam, file_name, implementor=Implementors.SHADOW, **kwargs):
@@ -76,102 +76,61 @@ def save_beam(beam, file_name, implementor=Implementors.SHADOW, **kwargs):
 def get_distribution_info(implementor, beam, xrange=None, yrange=None, do_gaussian_fit=False, **kwargs):
     if implementor == Implementors.SRW: return get_srw_wavefront_distribution_info(beam, xrange, yrange, do_gaussian_fit)
     elif implementor == Implementors.SHADOW:
-        try:    nbins_h = kwargs["nbins_h"]
-        except: nbins_h = 201
-        try:    nbins_v = kwargs["nbins_v"]
-        except: nbins_v = 201
-        try:    nolost = kwargs["nolost"]
-        except: nolost = 1
-        try:    add_noise = kwargs["add_noise"]
-        except: add_noise = False
-        try:    noise = kwargs["noise"]
-        except: noise = NOISE_DEFAULT_VALUE if add_noise else None
-        try:    percentage_fluctuation = kwargs["percentage_fluctuation"] * 1e-2
-        except: percentage_fluctuation = 0.1
-        try:    calculate_over_noise = kwargs["calculate_over_noise"]
-        except: calculate_over_noise = False
-        try:    noise_threshold = kwargs["noise_threshold"]
-        except: noise_threshold = 1.5
+        nbins_h                = kwargs.get("nbins_h",   default=201)
+        nbins_v                = kwargs.get("nbins_v",   default=201)
+        nolost                 = kwargs.get("nolost",    default=1)
+        add_noise              = kwargs.get("add_noise", default=False)
+        noise                  = kwargs.get("noise",     default=NOISE_DEFAULT_VALUE if add_noise else None)
+        percentage_fluctuation = kwargs.get("percentage_fluctuation", default=10.0) * 1e-2
+        calculate_over_noise   = kwargs.get("calculate_over_noise", default=False)
+        noise_threshold        = kwargs.get("noise_threshold", default=1.5)
 
-        try:
-            if kwargs["distribution"] == "spatial": return get_shadow_beam_spatial_distribution(shadow_beam=beam,
-                                                                                                nbins_h=nbins_h, nbins_v=nbins_v,
-                                                                                                nolost=nolost,
-                                                                                                xrange=xrange, yrange=yrange,
-                                                                                                do_gaussian_fit=do_gaussian_fit,
-                                                                                                add_noise=add_noise,
-                                                                                                noise=noise,
-                                                                                                percentage_fluctuation=percentage_fluctuation,
-                                                                                                calculate_over_noise=calculate_over_noise,
-                                                                                                noise_threshold=noise_threshold)
-            elif kwargs["distribution"] == "divergence": return get_shadow_beam_divergence_distribution(shadow_beam=beam,
-                                                                                                        nbins_h=nbins_h, nbins_v=nbins_v,
-                                                                                                        nolost=nolost,
-                                                                                                        xrange=xrange, yrange=yrange,
-                                                                                                        do_gaussian_fit=do_gaussian_fit)
-        except: return get_shadow_beam_spatial_distribution(shadow_beam=beam,
-                                                            nbins_h=nbins_h, nbins_v=nbins_v,
-                                                            nolost=nolost,
-                                                            xrange=xrange, yrange=yrange,
-                                                            do_gaussian_fit=do_gaussian_fit,
-                                                            add_noise=add_noise,
-                                                            noise=noise,
-                                                            percentage_fluctuation=percentage_fluctuation,
-                                                            calculate_over_noise=calculate_over_noise,
-                                                            noise_threshold=noise_threshold)
+        if kwargs.get("distribution") == "divergence": return get_shadow_beam_divergence_distribution(shadow_beam=beam,
+                                                                                                      nbins_h=nbins_h, nbins_v=nbins_v,
+                                                                                                      nolost=nolost,
+                                                                                                      xrange=xrange, yrange=yrange,
+                                                                                                      do_gaussian_fit=do_gaussian_fit)
+        else:                                          return get_shadow_beam_spatial_distribution(shadow_beam=beam,
+                                                                                                   nbins_h=nbins_h, nbins_v=nbins_v,
+                                                                                                   nolost=nolost,
+                                                                                                   xrange=xrange, yrange=yrange,
+                                                                                                   do_gaussian_fit=do_gaussian_fit,
+                                                                                                   add_noise=add_noise,
+                                                                                                   noise=noise,
+                                                                                                   percentage_fluctuation=percentage_fluctuation,
+                                                                                                   calculate_over_noise=calculate_over_noise,
+                                                                                                   noise_threshold=noise_threshold)
 
 def plot_distribution(implementor, beam, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, **kwargs):
     if implementor == Implementors.SRW: plot_srw_wavefront_spatial_distribution(beam, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
     elif implementor == Implementors.SHADOW:
-        try:    nbins_h = kwargs["nbins_h"]
-        except: nbins_h = 201
-        try:    nbins_v = kwargs["nbins_v"]
-        except: nbins_v = 201
-        try:    nolost = kwargs["nolost"]
-        except: nolost = 1
-        try:    add_noise = kwargs["add_noise"]
-        except: add_noise = False
-        try:    noise = kwargs["noise"]
-        except: noise = NOISE_DEFAULT_VALUE if add_noise else None
-        try:    percentage_fluctuation = kwargs["percentage_fluctuation"] * 1e-2
-        except: percentage_fluctuation = 0.1
-        try:    calculate_over_noise = kwargs["calculate_over_noise"]
-        except: calculate_over_noise = False
-        try:    noise_threshold = kwargs["noise_threshold"]
-        except: noise_threshold = 1.5
+        nbins_h                = kwargs.get("nbins_h",   default=201)
+        nbins_v                = kwargs.get("nbins_v",   default=201)
+        nolost                 = kwargs.get("nolost",    default=1)
+        add_noise              = kwargs.get("add_noise", default=False)
+        noise                  = kwargs.get("noise",     default=NOISE_DEFAULT_VALUE if add_noise else None)
+        percentage_fluctuation = kwargs.get("percentage_fluctuation", default=10.0) * 1e-2
+        calculate_over_noise   = kwargs.get("calculate_over_noise", default=False)
+        noise_threshold        = kwargs.get("noise_threshold", default=1.5)
 
-        try:
-            if kwargs["distribution"] == "spatial":      plot_shadow_beam_spatial_distribution(shadow_beam=beam,
-                                                                                               nbins_h=nbins_h, nbins_v=nbins_v,
-                                                                                               nolost=nolost,
-                                                                                               title=title,
-                                                                                               xrange=xrange, yrange=yrange,
-                                                                                               plot_mode=plot_mode,
-                                                                                               aspect_ratio=aspect_ratio,
-                                                                                               color_map=color_map,
-                                                                                               add_noise=add_noise,
-                                                                                               noise=noise,
-                                                                                               percentage_fluctuation=percentage_fluctuation,
-                                                                                               calculate_over_noise=calculate_over_noise,
-                                                                                               noise_threshold=noise_threshold)
-            elif kwargs["distribution"] == "divergence": plot_shadow_beam_divergence_distribution(shadow_beam=beam,
-                                                                                                  nbins_h=nbins_h, nbins_v=nbins_v,
-                                                                                                  nolost=nolost,
-                                                                                                  title=title,
-                                                                                                  xrange=xrange, yrange=yrange,
-                                                                                                  plot_mode=plot_mode,
-                                                                                                  aspect_ratio=aspect_ratio,
-                                                                                                  color_map=color_map)
-        except: plot_shadow_beam_spatial_distribution(shadow_beam=beam,
-                                                      nbins_h=nbins_h, nbins_v=nbins_v,
-                                                      nolost=nolost,
-                                                      title=title,
-                                                      xrange=xrange, yrange=yrange,
-                                                      plot_mode=plot_mode,
-                                                      aspect_ratio=aspect_ratio,
-                                                      color_map=color_map,
-                                                      add_noise=add_noise,
-                                                      noise=noise,
-                                                      percentage_fluctuation=percentage_fluctuation,
-                                                      calculate_over_noise=calculate_over_noise,
-                                                      noise_threshold=noise_threshold)
+        if kwargs.get("distribution") == "divergence": plot_shadow_beam_divergence_distribution(shadow_beam=beam,
+                                                                                                nbins_h=nbins_h, nbins_v=nbins_v,
+                                                                                                nolost=nolost,
+                                                                                                title=title,
+                                                                                                xrange=xrange, yrange=yrange,
+                                                                                                plot_mode=plot_mode,
+                                                                                                aspect_ratio=aspect_ratio,
+                                                                                                color_map=color_map)
+        else:                                          plot_shadow_beam_spatial_distribution(shadow_beam=beam,
+                                                                                             nbins_h=nbins_h, nbins_v=nbins_v,
+                                                                                             nolost=nolost,
+                                                                                             title=title,
+                                                                                             xrange=xrange, yrange=yrange,
+                                                                                             plot_mode=plot_mode,
+                                                                                             aspect_ratio=aspect_ratio,
+                                                                                             color_map=color_map,
+                                                                                             add_noise=add_noise,
+                                                                                             noise=noise,
+                                                                                             percentage_fluctuation=percentage_fluctuation,
+                                                                                             calculate_over_noise=calculate_over_noise,
+                                                                                             noise_threshold=noise_threshold)
