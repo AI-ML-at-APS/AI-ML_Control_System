@@ -80,7 +80,7 @@ def process_calibration(calibration, index, distance):
 
 
 def plot_axis(ax, data, title, degree, xlim, ylim, color='blue', escluded=[], top=True):
-    ax.plot(data[:, 0], data[:, 1], "bo", color=color)
+    ax.plot(data[:, 0], data[:, 1], "o", color=color)
     text = "Fit parameters:\n"
     xx = numpy.ma.array(data[:, 0], mask=False)
     yy = numpy.ma.array(data[:, 1], mask=False)
@@ -92,8 +92,11 @@ def plot_axis(ax, data, title, degree, xlim, ylim, color='blue', escluded=[], to
     xx = xx.compressed()
     yy = yy.compressed()
     param = numpy.polyfit(x=xx, y=yy, deg=degree)
-    for i in range(len(param)): text += "p" + str(i) + "=%0.7f" % (param[i],) + "\n"
+    for i in range(len(param)): text += "p" + str(i) + "=%0.10f" % (param[i],) + "\n"
     text += "\n"
+
+    print(title + " - Fit parameters:\n" + text)
+
     ax.plot(xx, numpy.poly1d(param)(xx), "-.", lw=0.5, color=color)
     ax.set_xlabel("Voltage [V]")
     ax.set_ylabel("$ \\frac{1}{Q}$ [$mm^{-1}$]")
@@ -111,6 +114,8 @@ def plot_axis(ax, data, title, degree, xlim, ylim, color='blue', escluded=[], to
 
     ax.set_title(title)
 
+    return param
+
 vertical = process_calibration(bimorph_calibration, 1, distance[0])
 horizontal_upward = process_calibration(bender_calibration, 2, distance[1])
 horizontal_downward = process_calibration(bender_calibration, 1, distance[1])
@@ -119,12 +124,16 @@ fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
 fig.suptitle("Benders Calibration")
 
-plot_axis(axes[0, 0], vertical,            "Vertical",             1, xlim=[-50, 950], ylim=[-0.9e-3, 1.6e-3], color='red', top=False)
+param_vertical = plot_axis(axes[0, 0], vertical,            "Vertical",             1, xlim=[-50, 950], ylim=[-0.9e-3, 1.6e-3], color='red', top=False)
 axes[1, 0].remove()
-plot_axis(axes[0, 1], horizontal_upward,   "Horizontal: upward",   1, xlim=[-160, -40], ylim=[0.32e-3, 0.65e-3])
-plot_axis(axes[1, 1], horizontal_downward, "Horizontal: downward", 1, xlim=[-160, -40], ylim=[0.32e-3, 0.65e-3])
+param_horizontal_u = plot_axis(axes[0, 1], horizontal_upward,   "Horizontal: upward",   1, xlim=[-160, -40], ylim=[0.32e-3, 0.65e-3])
+param_horizontal_d = plot_axis(axes[1, 1], horizontal_downward, "Horizontal: downward", 1, xlim=[-160, -40], ylim=[0.32e-3, 0.65e-3])
 
 fig.tight_layout()
+
+print("384 -> ",  str(2500  - 1/(param_vertical[0]*384 + param_vertical[1])))
+print("-170 -> ", str(3630 - 1/(param_horizontal_u[0]*-170 + param_horizontal_u[1])))
+print("-157 -> ", str(3630 - 1/(param_horizontal_d[0]*-155 + param_horizontal_d[1])))
 
 plt.show()
 

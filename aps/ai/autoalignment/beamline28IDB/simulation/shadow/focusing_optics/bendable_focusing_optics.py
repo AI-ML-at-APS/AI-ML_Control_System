@@ -55,7 +55,6 @@ from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.focusi
 from aps.ai.autoalignment.common.util.shadow.common import HybridFailureException, get_hybrid_input_parameters
 
 from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.calibrated_bender import TwoMotorsCalibratedBenderManager, OneMotorCalibratedBenderManager, HKBMockWidget
-from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import get_default_input_features
 from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits, DistanceUnits
 
 from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl.bendable_ellipsoid_mirror_bl import apply_bender_surface
@@ -171,7 +170,7 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
         v_bimorph_mirror.SIMAG = -999
         v_bimorph_mirror.SSOUR = 65000.0
         v_bimorph_mirror.THETA = v_bimorph_mirror_motor_pitch_angle_shadow
-        v_bimorph_mirror.T_IMAGE = 3000.0 + self._shift_detector
+        v_bimorph_mirror.T_IMAGE = 2500.0 + self._shift_detector
         v_bimorph_mirror.T_INCIDENCE = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_REFLECTION = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_SOURCE = 1130.0 - self._shift_horizontal_mirror
