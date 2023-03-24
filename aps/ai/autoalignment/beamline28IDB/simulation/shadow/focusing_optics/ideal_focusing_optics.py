@@ -134,14 +134,14 @@ class IdealFocusingOptics(FocusingOpticsCommonAbstract):
         self._h_bendable_mirror = ShadowOpticalElement(h_bendable_mirror)
         self._v_bimorph_mirror = ShadowOpticalElement(v_bimorph_mirror)
 
-    def _trace_h_bendable_mirror(self, random_seed, remove_lost_rays, verbose):
+    def _trace_h_bendable_mirror(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
         return self._trace_oe(input_beam=self._input_beam,
                               shadow_oe=self._h_bendable_mirror,
                               widget_class_name="EllypticalMirror",
                               oe_name="H-Bendable-Mirror",
                               remove_lost_rays=remove_lost_rays)
 
-    def _trace_v_bimorph_mirror(self, random_seed, remove_lost_rays, verbose):
+    def _trace_v_bimorph_mirror(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
         return self._trace_oe(input_beam=self._h_bendable_mirror_beam,
                               shadow_oe=self._v_bimorph_mirror,
                               widget_class_name="EllypticalMirror",

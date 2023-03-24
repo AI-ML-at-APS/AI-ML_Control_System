@@ -50,8 +50,9 @@ import numpy
 import Shadow
 
 from orangecontrib.shadow.util.shadow_objects import ShadowOpticalElement, ShadowBeam
-
+from orangecontrib.shadow.widgets.special_elements.bl import hybrid_control
 from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommonAbstract
+from aps.ai.autoalignment.common.util.shadow.common import HybridFailureException, get_hybrid_input_parameters
 
 from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.calibrated_bender import TwoMotorsCalibratedBenderManager, OneMotorCalibratedBenderManager, HKBMockWidget
 from aps.ai.autoalignment.beamline28IDB.simulation.facade.focusing_optics_interface import get_default_input_features
@@ -170,7 +171,7 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
         v_bimorph_mirror.SIMAG = -999
         v_bimorph_mirror.SSOUR = 65000.0
         v_bimorph_mirror.THETA = v_bimorph_mirror_motor_pitch_angle_shadow
-        v_bimorph_mirror.T_IMAGE = 2500.0 + self._shift_detector
+        v_bimorph_mirror.T_IMAGE = 3000.0 + self._shift_detector
         v_bimorph_mirror.T_INCIDENCE = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_REFLECTION = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_SOURCE = 1130.0 - self._shift_horizontal_mirror
@@ -184,9 +185,30 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
         self._h_bendable_mirror = [ShadowOpticalElement(h_bendable_mirror_up), ShadowOpticalElement(h_bendable_mirror_down)]
         self._v_bimorph_mirror = ShadowOpticalElement(v_bimorph_mirror)
 
-    def _trace_h_bendable_mirror(self, random_seed, remove_lost_rays, verbose): 
+    def _trace_h_bendable_mirror(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
         upstream_widget   = self.__hkb_bender_manager._kb_upstream
         downstream_widget = self.__hkb_bender_manager._kb_downstream
+
+        upstream_oe   = upstream_widget._shadow_oe.duplicate()
+        downstream_oe = downstream_widget._shadow_oe.duplicate()
+
+        upstream_oe._oe.RLEN1   = 0.0  # no positive part
+        downstream_oe._oe.RLEN2 = 0.0  # no negative part
+
+        # trace both sides separately and get the beams:
+        upstream_beam_cursor = numpy.where(self._trace_oe(input_beam=self._input_beam,
+                                                          shadow_oe=upstream_oe,
+                                                          widget_class_name="BendableEllipsoidMirror",
+                                                          oe_name="H-KB_UPSTREAM",
+                                                          remove_lost_rays=False,
+                                                          history=False)._beam.rays[:, 9] == 1)
+
+        downstream_beam_cursor = numpy.where(self._trace_oe(input_beam=self._input_beam,
+                                                            shadow_oe=downstream_oe,
+                                                            widget_class_name="BendableEllipsoidMirror",
+                                                            oe_name="H-KB_DOWNSTREAM",
+                                                            remove_lost_rays=False,
+                                                            history=False)._beam.rays[:, 9] == 1)
 
         def calculate_bender(input_beam, widget, do_calculation=True):
             widget.M1    = widget.M1_out  # use last fit result
@@ -214,9 +236,6 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
         self.__hkb_bender_manager.q_upstream_previous   = q_upstream
         self.__hkb_bender_manager.q_downstream_previous = q_downstream
 
-        upstream_widget._shadow_oe._oe.RLEN1   = 0.0  # no positive part
-        downstream_widget._shadow_oe._oe.RLEN2 = 0.0  # no negative part
-
         # Redo raytracing with the bender correction as error profile
         output_beam_upstream   = self._trace_oe(input_beam=self._input_beam,
                                                 shadow_oe=upstream_widget._shadow_oe,
@@ -229,14 +248,61 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
                                                 oe_name="H-KB_DOWNSTREAM",
                                                 remove_lost_rays=remove_lost_rays)
 
+
+        def run_hybrid(output_beam, increment):
+            # NOTE: Near field not possible for vkb (beam is untraceable)
+            try:
+                if not near_field_calculation:
+                    return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                             diffraction_plane=2,  # Tangential
+                                                                             calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                             verbose=verbose,
+                                                                             random_seed=None if random_seed is None else (random_seed + increment))).ff_beam
+                else:
+                    return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                             diffraction_plane=2,  # Tangential
+                                                                             calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                             nf=1,
+                                                                             image_distance=self._h_bendable_mirror[0]._oe.T_IMAGE + self._v_bimorph_mirror._oe.T_SOURCE + self._v_bimorph_mirror._oe.T_IMAGE,
+                                                                             verbose=verbose,
+                                                                             random_seed=None if random_seed is None else (random_seed + increment))).nf_beam
+            except Exception:
+                raise HybridFailureException(oe="V-KB")
+
+        output_beam_upstream = run_hybrid(output_beam_upstream, increment=200)
+        output_beam_upstream._beam.rays = output_beam_upstream._beam.rays[upstream_beam_cursor]
+
+        output_beam_downstream = run_hybrid(output_beam_downstream, increment=201)
+        output_beam_downstream._beam.rays = output_beam_downstream._beam.rays[downstream_beam_cursor]
+
         return ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=0)
 
-    def _trace_v_bimorph_mirror(self,  random_seed, remove_lost_rays, verbose):
-        return self._trace_oe(input_beam=self._h_bendable_mirror_beam,
-                              shadow_oe=self.__vkb_bender_manager._shadow_oe,
-                              widget_class_name="EllipticalMirror",
-                              oe_name="V-KB",
-                              remove_lost_rays=remove_lost_rays)
+    def _trace_v_bimorph_mirror(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
+        output_beam = self._trace_oe(input_beam=self._h_bendable_mirror_beam,
+                                     shadow_oe=self.__vkb_bender_manager._shadow_oe,
+                                     widget_class_name="EllipticalMirror",
+                                     oe_name="V-KB",
+                                     remove_lost_rays=remove_lost_rays)
+
+        def run_hybrid(output_beam, increment):
+            try:
+                if not near_field_calculation:
+                    return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                             diffraction_plane=2,  # Tangential
+                                                                             calcType=2,  # Diffraction by Mirror Size
+                                                                             verbose=verbose,
+                                                                             random_seed=None if random_seed is None else (random_seed + increment))).ff_beam
+                else:
+                    return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                             diffraction_plane=2,  # Tangential
+                                                                             calcType=2,  # Diffraction by Mirror Size
+                                                                             nf=1,
+                                                                             verbose=verbose,
+                                                                             random_seed=None if random_seed is None else (random_seed + increment))).nf_beam
+            except Exception:
+                raise HybridFailureException(oe="H-KB")
+
+        return run_hybrid(output_beam, increment=300)
 
     def move_h_bendable_mirror_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE):
         self.__move_motor_1_2_bender(self.__hkb_bender_manager, pos_upstream, None, movement,
