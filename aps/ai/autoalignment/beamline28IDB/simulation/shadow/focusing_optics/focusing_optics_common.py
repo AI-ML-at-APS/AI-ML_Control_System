@@ -73,7 +73,7 @@ class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulat
 
         self._layout           = layout
         self._shift_horizontal_mirror = 0.0 if self._layout == Layout.AUTO_ALIGNMENT else 325.0
-        self._shift_detector          = 0.0 if self._layout == Layout.AUTO_ALIGNMENT else -610.0
+        self._shift_detector          = 0.0 if self._layout == Layout.AUTO_ALIGNMENT else -710.0
 
         self._motor_resolution = MotorResolutionRegistry.getInstance().get_motor_resolution_set("28-ID-B")
 

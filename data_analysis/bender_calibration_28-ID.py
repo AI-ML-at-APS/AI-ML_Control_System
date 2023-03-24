@@ -36,8 +36,8 @@ bimorph_calibration[5 , 1] = 1.417
 bimorph_calibration[6 , 1] = 1.197
 bimorph_calibration[7 , 1] = 0.991
 bimorph_calibration[8 , 1] = 0.571
-bimorph_calibration[9 , 1] = -0.01
-bimorph_calibration[10, 1] = -1.41
+bimorph_calibration[9 , 1] = numpy.nan
+bimorph_calibration[10, 1] = numpy.nan
 bimorph_calibration[11, 1] = -6.606
 bimorph_calibration[12, 1] = 36.322
 bimorph_calibration[13, 1] = 8.291
@@ -79,15 +79,15 @@ def process_calibration(calibration, index, distance):
     return data
 
 
-def plot_axis(ax, data, title, degree, xlim, ylim, color='blue', escluded=[], top=True):
+def plot_axis(ax, data, title, degree, xlim, ylim, color='blue', excluded=[], top=True):
     ax.plot(data[:, 0], data[:, 1], "o", color=color)
     text = "Fit parameters:\n"
     xx = numpy.ma.array(data[:, 0], mask=False)
     yy = numpy.ma.array(data[:, 1], mask=False)
 
-    if len(escluded) > 0:
-        xx.mask[escluded] = True
-        yy.mask[escluded] = True
+    if len(excluded) > 0:
+        xx.mask[excluded] = True
+        yy.mask[excluded] = True
 
     xx = xx.compressed()
     yy = yy.compressed()
@@ -124,16 +124,22 @@ fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
 fig.suptitle("Benders Calibration")
 
-param_vertical = plot_axis(axes[0, 0], vertical,            "Vertical",             1, xlim=[-50, 950], ylim=[-0.9e-3, 1.6e-3], color='red', top=False)
+param_vertical = plot_axis(axes[0, 0], vertical,            "Vertical",             1, xlim=[-50, 950], ylim=[-0.9e-3, 1.6e-3], color='red', top=False, excluded=[9, 10])
 axes[1, 0].remove()
 param_horizontal_u = plot_axis(axes[0, 1], horizontal_upward,   "Horizontal: upward",   1, xlim=[-160, -40], ylim=[0.32e-3, 0.65e-3])
 param_horizontal_d = plot_axis(axes[1, 1], horizontal_downward, "Horizontal: downward", 1, xlim=[-160, -40], ylim=[0.32e-3, 0.65e-3])
 
 fig.tight_layout()
 
-print("384 -> ",  str(2500  - 1/(param_vertical[0]*384 + param_vertical[1])))
-print("-170 -> ", str(3630 - 1/(param_horizontal_u[0]*-170 + param_horizontal_u[1])))
-print("-157 -> ", str(3630 - 1/(param_horizontal_d[0]*-155 + param_horizontal_d[1])))
+print("384 -> ",  str(1/(param_vertical[0]*384 + param_vertical[1])))
+print("-170 -> ", str(1/(param_horizontal_u[0]*-170 + param_horizontal_u[1])))
+print("-157 -> ", str(1/(param_horizontal_d[0]*-155 + param_horizontal_d[1])))
+
+print("2290 -> ",  str((1/2290 - param_vertical[1]) / param_vertical[0]))
+print("3095 -> ",  str((1/3095 - param_horizontal_u[1]) / param_horizontal_u[0]))
+print("3095 -> ",  str((1/3095 - param_horizontal_d[1]) / param_horizontal_d[0]))
+
+
 
 plt.show()
 
