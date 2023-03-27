@@ -68,7 +68,7 @@ year  = today.year
 month = today.month-1
 months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-root_directory = "/data/Beamline28IDB_" + months[month] + str(year) + "/"
+root_directory = "/data/Beamline28IDB/" + str(year) +"/" + months[month] + "/"
 
 _ROOT_DIRECTORY              = ini_file.get_string_from_ini( section="Directories", key="Root-Directory",              default=root_directory)
 _ENERGY                      = ini_file.get_float_from_ini(  section="Execution",   key="Energy",                      default=20000)
