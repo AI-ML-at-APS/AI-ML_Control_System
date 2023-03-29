@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------- #
-# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
+# Copyright (c) 2023, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2023. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -44,19 +44,3 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
-from aps.common.measurment.beamline.image_processor import ImageProcessor as ImageProcessorCommon, APPLICATION_NAME
-from aps.common.initializer import get_registered_ini_instance
-
-class ImageProcessor(ImageProcessorCommon):
-    def __init__(self, data_collection_directory):
-        super(ImageProcessor, self).__init__(data_collection_directory=data_collection_directory,
-                                             simulated_mask_directory=None,
-                                             energy=20000.0)
-
-    def generate_simulated_mask(self, image_index_for_mask=1, verbose=False):
-        image_transfer_matrix, is_new_mask = super(ImageProcessor, self).generate_simulated_mask(image_index_for_mask, verbose)
-
-        if is_new_mask:
-            ini_file = get_registered_ini_instance(APPLICATION_NAME)
-            ini_file.set_list_at_ini(section="Output", key="Image-Transfer-Matrix", values_list=image_transfer_matrix)
-            ini_file.push()
