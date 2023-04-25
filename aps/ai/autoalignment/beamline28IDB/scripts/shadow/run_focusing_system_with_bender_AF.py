@@ -89,7 +89,8 @@ if __name__ == "__main__":
     add_noise = False #True
     noise     = EXPERIMENTAL_NOISE_TO_SIGNAL_RATIO * 70
 
-    os.chdir("../../../../../../work_directory/28-ID")
+    try: os.chdir("../../../../../../work_directory/28-ID")
+    except: os.chdir("../../../../../work_directory/28-ID")
 
     clean_up()
 

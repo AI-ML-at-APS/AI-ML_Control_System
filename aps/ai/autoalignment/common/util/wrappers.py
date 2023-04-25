@@ -76,14 +76,14 @@ def save_beam(beam, file_name, implementor=Implementors.SHADOW, **kwargs):
 def get_distribution_info(implementor, beam, xrange=None, yrange=None, do_gaussian_fit=False, **kwargs):
     if implementor == Implementors.SRW: return get_srw_wavefront_distribution_info(beam, xrange, yrange, do_gaussian_fit)
     elif implementor == Implementors.SHADOW:
-        nbins_h                = kwargs.get("nbins_h",   default=201)
-        nbins_v                = kwargs.get("nbins_v",   default=201)
-        nolost                 = kwargs.get("nolost",    default=1)
-        add_noise              = kwargs.get("add_noise", default=False)
-        noise                  = kwargs.get("noise",     default=NOISE_DEFAULT_VALUE if add_noise else None)
-        percentage_fluctuation = kwargs.get("percentage_fluctuation", default=10.0) * 1e-2
-        calculate_over_noise   = kwargs.get("calculate_over_noise", default=False)
-        noise_threshold        = kwargs.get("noise_threshold", default=1.5)
+        nbins_h                = kwargs.get("nbins_h",   201)
+        nbins_v                = kwargs.get("nbins_v",   201)
+        nolost                 = kwargs.get("nolost",    1)
+        add_noise              = kwargs.get("add_noise", False)
+        noise                  = kwargs.get("noise",     NOISE_DEFAULT_VALUE if add_noise else None)
+        percentage_fluctuation = kwargs.get("percentage_fluctuation", 10.0) * 1e-2
+        calculate_over_noise   = kwargs.get("calculate_over_noise", False)
+        noise_threshold        = kwargs.get("noise_threshold", 1.5)
 
         if kwargs.get("distribution") == "divergence": return get_shadow_beam_divergence_distribution(shadow_beam=beam,
                                                                                                       nbins_h=nbins_h, nbins_v=nbins_v,
@@ -104,14 +104,14 @@ def get_distribution_info(implementor, beam, xrange=None, yrange=None, do_gaussi
 def plot_distribution(implementor, beam, title="X,Z", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW, **kwargs):
     if implementor == Implementors.SRW: plot_srw_wavefront_spatial_distribution(beam, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
     elif implementor == Implementors.SHADOW:
-        nbins_h                = kwargs.get("nbins_h",   default=201)
-        nbins_v                = kwargs.get("nbins_v",   default=201)
-        nolost                 = kwargs.get("nolost",    default=1)
-        add_noise              = kwargs.get("add_noise", default=False)
-        noise                  = kwargs.get("noise",     default=NOISE_DEFAULT_VALUE if add_noise else None)
-        percentage_fluctuation = kwargs.get("percentage_fluctuation", default=10.0) * 1e-2
-        calculate_over_noise   = kwargs.get("calculate_over_noise", default=False)
-        noise_threshold        = kwargs.get("noise_threshold", default=1.5)
+        nbins_h                = kwargs.get("nbins_h",   201)
+        nbins_v                = kwargs.get("nbins_v",   201)
+        nolost                 = kwargs.get("nolost",    1)
+        add_noise              = kwargs.get("add_noise", False)
+        noise                  = kwargs.get("noise",     NOISE_DEFAULT_VALUE if add_noise else None)
+        percentage_fluctuation = kwargs.get("percentage_fluctuation", 10.0) * 1e-2
+        calculate_over_noise   = kwargs.get("calculate_over_noise", False)
+        noise_threshold        = kwargs.get("noise_threshold", 1.5)
 
         if kwargs.get("distribution") == "divergence": plot_shadow_beam_divergence_distribution(shadow_beam=beam,
                                                                                                 nbins_h=nbins_h, nbins_v=nbins_v,
