@@ -5,3 +5,5 @@
 __pycache__
 tmp_work_dir_*
 
+/APS_AI_Autoalignment.egg-info/
+/Beamline/28ID/AI/

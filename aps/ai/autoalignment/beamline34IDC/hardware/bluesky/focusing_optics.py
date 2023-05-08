@@ -47,12 +47,11 @@
 
 from aps.ai.autoalignment.common.facade.parameters import AngularUnits, DistanceUnits, Movement
 from aps.ai.autoalignment.common.hardware.facade.parameters import Directions
-from aps.ai.autoalignment.common.hardware.facade.focusing_optics_interface import AbstractHardwareFocusingOptics
 
 def bluesky_focusing_optics_factory_method(**kwargs):
     return __BlueskyFocusingOptics(**kwargs)
 
-class __BlueskyFocusingOptics(AbstractHardwareFocusingOptics):
+class __BlueskyFocusingOptics():
     def __init__(self, **kwargs):
         pass
 

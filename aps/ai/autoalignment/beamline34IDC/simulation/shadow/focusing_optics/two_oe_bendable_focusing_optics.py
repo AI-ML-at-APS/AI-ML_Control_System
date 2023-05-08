@@ -70,14 +70,14 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
 
         self.__vkb_bender_manager = CalibratedBenderManager(kb_upstream=VKBMockWidget(self._vkb[0], verbose=True, label="Upstream"),
                                                             kb_downstream=VKBMockWidget(self._vkb[1], verbose=True, label="Downstream"))
-        self.__vkb_bender_manager.load_calibration("V-KB", power=kwargs["power"])
+        self.__vkb_bender_manager.load_calibration("V-KB")
         self.__vkb_bender_manager.set_positions(self._input_features.get_parameter("vkb_motor_1_bender_position"),
                                                 self._input_features.get_parameter("vkb_motor_2_bender_position"))
         self.__vkb_bender_manager.remove_bender_files()
 
         self.__hkb_bender_manager = CalibratedBenderManager(kb_upstream=HKBMockWidget(self._hkb[0], verbose=True, label="Upstream"),
                                                             kb_downstream=HKBMockWidget(self._hkb[1], verbose=True, label="Downstream"))
-        self.__hkb_bender_manager.load_calibration("H-KB", power=kwargs["power"])
+        self.__hkb_bender_manager.load_calibration("H-KB")
         self.__hkb_bender_manager.set_positions(self._input_features.get_parameter("hkb_motor_1_bender_position"),
                                                 self._input_features.get_parameter("hkb_motor_2_bender_position"))
         self.__hkb_bender_manager.remove_bender_files()
@@ -326,7 +326,7 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
 
     # IMPLEMENTATION OF PROTECTED METHODS FROM SUPERCLASS
 
-    def _trace_vkb(self, random_seed, remove_lost_rays, verbose):
+    def _trace_vkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
         output_beam_upstream, cursor_upstream, output_beam_downstream, cursor_downstream = \
             self.__trace_kb(bender_manager=self.__vkb_bender_manager,
                             input_beam=self._slits_beam,
@@ -337,11 +337,20 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
         def run_hybrid(output_beam, increment):
             # NOTE: Near field not possible for vkb (beam is untraceable)
             try:
-                return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                         diffraction_plane=2,  # Tangential
-                                                                         calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                         verbose=verbose,
-                                                                         random_seed=None if random_seed is None else (random_seed + increment))).ff_beam
+                if not near_field_calculation:
+                    return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                             diffraction_plane=2,  # Tangential
+                                                                             calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                             verbose=verbose,
+                                                                             random_seed=None if random_seed is None else (random_seed + increment))).ff_beam
+                else:
+                    return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                             diffraction_plane=2,  # Tangential
+                                                                             calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                             nf=1,
+                                                                             image_distance=self._vkb[0]._oe.T_IMAGE + self._hkb[0]._oe.T_SOURCE + self._hkb[0]._oe.T_IMAGE,
+                                                                             verbose=verbose,
+                                                                             random_seed=None if random_seed is None else (random_seed + increment))).nf_beam
             except Exception:
                 raise HybridFailureException(oe="V-KB")
 

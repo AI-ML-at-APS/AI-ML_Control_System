@@ -45,6 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os
+import sys
 
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import focusing_optics_factory_method, ExecutionMode
@@ -99,6 +100,9 @@ if __name__ == "__main__":
                       xrange=x_range, yrange=y_range, nbins_h=nbins_h, nbins_v=nbins_v,
                       title="Initial Beam",
                       plot_mode=plot_mode, aspect_ratio=aspect_ratio, color_map=color_map)
+
+
+    sys.exit(0)
 
     #--------------------------------------------------
     # interaction with the beamline

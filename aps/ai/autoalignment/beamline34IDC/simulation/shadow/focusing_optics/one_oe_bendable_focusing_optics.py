@@ -74,7 +74,7 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommonAbstract):
         self.__vkb_bender_manager = CalibratedBenderManager(kb_raytracing = VKBMockWidget(shadow_oe=self._vkb, verbose=True, label="Raytracing"),
                                                             kb_upstream   = VKBMockWidget(shadow_oe=self._vkb.duplicate(), verbose=True, label="Upstream"),
                                                             kb_downstream = VKBMockWidget(shadow_oe=self._vkb.duplicate(), verbose=True, label="Downstream"))
-        self.__vkb_bender_manager.load_calibration("V-KB", power=kwargs["power"])
+        self.__vkb_bender_manager.load_calibration("V-KB")
         self.__vkb_bender_manager.set_positions(self._input_features.get_parameter("vkb_motor_1_bender_position"),
                                                 self._input_features.get_parameter("vkb_motor_2_bender_position"))
         self.__vkb_bender_manager.remove_bender_files()
@@ -83,7 +83,7 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommonAbstract):
                                                             kb_upstream   = HKBMockWidget(shadow_oe=self._hkb.duplicate(), verbose=True, label="Upstream"),
                                                             kb_downstream = HKBMockWidget(shadow_oe=self._hkb.duplicate(), verbose=True, label="Downstream"))
 
-        self.__hkb_bender_manager.load_calibration("H-KB", power=kwargs["power"])
+        self.__hkb_bender_manager.load_calibration("H-KB")
         self.__hkb_bender_manager.set_positions(self._input_features.get_parameter("hkb_motor_1_bender_position"),
                                                 self._input_features.get_parameter("hkb_motor_2_bender_position"))
         self.__hkb_bender_manager.remove_bender_files()
@@ -257,7 +257,7 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommonAbstract):
 
     # IMPLEMENTATION OF PROTECTED METHODS FROM SUPERCLASS
 
-    def _trace_vkb(self, random_seed, remove_lost_rays, verbose):
+    def _trace_vkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
         output_beam = self.__trace_kb(bender_manager=self.__vkb_bender_manager,
                                       input_beam=self._slits_beam,
                                       widget_class_name="DoubleRodBenderEllypticalMirror",
@@ -327,24 +327,6 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommonAbstract):
             z_bender_correction += upstream_bender_data.z_figure_error
 
             ST.write_shadow_surface(z_bender_correction.T, numpy.round(upstream_bender_data.x, 6), numpy.round(upstream_bender_data.y, 6), raytracing_widget.output_file_name_full)
-            '''
-            from matplotlib import cm
-            from matplotlib import pyplot as plt
-
-            figure = plt.figure(figsize=(10, 7))
-            figure.patch.set_facecolor('white')
-
-            axis = figure.add_subplot(111, projection='3d')
-            axis.set_zlabel("Z [nm]")
-            axis.set_xlabel("X [mm]")
-            axis.set_ylabel("Y [mm]")
-
-            x_to_plot, y_to_plot = numpy.meshgrid(upstream_bender_data.x, upstream_bender_data.y)
-            z_to_plot = z_bender_correction.T * 1e6
-
-            axis.plot_surface(x_to_plot, y_to_plot, z_to_plot, rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
-            plt.show()
-            '''
 
         raytracing_widget._shadow_oe._oe.F_RIPPLE = 1
         raytracing_widget._shadow_oe._oe.F_G_S = 2

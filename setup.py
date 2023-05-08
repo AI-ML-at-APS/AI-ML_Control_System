@@ -85,14 +85,12 @@ SETUP_REQUIRES = (
 )
 
 INSTALL_REQUIRES = (
-    'aps_common_libraries',
+    'aps_common_libraries>=1.0.0',
     'OASYS1-ShadowOui>=1.5.131',
     'OASYS1-ShadowOui-Advanced-Tools>=1.0.82',
     'oasys-srwpy',
-    'torch',
     'optuna',
     'botorch',
-    'pyepics'
 )
 
 PACKAGES = find_packages(exclude=('*.tests', '*.tests.*', 'tests.*', 'tests'))

@@ -200,7 +200,7 @@ class IdealFocusingOptics(FocusingOpticsCommonAbstract):
 
     # IMPLEMENTATION OF PROTECTED METHODS FROM SUPERCLASS
 
-    def _trace_vkb(self, random_seed, remove_lost_rays, verbose):
+    def _trace_vkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
         output_beam =  self._trace_oe(input_beam=self._slits_beam,
                                       shadow_oe=self._vkb,
                                       widget_class_name="EllypticalMirror",
@@ -209,11 +209,20 @@ class IdealFocusingOptics(FocusingOpticsCommonAbstract):
 
         # NOTE: Near field not possible for vkb (beam is untraceable)
         try:
-            return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
-                                                                     diffraction_plane=2,  # Tangential
-                                                                     calcType=3,  # Diffraction by Mirror Size + Errors
-                                                                     verbose=verbose,
-                                                                     random_seed=None if random_seed is None else (random_seed + 200))).ff_beam
+            if not near_field_calculation:
+                return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                         diffraction_plane=2,  # Tangential
+                                                                         calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                         verbose=verbose,
+                                                                         random_seed=None if random_seed is None else (random_seed + 200))).ff_beam
+            else:
+                return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
+                                                                         diffraction_plane=2,  # Tangential
+                                                                         calcType=3,  # Diffraction by Mirror Size + Errors
+                                                                         nf=1,
+                                                                         image_distance=self._vkb._oe.T_IMAGE + self._hkb._oe.T_SOURCE + self._hkb._oe.T_IMAGE,
+                                                                         verbose=verbose,
+                                                                         random_seed=None if random_seed is None else (random_seed + 200))).nf_beam
         except Exception:
             raise HybridFailureException(oe="V-KB")
 

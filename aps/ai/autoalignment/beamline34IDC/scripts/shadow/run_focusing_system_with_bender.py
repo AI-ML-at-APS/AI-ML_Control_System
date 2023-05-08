@@ -47,6 +47,8 @@
 import os
 import sys
 
+import numpy
+
 from aps.ai.autoalignment.common.facade.parameters import ExecutionMode, DistanceUnits
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_factory import focusing_optics_factory_method
@@ -54,6 +56,31 @@ from aps.ai.autoalignment.beamline34IDC.simulation.facade.focusing_optics_interf
 from aps.ai.autoalignment.common.util.shadow.common import plot_shadow_beam_spatial_distribution, get_shadow_beam_spatial_distribution, load_shadow_beam, PreProcessorFiles
 from aps.ai.autoalignment.common.util import clean_up
 from aps.ai.autoalignment.common.util.wrappers import PlotMode
+from aps.ai.autoalignment.common.facade.parameters import DistanceUnits, Movement, AngularUnits
+
+def dump_photon_beam_as_beamline(beam, suffix):
+    histo, dict = get_shadow_beam_spatial_distribution(beam, xrange=ranges[0], yrange=ranges[1])
+
+    print("Sigma (HxV): ", round(dict.get_parameter("h_sigma")*1e6, 0), " x ", round(dict.get_parameter("v_sigma")*1e6, 0), " nm")
+
+    xx   = histo.hh
+    yy   = histo.vv
+    hh_h = histo.data_2D.sum(axis=1)
+    hh_v = histo.data_2D.sum(axis=0)
+
+    dim_x = len(xx)
+    dim_y = len(yy)
+
+    data_x = numpy.zeros((dim_x, 2))
+    data_y = numpy.zeros((dim_y, 2))
+
+    data_x[:, 0] = xx
+    data_y[:, 0] = yy
+    data_x[:, 1] = hh_h
+    data_y[:, 1] = hh_v
+
+    numpy.savetxt("simulated_scan_x_" + suffix + ".txt", data_x)
+    numpy.savetxt("simulated_scan_z_" + suffix + ".txt", data_y)
 
 if __name__ == "__main__":
     verbose = False
@@ -76,20 +103,15 @@ if __name__ == "__main__":
     #
     input_features.set_parameter("coh_slits_h_aperture", 0.03)
     input_features.set_parameter("coh_slits_v_aperture", 0.07)
+    #input_features.set_parameter("coh_slits_h_aperture", 0.15)
+    #input_features.set_parameter("coh_slits_v_aperture", 0.15)
     input_features.set_parameter("vkb_motor_1_bender_position", 138.0)
     input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
     input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
     input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
-    #input_features.set_parameter("coh_slits_h_aperture", 0.15)
-    #input_features.set_parameter("coh_slits_v_aperture", 0.15)
-    #input_features.set_parameter("vkb_motor_1_bender_position", 141.5)
-    #input_features.set_parameter("vkb_motor_2_bender_position", 239.5)
-    #input_features.set_parameter("hkb_motor_1_bender_position", 216.5)
-    #input_features.set_parameter("hkb_motor_2_bender_position", 113.0)
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                input_features=input_features,
-                               power=1,
                                rewrite_preprocessor_files=PreProcessorFiles.NO,
                                rewrite_height_error_profile_files=False)
 
@@ -106,75 +128,161 @@ if __name__ == "__main__":
     # perturbation of the incident beam to make adjustements necessary
 
     random_seed = 2120 # for repeatability
-
+    ranges = [[-0.0025, 0.0025], [-0.0025, 0.0025]]
     focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.INTERNAL)
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE)
+    #plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.INTERNAL)
 
-    _, dict = get_shadow_beam_spatial_distribution(output_beam, xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
-
-    print("Initial Sigma (HxV): ", round(dict.get_parameter("h_sigma")*1e6, 0), " x ", round(dict.get_parameter("v_sigma")*1e6, 0), " nm")
-
-    sys.exit(0)
+    dump_photon_beam_as_beamline(output_beam, "0_0")
 
     #--------------------------------------------------
     # interaction with the beamline
 
-    focusing_system.move_vkb_motor_2_bender(pos_downstream=-15.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    print("Case: -10")
 
-    print("VKB Q", focusing_system.get_vkb_q_distance())
+    focusing_system.move_vkb_motor_1_bender(pos_upstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_2_bender(pos_downstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_1_bender(pos_upstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_2_bender(pos_downstream=-10.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
+    print("V-KB bender positions and q (up, down) ",
+          focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_q_distance())
+    print("H-KB bender positions and q (up, down)",
+          focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_q_distance())
 
-    focusing_system.move_vkb_motor_1_bender(pos_upstream=-15.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    print("VKB Q", focusing_system.get_vkb_q_distance())
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE, title="Case -10/-10")
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005], plot_mode=PlotMode.NATIVE)
+    dump_photon_beam_as_beamline(output_beam, "-10_-10")
 
-    '''
-    focusing_system.move_vkb_motor_3_pitch(0.1, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
-
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
-
-    focusing_system.move_vkb_motor_4_translation(5, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
-
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
-    '''
     #--------------------------------------------------
 
-    focusing_system.move_hkb_motor_1_bender(pos_upstream=-15.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    print("Case: -5")
 
-    print("HKB Q", focusing_system.get_hkb_q_distance())
+    focusing_system.move_vkb_motor_1_bender(pos_upstream=+5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_2_bender(pos_downstream=+5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_1_bender(pos_upstream=+5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_2_bender(pos_downstream=+5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
+    print("V-KB bender positions and q (up, down) ",
+          focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_q_distance())
+    print("H-KB bender positions and q (up, down)",
+          focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_q_distance())
 
-    focusing_system.move_hkb_motor_2_bender(pos_downstream=-15.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    print("HKB Q", focusing_system.get_hkb_q_distance())
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE, title="Case -5/-5")
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=[-0.005, 0.005], yrange=[-0.005, 0.005])
+    dump_photon_beam_as_beamline(output_beam, "-5_-5")
 
-    '''
-    focusing_system.move_hkb_motor_3_pitch(0.2, movement=Movement.RELATIVE, units=AngularUnits.MILLIRADIANS)
+    #--------------------------------------------------
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
+    print("Case: -2")
 
-    focusing_system.move_hkb_motor_4_translation(-1, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_1_bender(pos_upstream=+3.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_2_bender(pos_downstream=+3.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_1_bender(pos_upstream=+3.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_2_bender(pos_downstream=+3.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
 
-    plot_shadow_beam_spatial_distribution(focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=False, debug_mode=False, random_seed=random_seed),
-                                          xrange=None, yrange=None)
-    '''
-    # ----------------------------------------------------------------
+    print("V-KB bender positions and q (up, down) ",
+          focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_q_distance())
+    print("H-KB bender positions and q (up, down)",
+          focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_q_distance())
+
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
+
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE, title="Case -2/-2")
+
+    dump_photon_beam_as_beamline(output_beam, "-2_-2")
+
+    #--------------------------------------------------
+
+    print("Case: +2")
+
+    focusing_system.move_vkb_motor_1_bender(pos_upstream=+4.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_2_bender(pos_downstream=+4.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_1_bender(pos_upstream=+4.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_2_bender(pos_downstream=+4.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+
+    print("V-KB bender positions and q (up, down) ",
+          focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_q_distance())
+    print("H-KB bender positions and q (up, down)",
+          focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_q_distance())
+
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
+
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE, title="Case +2/+2")
+
+    dump_photon_beam_as_beamline(output_beam, "+2_+2")
+
+    #--------------------------------------------------
+
+    print("Case: +5")
+
+    focusing_system.move_vkb_motor_1_bender(pos_upstream=+4, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_2_bender(pos_downstream=+4, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_1_bender(pos_upstream=+3.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_2_bender(pos_downstream=+3.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+
+    print("V-KB bender positions and q (up, down) ",
+          focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_q_distance())
+    print("H-KB bender positions and q (up, down)",
+          focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_q_distance())
+
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
+
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE, title="Case +5/+5")
+
+    dump_photon_beam_as_beamline(output_beam, "+5_+5")
+
+    #--------------------------------------------------
+
+    print("Case: +10")
+
+    focusing_system.move_vkb_motor_1_bender(pos_upstream=+5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_vkb_motor_2_bender(pos_downstream=+5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_1_bender(pos_upstream=+5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+    focusing_system.move_hkb_motor_2_bender(pos_downstream=+5.0, movement=Movement.RELATIVE, units=DistanceUnits.MICRON)
+
+    print("V-KB bender positions and q (up, down) ",
+          focusing_system.get_vkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_vkb_q_distance())
+    print("H-KB bender positions and q (up, down)",
+          focusing_system.get_hkb_motor_1_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_motor_2_bender(units=DistanceUnits.MICRON),
+          focusing_system.get_hkb_q_distance())
+
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
+
+    plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE, title="Case +10/+10")
+
+    dump_photon_beam_as_beamline(output_beam, "+10_+10")
 
     clean_up()
+
+    sys.exit(0)

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------- #
-# Copyright (c) 2021, UChicago Argonne, LLC. All rights reserved.         #
+# Copyright (c) 2022, UChicago Argonne, LLC. All rights reserved.         #
 #                                                                         #
-# Copyright 2021. UChicago Argonne, LLC. This software was produced       #
+# Copyright 2022. UChicago Argonne, LLC. This software was produced       #
 # under U.S. Government contract DE-AC02-06CH11357 for Argonne National   #
 # Laboratory (ANL), which is operated by UChicago Argonne, LLC for the    #
 # U.S. Department of Energy. The U.S. Government has rights to use,       #
@@ -44,60 +44,64 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
+import os, numpy
+from aps.ai.autoalignment.beamline28IDB.optimization.analysis_utils import load_histograms_from_files
+from aps.ai.autoalignment.common.util.common import plot_2D
+from aps.ai.autoalignment.beamline28IDB.hardware.epics.focusing_optics import DISTANCE_V_MOTORS
 
-from aps.common.ml.data_structures import DictionaryWrapper
+def get_v_bimorph_mirror_motor_pitch(di, do, u):
+    zero_pos = 0.5 * (u + do)
+    pos      = di - zero_pos
 
-from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnits
-from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
+    angle = numpy.arcsin(pos / (0.5 * DISTANCE_V_MOTORS))
 
-class Layout:
-    AUTO_ALIGNMENT = 0
-    AUTO_FOCUSING  = 1
+    return numpy.degrees(angle)
 
-def get_default_input_features(**kwargs): # units: mm, mrad and micron for the bender
-    try:    layout = kwargs["layout"]
-    except: layout = Layout.AUTO_ALIGNMENT
+def print_positions(title, motor_reference, motors=None):
+    print(title + " Motors Positions:")
+    print("hb up    (V)  :" + str(motor_reference['hb_1'     ] + (0.0 if motors is None else motors['hb_1'     ])))
+    print("hb down  (V)  :" + str(motor_reference['hb_2'     ] + (0.0 if motors is None else motors['hb_2'     ])))
+    print("hb pitch (deg):" + str(motor_reference['hb_pitch' ] + (0.0 if motors is None else motors['hb_pitch' ])))
+    print("hb trans (deg):" + str(motor_reference['hb_trans' ] + (0.0 if motors is None else motors['hb_trans' ])))
+    print("vb       (V)  :" + str(motor_reference['vb_bender'] + (0.0 if motors is None else motors['vb_bender'])))
+    print("vb pitch (deg):" + str(motor_reference['vb_pitch' ] + (0.0 if motors is None else motors['vb_pitch' ])))
+    print("vb trans (deg):" + str(motor_reference['vb_trans' ] + (0.0 if motors is None else motors['vb_trans' ])))
 
-    if layout == Layout.AUTO_ALIGNMENT:
-        return DictionaryWrapper(v_bimorph_mirror_q_distance=892.0,
-                                 v_bimorph_mirror_motor_translation=0.0,
-                                 v_bimorph_mirror_motor_pitch_angle=0.003,
-                                 v_bimorph_mirror_motor_pitch_delta_angle=0.0,
-                                 v_bimorph_mirror_motor_bender_voltage=170,
-                                 h_bendable_mirror_q_distance=2022.0,
-                                 h_bendable_mirror_motor_translation=0.0,
-                                 h_bendable_mirror_motor_pitch_angle=0.003,
-                                 h_bendable_mirror_motor_pitch_delta_angle=0.0,
-                                 h_bendable_mirror_motor_1_bender_voltage=-90,
-                                 h_bendable_mirror_motor_2_bender_voltage=-90
-                                 )
-    elif layout == Layout.AUTO_FOCUSING:
-        return DictionaryWrapper(v_bimorph_mirror_q_distance=2290.0,
-                                 v_bimorph_mirror_motor_translation=0.0,
-                                 v_bimorph_mirror_motor_pitch_angle=0.003,
-                                 v_bimorph_mirror_motor_pitch_delta_angle=0.0,
-                                 v_bimorph_mirror_motor_bender_voltage=419.0,
-                                 h_bendable_mirror_q_distance=3095.0,
-                                 h_bendable_mirror_motor_translation=0.0,
-                                 h_bendable_mirror_motor_pitch_angle=0.003,
-                                 h_bendable_mirror_motor_pitch_delta_angle=0.0,
-                                 h_bendable_mirror_motor_1_bender_voltage=-168,
-                                 h_bendable_mirror_motor_2_bender_voltage=-161
-                                 )
+def plot_trial(title, histo):
+    xx = histo.hh
+    yy = histo.vv
+    zz = histo.data_2D
 
-class AbstractSimulatedFocusingOptics(AbstractFocusingOptics):
+    plot_2D(x_array=xx, y_array=yy, z_array=zz, title=title)
 
-    #####################################################################################
-    # This methods represent the run-time interface, to interact with the optical system
-    # in real time, like in the real beamline. FOR SIMULATION PURPOSES ONLY
 
-    # V-KB -----------------------
+import joblib
 
-    def change_h_bendable_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON): raise NotImplementedError()
-    def get_h_bendable_mirror_q_distance(self): raise NotImplementedError()
+directory = "/Users/lrebuffi/Library/CloudStorage/Box-Box/Luca_Documents/AI-ML/AXO/28-ID/Experiment-Nov-2022/AI/autofocusing/peak_fwhm/"
+target_trial = 23
 
-    # H-KB -----------------------
+histo_dir     = os.path.join(directory, "peak_fwhm_ref_150_2022-11-18_steps")
+final_output  = os.path.join(directory, "peak_fwhm_ref_optimization_final_150_2022-11-18_01-23.pkl")
 
-    def change_v_bimorph_mirror_shape(self, q_distance, movement=Movement.ABSOLUTE): raise NotImplementedError()
-    def get_v_bimorph_mirror_q_distance(self): raise NotImplementedError()
+histos = load_histograms_from_files(n_steps=150, hists_dir=histo_dir, extension="pkl")
+trials = joblib.load(final_output)
+
+
+motors_reference = {
+    'hb_1' : -170.0,
+    'hb_2' : -155.0,
+    'hb_pitch' : 0.17164,
+    'hb_trans' : 0.0,
+    'vb_bender' : 384.0,
+    'vb_pitch' : get_v_bimorph_mirror_motor_pitch(0.54126, 0.54126, -0.54126),
+    'vb_trans' : 0.0,
+}
+
+print_positions("Reference", motors_reference)
+print_positions("Initial", motors_reference, trials[0].params)
+print_positions("Target", motors_reference, trials[target_trial].params)
+
+plot_trial("Initial", histos[0])
+plot_trial("Target",  histos[target_trial])
+
 
