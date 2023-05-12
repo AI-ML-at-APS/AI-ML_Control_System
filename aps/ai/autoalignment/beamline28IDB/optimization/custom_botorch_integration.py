@@ -63,7 +63,7 @@ from botorch.fit import fit_gpytorch_mll
 from botorch.models import SingleTaskGP
 from botorch.models.transforms.outcome import Standardize
 from botorch.optim import optimize_acqf
-from botorch.sampling.samplers import SobolQMCNormalSampler
+from botorch.sampling.normal import SobolQMCNormalSampler
 from botorch.utils.multi_objective.box_decompositions import NondominatedPartitioning
 from botorch.utils.multi_objective.scalarization import get_chebyshev_scalarization
 from botorch.utils.sampling import manual_seed, sample_simplex
@@ -156,7 +156,7 @@ def qnei_candidates_func(
     acqf = qNoisyExpectedImprovement(
         model=model,
         X_baseline=train_x,
-        sampler=SobolQMCNormalSampler(num_samples=256),
+        sampler=SobolQMCNormalSampler(256),
         objective=objective,
         prune_baseline=True,
     )
@@ -259,7 +259,7 @@ def qnehvi_candidates_func(
         ref_point=ref_point_list,
         X_baseline=train_x,
         prune_baseline=True,
-        sampler=SobolQMCNormalSampler(num_samples=256),
+        sampler=SobolQMCNormalSampler(256),
         **additional_qnehvi_kwargs,
     )
 
@@ -366,7 +366,7 @@ def qei_candidates_func(
     acqf = qExpectedImprovement(
         model=model,
         best_f=best_f,
-        sampler=SobolQMCNormalSampler(num_samples=256),
+        sampler=SobolQMCNormalSampler(256),
         objective=objective,
     )
 
@@ -459,7 +459,7 @@ def qehvi_candidates_func(
         model=model,
         ref_point=ref_point_list,
         partitioning=partitioning,
-        sampler=SobolQMCNormalSampler(num_samples=256),
+        sampler=SobolQMCNormalSampler(256),
         **additional_qehvi_kwargs,
     )
 
@@ -537,7 +537,7 @@ def qparego_candidates_func(
     acqf = qExpectedImprovement(
         model=model,
         best_f=objective(train_y).max(),
-        sampler=SobolQMCNormalSampler(num_samples=256),
+        sampler=SobolQMCNormalSampler(256),
         objective=objective,
     )
 

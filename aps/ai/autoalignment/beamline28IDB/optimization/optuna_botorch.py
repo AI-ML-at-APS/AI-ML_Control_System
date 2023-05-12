@@ -57,7 +57,8 @@ import joblib
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import ExecutionMode
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 from aps.ai.autoalignment.beamline28IDB.optimization import configs
-from aps.ai.autoalignment.beamline28IDB.optimization.common import SelectionAlgorithm, OptimizationCriteria, CalculationParameters, OptimizationCommon, MooThresholds
+from aps.ai.autoalignment.beamline28IDB.optimization.common import SelectionAlgorithm, OptimizationCriteria, CalculationParameters, \
+    OptimizationCommon
 from aps.ai.autoalignment.beamline28IDB.optimization.analysis_utils import select_nash_equil_trial_from_pareto_front
 from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration import (
     BoTorchSampler,
@@ -66,8 +67,14 @@ from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration 
     qnehvi_candidates_func,
     qnei_candidates_func,
 )
-from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
-
+class MooThresholds:
+    CENTROID       = "centroid"
+    PEAK_DISTANCE  = "peak_distance"
+    FWHM           = "fwhm"
+    SIGMA          = "sigma"
+    PEAK_INTENSITY = "peak_intensity"
+    SUM_INTENSITY  = "sum_intensity"
+    KL_DIVERGENCE = "kl_divergence"
 
 class Constraints:
     CENTROID       = "centroid"
@@ -316,6 +323,7 @@ class OptunaOptimizer(OptimizationCommon):
         if algorithm == SelectionAlgorithm.TOPSIS:
             n_loss_parameters = len(self.loss_parameters)
             n_trials = len(trials)
+            print(n_trials)
 
             all_values = numpy.ones((n_trials, n_loss_parameters))
             for ti in range(n_trials): all_values[ti, :] = trials[ti].values
@@ -333,6 +341,8 @@ class OptunaOptimizer(OptimizationCommon):
             closeness = s_minus / (s_plus + s_minus)
 
             idx = np.argmax(closeness)
+            print(closeness)
+            print(idx)
         elif algorithm == SelectionAlgorithm.NASH_EQUILIBRIUM:
             _, idx, _ = select_nash_equil_trial_from_pareto_front(self.study)
 
