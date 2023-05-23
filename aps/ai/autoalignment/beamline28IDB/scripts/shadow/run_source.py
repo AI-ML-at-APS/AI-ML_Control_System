@@ -60,7 +60,7 @@ if __name__ == "__main__":
     clean_up()
 
     source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.UNDULATOR)
-    source.initialize(n_rays=100000, random_seed=56565, verbose=True, storage_ring=StorageRing.APS)
+    source.initialize(n_rays=50000, random_seed=56565, verbose=True, storage_ring=StorageRing.APS)
     source.set_K_on_specific_harmonic(harmonic_energy=4000, harmonic_number=1, which=source.KDirection.VERTICAL)
     source.set_energy(photon_energy_distribution=source.PhotonEnergyDistributions.RANGE, energy=[19600.0, 20200.0], energy_points=61)
     source.set_undulator_parameters(longitudinal_central_position=-1.3, waist_position_user_defined=0.6814)

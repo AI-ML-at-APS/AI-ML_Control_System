@@ -49,8 +49,10 @@ import abc
 from typing import Dict, List, NamedTuple, NoReturn, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 import dataclasses as dt
 from scipy.stats import multivariate_normal
+import scipy
 
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import (
     ExecutionMode,
@@ -86,6 +88,7 @@ class OptimizationCriteria:
 class SelectionAlgorithm:
     TOPSIS           = "topsis"
     NASH_EQUILIBRIUM = "nash-equilibrium"
+
 
 class BeamState(NamedTuple):
     photon_beam: object
@@ -330,13 +333,14 @@ def get_peak_intensity(cp : CalculationParameters, focusing_system: AbstractFocu
     return BeamParameterOutput(peak, photon_beam, hist, dw)
 
 def get_kl_divergence_with_gaussian_from_hist(cp: CalculationParameters, focusing_system: AbstractFocusingOptics, photon_beam: object,
-                                              no_beam_value: float = 0.0,  ref_fwhm: Tuple[float] = (1e-2, 1e-2),
-                                              eps: float = 1e-5, **kwargs) -> BeamParameterOutput:
+                                              no_beam_value: float = 0.0,  ref_pdf: npt.NDArray[float] = None, ref_fwhm: Tuple[float] = (1e-2, 1e-2),
+                                              eps: float = 1e-8, return_ref_pdf: bool = False, **kwargs) -> BeamParameterOutput:
     photon_beam, hist, dw = get_beam_hist_dw(cp, focusing_system, photon_beam, **kwargs)
-    kl_div = _get_kl_divergence_with_gaussian_from_hist(hist, ref_fwhm=ref_fwhm, no_beam_value=no_beam_value,
+    kl_div = _get_kl_divergence_with_gaussian_from_hist(hist, ref_pdf=ref_pdf, ref_fwhm=ref_fwhm, no_beam_value=no_beam_value,
                                                         eps=eps, calculate_over_noise=cp.calculate_over_noise,
-                                                        noise_threshold=cp.noise_threshold)
+                                                        noise_threshold=cp.noise_threshold, return_ref_pdf=return_ref_pdf)
     return BeamParameterOutput(kl_div, photon_beam, hist, dw)
+
 
 # -------------------------------------------------------------------- #
 
@@ -429,9 +433,12 @@ def _get_weighted_sum_intensity_from_hist(cp: CalculationParameters, hist: Histo
     return weighted_hist.sum()
 
 
-def _get_kl_divergence_with_gaussian_from_hist(cp: CalculationParameters, hist: Histogram,  ref_fwhm: Tuple[float] = (1e-2, 1e-2), eps: float = 1e-5,
-                                               no_beam_value: float = 0) -> float:
+def _get_kl_divergence_with_gaussian_from_hist(cp: CalculationParameters, hist: Histogram,  ref_pdf: npt.NDArray[float] = None, 
+                                               reference_h: float=1e-3, refernece_v: float=1e-3,
+                                               eps: float = 1e-8, no_beam_value: float = 0, 
+                                               return_ref_pdf: bool = False, verbose: bool = False) -> float:
     # ref_fwhm is in mm
+    
     if hist is None: return no_beam_value
 
     data_2D = hist.data_2D
@@ -439,18 +446,73 @@ def _get_kl_divergence_with_gaussian_from_hist(cp: CalculationParameters, hist: 
         data_2D, *_ = calculate_projections_over_noise(data_2D, cp.noise_threshold)
 
     dsum = data_2D.sum()
-    dat_pdf = data_2D / dsum + 1e-8
+    dat_pdf = data_2D / dsum + eps
 
-    vv, hh = np.meshgrid(hist.vv, hist.hh)
-    pos = np.dstack((hh, vv))
-    std_dev = np.array(ref_fwhm) / (2 * (2 * np.log(2)) ** 0.5)
-    cov = np.array([[std_dev[0] ** 2, 0], [0, std_dev[1] ** 2]])
-    ref_pdf = multivariate_normal.pdf(pos, cov=cov)
-    ref_pdf = ref_pdf / ref_pdf.sum() + 1e-8
+    if ref_pdf is None:
+        if verbose:
+            print("Ref pdf is not supplied. Using reference_h and reference_v to create a Gaussian.")
+        ref_fwhm = np.array([reference_h, refernece_v]) + eps
+        vv, hh = np.meshgrid(hist.vv, hist.hh)
+        pos = np.dstack((hh, vv))
+        std_dev = ref_fwhm / (2 * (2 * np.log(2)) ** 0.5)
+        cov = np.array([[std_dev[0] ** 2, 0], [0, std_dev[1] ** 2]])
+        ref_pdf = multivariate_normal.pdf(pos, cov=cov)
+        ref_pdf = ref_pdf / ref_pdf.sum() + 1e-8
+    else:
+        if verbose:
+            print("Ref pdf is supplied. Ignoring reference_h and refernece_v")
+
+    kl_div = np.sum(dat_pdf * np.log(2 * dat_pdf / (ref_pdf + dat_pdf))
+                   + ref_pdf * np.log(2 * ref_pdf / (ref_pdf + dat_pdf)))
+    #kl_div = np.sum(dat_pdf * np.log(dat_pdf / ref_pdf))
+    if not return_ref_pdf:
+        return kl_div
+    else:
+        return kl_div, ref_pdf
+
+def _get_wasserstein_dist_with_gaussian_from_hist(cp: CalculationParameters, hist: Histogram,  ref_pdf: npt.NDArray[float] = None, 
+                                               reference_h: float=1e-3, refernece_v: float=1e-3,
+                                               eps: float = 1e-8, no_beam_value: float = 0, 
+                                               return_ref_pdf: bool = False, verbose: bool = False) -> float:
+    # ref_fwhm is in mm
+    raise NotImplementedError
+    if hist is None: return no_beam_value
+
+    data_2D = hist.data_2D
+    if cp.calculate_over_noise:
+        data_2D, *_ = calculate_projections_over_noise(data_2D, cp.noise_threshold)
+
+    dsum = data_2D.sum()
+    dat_pdf = data_2D / dsum + eps
+
+    if ref_pdf is None:
+        if verbose:
+            print("Ref pdf is not supplied. Using reference_h and reference_v to create a Gaussian.")
+        ref_fwhm = np.array([reference_h, refernece_v]) + eps
+        vv, hh = np.meshgrid(hist.vv, hist.hh)
+        pos = np.dstack((hh, vv))
+        std_dev = ref_fwhm / (2 * (2 * np.log(2)) ** 0.5)
+        cov = np.array([[std_dev[0] ** 2, 0], [0, std_dev[1] ** 2]])
+        ref_pdf = multivariate_normal.pdf(pos, cov=cov)
+        ref_pdf = ref_pdf / ref_pdf.sum() + 1e-8
+    else:
+        if verbose:
+            print("Ref pdf is supplied. Ignoring reference_h and refernece_v")
+
     #kl_div = np.sum(dat_pdf * np.log(2 * dat_pdf / (ref_pdf + dat_pdf))
     #                + ref_pdf * np.log(2 * ref_pdf / (ref_pdf + dat_pdf)))
+
+    from scipy.spatial.distance import cdist
+    from scipy.optimize import linear_sum_assignment
+
+    d = cdist(Y1, Y2)
+    assignment = linear_sum_assignment(d)
     kl_div = np.sum(dat_pdf * np.log(dat_pdf / ref_pdf))
-    return kl_div
+    if not return_ref_pdf:
+        return kl_div
+    else:
+        return kl_div, ref_pdf
+
 
 def _get_peak_intensity_from_dw( dw: DictionaryWrapper, do_gaussian_fit: bool = False, no_beam_value: float = 0.0) -> float:
     if dw is None: return no_beam_value
@@ -529,6 +591,8 @@ class OptimizationCommon(abc.ABC):
         for loss_type in self.loss_parameters:
             self._loss_function_list.append(self.get_beam_property_function_for_loss(loss_type))
             temp_loss_min_value += configs.DEFAULT_LOSS_TOLERANCES[loss_type]
+            if loss_type == OptimizationCriteria.KL_DIVERGENCE_WITH_GAUSSIAN:
+                self._ref_pdf = None
 
         self._multi_objective_optimization = multi_objective_optimization
         self._loss_min_value = temp_loss_min_value if loss_min_value is None else loss_min_value
@@ -624,9 +688,13 @@ class OptimizationCommon(abc.ABC):
                                   self._no_beam_loss)
 
     def get_kl_divergence_with_gaussian_from_hist(self) -> float:
-        return _get_kl_divergence_with_gaussian_from_hist(self.cp, self.beam_state.hist,
-                                                          self.reference_parameter_h_v[OptimizationCriteria.FWHM],
-                                                          no_beam_value=self._intensity_no_beam_loss)
+        kl_div, self._ref_pdf = _get_kl_divergence_with_gaussian_from_hist(self.cp, self.beam_state.hist, self._ref_pdf,
+                                                          self.reference_parameter_h_v[OptimizationCriteria.FWHM][0],
+                                                          self.reference_parameter_h_v[OptimizationCriteria.FWHM][1],
+                                                          no_beam_value=self._intensity_no_beam_loss,
+                                                          return_ref_pdf=True)
+        return kl_div
+
 
 
     def loss_function(self, translations: Union[List[float], "np.ndarray"], verbose: bool = True) -> float:
