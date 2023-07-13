@@ -105,6 +105,7 @@ class OptunaOptimizer(OptimizationCommon):
                  no_beam_loss: float = 1e4,
                  intensity_no_beam_loss: float = 0,
                  multi_objective_optimization: bool = False,
+                 dump_directory: str = None,
                  **kwargs):
         super().__init__(calculation_parameters=calculation_parameters,
                          focusing_system=focusing_system,
@@ -126,7 +127,8 @@ class OptunaOptimizer(OptimizationCommon):
         self._sum_intensity_threshold = None
         self._loss_fn_this = None
         self._use_discrete_space = None
-        self._dump_directory = os.path.join(os.curdir, "dump")
+        
+        self._dump_directory = dump_directory if dump_directory is not None else os.path.join(os.curdir, "dump")
         if not os.path.exists(self._dump_directory): os.mkdir(self._dump_directory)
 
     def set_optimizer_options(

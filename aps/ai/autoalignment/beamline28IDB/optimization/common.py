@@ -123,6 +123,10 @@ class CalculationParameters:
     reference_v : float = 0.0
     save_images : bool = False
     every_n_images : int = 5
+    rng: np.random.Generator = dt.field(init=False)
+
+    def __post_init__(self):
+        self.rng = np.random.default_rng(self.random_seed)
 
 @dt.dataclass
 class PlotParameters:
@@ -208,7 +212,7 @@ def get_random_init(cp : CalculationParameters,
     regenerate              = True
 
     while regenerate:
-        initial_guess = [np.random.uniform(m1, m2) for (m1, m2) in init_range]
+        initial_guess = [cp.rng.uniform(m1, m2) for (m1, m2) in init_range]
         focusing_system = movers.move_motors(focusing_system, motor_types, initial_guess, movement="relative")
         centroid, photon_beam, hist, dw = get_centroid_distance(cp, focusing_system, None, **kwargs)
 
@@ -733,7 +737,7 @@ class OptimizationCommon(abc.ABC):
     def get_random_init(self, guess_range: List[float] = None, verbose=True):
         guess_range = self._get_guess_ranges(guess_range)
 
-        initial_guess = [np.random.uniform(m1, m2) for (m1, m2) in guess_range]
+        initial_guess = [self.cp.rng.uniform(m1, m2) for (m1, m2) in guess_range]
         lossfn_obj_this = self.TrialInstanceLossFunction(self, verbose=verbose)
         guess_loss = lossfn_obj_this.loss(initial_guess, verbose=False)
         if verbose: print("Random guess", initial_guess, "has loss", guess_loss)
