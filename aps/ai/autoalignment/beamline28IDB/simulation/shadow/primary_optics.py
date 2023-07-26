@@ -171,8 +171,10 @@ class __PrimaryOptics(AbstractPrimaryOptics):
         slits_screen.F_SCREEN = 1
         slits_screen.I_SLIT = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         slits_screen.N_SCREEN = 1
-        slits_screen.RX_SLIT = numpy.array([0.85, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        slits_screen.RZ_SLIT = numpy.array([0.42, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        #slits_screen.RX_SLIT = numpy.array([0.78, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        #slits_screen.RZ_SLIT = numpy.array([0.12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        slits_screen.RX_SLIT = numpy.array([5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        slits_screen.RZ_SLIT = numpy.array([5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         slits_screen.T_IMAGE = 0.0
         slits_screen.T_INCIDENCE = 0.0
         slits_screen.T_REFLECTION = 180.0

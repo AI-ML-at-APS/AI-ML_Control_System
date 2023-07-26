@@ -142,11 +142,13 @@ class IdealFocusingOptics(FocusingOpticsCommonAbstract):
                               remove_lost_rays=remove_lost_rays)
 
     def _trace_v_bimorph_mirror(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
-        return self._trace_oe(input_beam=self._h_bendable_mirror_beam,
-                              shadow_oe=self._v_bimorph_mirror,
-                              widget_class_name="EllypticalMirror",
-                              oe_name="V-Bimorph-Mirror",
-                              remove_lost_rays=remove_lost_rays)
+        output_beam = self._trace_oe(input_beam=self._h_bendable_mirror_beam,
+                                     shadow_oe=self._v_bimorph_mirror,
+                                     widget_class_name="EllypticalMirror",
+                                     oe_name="V-Bimorph-Mirror",
+                                     remove_lost_rays=remove_lost_rays)
+
+        return output_beam, numpy.where(output_beam._beam.rays[:, 9]==1)
 
     def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_pitch_motor(self._h_bendable_mirror, angle, movement, units,

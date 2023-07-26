@@ -72,11 +72,12 @@ def plot_trial(title, histo):
     yy = histo.vv
     zz = histo.data_2D
 
-    plot_2D(x_array=xx, y_array=yy, z_array=zz, title=title)
+    plot_2D(x_array=xx, y_array=yy, z_array=zz, title=title, xrange=[-0.1, 0.1], yrange=[-0.1, 0.1])
 
 
 import joblib
 
+'''
 directory = "/Users/lrebuffi/Library/CloudStorage/Box-Box/Luca_Documents/AI-ML/AXO/28-ID/Experiment-Nov-2022/AI/autofocusing/peak_fwhm/"
 target_trial = 23
 
@@ -84,8 +85,17 @@ histo_dir     = os.path.join(directory, "peak_fwhm_ref_150_2022-11-18_steps")
 final_output  = os.path.join(directory, "peak_fwhm_ref_optimization_final_150_2022-11-18_01-23.pkl")
 
 histos = load_histograms_from_files(n_steps=150, hists_dir=histo_dir, extension="pkl")
-trials = joblib.load(final_output)
+'''
+directory = "/Users/lrebuffi/Library/CloudStorage/Box-Box/Luca_Documents/AI-ML/AXO/28-ID/Experiment-Nov-2022/AI/autofocusing/peak_fwhm_nlpi/all_motors_coma_denoised/"
+target_trial = 54
 
+histo_dir     = os.path.join(directory, "peak_fwhm_nlpi_moo_100_2022-11-21_steps")
+final_output  = os.path.join(directory, "peak_fwhm_nlpi_moo_optimization_final_101_2022-11-21_23-54.gz")
+
+histos = load_histograms_from_files(n_steps=100, hists_dir=histo_dir, extension="gz")
+
+
+trials = joblib.load(final_output)
 
 motors_reference = {
     'hb_1' : -170.0,
