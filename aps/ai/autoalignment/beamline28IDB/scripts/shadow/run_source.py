@@ -75,6 +75,6 @@ if __name__ == "__main__":
 
     save_source_beam(source_beam, "undulator_source.dat")
 
-    plot_shadow_beam_spatial_distribution(source.get_source_beam(), xrange=[-0.2, 0.2], yrange=[-0.05, 0.05])
+    plot_shadow_beam_spatial_distribution(source_beam, xrange=[-0.2, 0.2], yrange=[-0.05, 0.05])
 
     clean_up()
