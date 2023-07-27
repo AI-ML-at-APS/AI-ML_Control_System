@@ -132,20 +132,40 @@ if __name__ == "__main__":
     vb       (V)  :372.0
     vb pitch (deg):0.17232866863693438
     vb trans (deg):0.015600000000000003
-
-    
     '''
 
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-168,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-158,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_pitch(0.17185,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_h_bendable_mirror_motor_translation(0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+    '''
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-174,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-162,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_pitch(0.17202,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    focusing_system.move_h_bendable_mirror_motor_translation(0.0136, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-174,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-161,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_pitch(0.17203,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    focusing_system.move_h_bendable_mirror_motor_translation(0.018, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-173,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-162,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_pitch(0.17202,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    focusing_system.move_h_bendable_mirror_motor_translation(0.01, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+    
+    Figure 7:
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-173,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-162,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_pitch(0.17202,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    focusing_system.move_h_bendable_mirror_motor_translation(0.01, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+    '''
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-173,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-162,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_pitch(0.17202,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    focusing_system.move_h_bendable_mirror_motor_translation(0.01, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
     focusing_system.move_v_bimorph_mirror_motor_bender(420, movement=Movement.ABSOLUTE) # vertical focus
-    focusing_system.move_v_bimorph_mirror_motor_pitch(get_v_bimorph_mirror_motor_pitch(0.54126, 0.54126, -0.54126),    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_v_bimorph_mirror_motor_translation(get_v_bimorph_mirror_motor_translation(0.54126, -0.54126), movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-    #focusing_system.move_v_bimorph_mirror_motor_pitch(0.172329,    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    #focusing_system.move_v_bimorph_mirror_motor_translation(0.0156, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+    #focusing_system.move_v_bimorph_mirror_motor_pitch(get_v_bimorph_mirror_motor_pitch(0.54126, 0.54126, -0.54126),    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    #focusing_system.move_v_bimorph_mirror_motor_translation(get_v_bimorph_mirror_motor_translation(0.54126, -0.54126), movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+    focusing_system.move_v_bimorph_mirror_motor_pitch(0.1721,    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    focusing_system.move_v_bimorph_mirror_motor_translation(0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
     print(focusing_system.get_h_bendable_mirror_q_distance(), focusing_system.get_v_bimorph_mirror_q_distance())
 
