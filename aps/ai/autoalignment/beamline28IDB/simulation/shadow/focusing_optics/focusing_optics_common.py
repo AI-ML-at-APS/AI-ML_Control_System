@@ -130,10 +130,8 @@ class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulat
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._h_bendable_mirror_beam, title="H-Bendable-Mirror", xrange=None, yrange=None)
 
             if run_all or self._v_bimorph_mirror in self._modified_elements:
-                if near_field_calculation:
-                    self._v_bimorph_mirror_beam = self.__generate_v_bimorph_mirror_beam_nf(remove_lost_rays, random_seed, verbose)
-                else:
-                    self._v_bimorph_mirror_beam = self._trace_v_bimorph_mirror(near_field_calculation, random_seed, remove_lost_rays, verbose)
+                if near_field_calculation: self._v_bimorph_mirror_beam    = self.__generate_v_bimorph_mirror_beam_nf(remove_lost_rays, random_seed, verbose)
+                else:                      self._v_bimorph_mirror_beam, _ = self._trace_v_bimorph_mirror(False, random_seed, remove_lost_rays, verbose)
 
                 output_beam = self._v_bimorph_mirror_beam
 

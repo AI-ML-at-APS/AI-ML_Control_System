@@ -292,8 +292,6 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
 
         output_beam = ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=0)
 
-        go = numpy.where(output_beam._beam.rays[:, 9] == 1)
-
         if remove_lost_rays:
             output_beam._beam.rays = output_beam._beam.rays[numpy.where(output_beam._beam.rays[:, 9] == 1)]
             output_beam._beam.rays[:, 11] = numpy.arange(1, output_beam._beam.rays.shape[0] + 1, 1)
@@ -325,9 +323,9 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
             except Exception:
                 raise HybridFailureException(oe="H-KB")
 
-        go = numpy.where(output_beam._beam.rays[:, 9]==1)
+        good_only = numpy.where(output_beam._beam.rays[:, 9]==1)
 
-        return run_hybrid(output_beam, increment=300), go
+        return run_hybrid(output_beam, increment=300), good_only
 
     def move_h_bendable_mirror_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE):
         self.__move_motor_1_2_bender(self.__hkb_bender_manager, pos_upstream, None, movement,

@@ -46,7 +46,7 @@
 # ----------------------------------------------------------------------- #
 import os, numpy
 from aps.ai.autoalignment.beamline28IDB.optimization.analysis_utils import load_histograms_from_files
-from aps.ai.autoalignment.common.util.common import plot_2D
+from aps.ai.autoalignment.common.util.common import plot_2D, ColorMap
 from aps.ai.autoalignment.beamline28IDB.hardware.epics.focusing_optics import DISTANCE_V_MOTORS
 
 def get_v_bimorph_mirror_motor_pitch(di, do, u):
@@ -72,7 +72,7 @@ def plot_trial(title, histo):
     yy = histo.vv
     zz = histo.data_2D
 
-    plot_2D(x_array=xx, y_array=yy, z_array=zz, title=title, xrange=[-0.1, 0.1], yrange=[-0.1, 0.1])
+    plot_2D(x_array=xx, y_array=yy, z_array=zz, title=title, xrange=[-0.1, 0.1], yrange=[-0.1, 0.1], color_map=ColorMap.SUNBURST)
 
 
 import joblib
@@ -93,7 +93,6 @@ histo_dir     = os.path.join(directory, "peak_fwhm_nlpi_moo_100_2022-11-21_steps
 final_output  = os.path.join(directory, "peak_fwhm_nlpi_moo_optimization_final_101_2022-11-21_23-54.gz")
 
 histos = load_histograms_from_files(n_steps=100, hists_dir=histo_dir, extension="gz")
-
 
 trials = joblib.load(final_output)
 

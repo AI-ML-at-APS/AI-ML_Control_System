@@ -360,7 +360,13 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
         output_beam_downstream = run_hybrid(output_beam_downstream, increment=201)
         output_beam_downstream._beam.rays = output_beam_downstream._beam.rays[cursor_downstream]
 
-        return ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=0)
+        output_beam = ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=0)
+
+        if remove_lost_rays:
+            output_beam._beam.rays = output_beam._beam.rays[numpy.where(output_beam._beam.rays[:, 9] == 1)]
+            output_beam._beam.rays[:, 11] = numpy.arange(1, output_beam._beam.rays.shape[0] + 1, 1)
+
+        return output_beam
 
     def _trace_hkb(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
         output_beam_upstream, cursor_upstream, output_beam_downstream, cursor_downstream = \
@@ -396,13 +402,37 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
 
         output_beam = ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=0)
 
-        return rotate_axis_system(output_beam, rotation_angle=270.0)
+        if remove_lost_rays:
+            output_beam._beam.rays = output_beam._beam.rays[numpy.where(output_beam._beam.rays[:, 9] == 1)]
+            output_beam._beam.rays[:, 11] = numpy.arange(1, output_beam._beam.rays.shape[0] + 1, 1)
+
+        good_only = numpy.where(output_beam._beam.rays[:, 9] == 1)
+
+        return rotate_axis_system(output_beam, rotation_angle=270.0), good_only
 
     # PRIVATE METHODS
 
     def __trace_kb(self, bender_manager, input_beam, widget_class_name, oe_name, remove_lost_rays):
         upstream_widget   = bender_manager._kb_upstream
         downstream_widget = bender_manager._kb_downstream
+
+        # raytracing without the bender correction as error profile
+        output_beam_upstream   = self._trace_oe(input_beam=input_beam,
+                                                shadow_oe=upstream_widget._shadow_oe,
+                                                widget_class_name=widget_class_name,
+                                                oe_name=oe_name + "_UPSTREAM",
+                                                remove_lost_rays=False)
+        output_beam_downstream = self._trace_oe(input_beam=input_beam,
+                                                shadow_oe=downstream_widget._shadow_oe,
+                                                widget_class_name=widget_class_name,
+                                                oe_name=oe_name + "_DOWNSTREAM",
+                                                remove_lost_rays=False)
+
+        input_beam_upstream   = input_beam.duplicate()
+        input_beam_upstream._beam.rays = input_beam_upstream._beam.rays[numpy.where(output_beam_upstream._beam.rays[:, 9] == 1)]
+
+        input_beam_downstream   = input_beam.duplicate()
+        input_beam_downstream._beam.rays = input_beam_downstream._beam.rays[numpy.where(output_beam_downstream._beam.rays[:, 9] == 1)]
 
         upstream_oe   = upstream_widget._shadow_oe.duplicate()
         downstream_oe = downstream_widget._shadow_oe.duplicate()
@@ -411,14 +441,14 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
         downstream_oe._oe.RLEN2 = 0.0  # no negative part
 
         # trace both sides separately and get the beams:
-        upstream_beam_cursor = numpy.where(self._trace_oe(input_beam=input_beam,
+        upstream_beam_cursor = numpy.where(self._trace_oe(input_beam=input_beam_upstream,
                                                           shadow_oe=upstream_oe,
                                                           widget_class_name=widget_class_name,
                                                           oe_name=oe_name + "_UPSTREAM",
                                                           remove_lost_rays=False,
                                                           history=False)._beam.rays[:, 9] == 1)
 
-        downstream_beam_cursor = numpy.where(self._trace_oe(input_beam=input_beam,
+        downstream_beam_cursor = numpy.where(self._trace_oe(input_beam=input_beam_downstream,
                                                             shadow_oe=downstream_oe,
                                                             widget_class_name=widget_class_name,
                                                             oe_name=oe_name + "_DOWNSTREAM",
@@ -457,17 +487,17 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
         bender_manager.q_downstream_previous = q_downstream
 
         # Redo raytracing with the bender correction as error profile
-        return self._trace_oe(input_beam=input_beam,
+        return self._trace_oe(input_beam=input_beam_upstream,
                               shadow_oe=upstream_widget._shadow_oe,
                               widget_class_name=widget_class_name,
-                              oe_name=oe_name,
-                              remove_lost_rays=remove_lost_rays), \
+                              oe_name=oe_name + "_UPSTREAM",
+                              remove_lost_rays=False), \
                upstream_beam_cursor, \
-               self._trace_oe(input_beam=input_beam,
+               self._trace_oe(input_beam=input_beam_downstream,
                               shadow_oe=downstream_widget._shadow_oe,
                               widget_class_name=widget_class_name,
-                              oe_name=oe_name,
-                              remove_lost_rays=remove_lost_rays), \
+                              oe_name=oe_name + "_DOWNSTREAM",
+                              remove_lost_rays=False), \
                downstream_beam_cursor
 
     @classmethod

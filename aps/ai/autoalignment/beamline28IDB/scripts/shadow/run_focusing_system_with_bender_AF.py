@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
     plot_mode = PlotMode.INTERNAL
     aspect_ratio = AspectRatio.CARTESIAN
-    color_map = ColorMap.RAINBOW
+    color_map = ColorMap.SUNBURST
 
     nbins_h = 2160
     nbins_v = 2560
@@ -163,10 +163,10 @@ if __name__ == "__main__":
     focusing_system.move_h_bendable_mirror_motor_translation(0.0136, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
     focusing_system.move_v_bimorph_mirror_motor_bender(420, movement=Movement.ABSOLUTE) # vertical focus
-    #focusing_system.move_v_bimorph_mirror_motor_pitch(get_v_bimorph_mirror_motor_pitch(0.54126, 0.54126, -0.54126),    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    #focusing_system.move_v_bimorph_mirror_motor_translation(get_v_bimorph_mirror_motor_translation(0.54126, -0.54126), movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
     focusing_system.move_v_bimorph_mirror_motor_pitch(0.1721,    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
     focusing_system.move_v_bimorph_mirror_motor_translation(0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+    #focusing_system.move_v_bimorph_mirror_motor_pitch(get_v_bimorph_mirror_motor_pitch(0.54126, 0.54126, -0.54126),    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    #focusing_system.move_v_bimorph_mirror_motor_translation(get_v_bimorph_mirror_motor_translation(0.54126, -0.54126), movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
     print(focusing_system.get_h_bendable_mirror_q_distance(), focusing_system.get_v_bimorph_mirror_q_distance())
 
