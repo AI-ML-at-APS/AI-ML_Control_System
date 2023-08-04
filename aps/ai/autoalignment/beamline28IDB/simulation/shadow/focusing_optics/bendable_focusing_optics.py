@@ -188,21 +188,38 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
         upstream_widget   = self.__hkb_bender_manager._kb_upstream
         downstream_widget = self.__hkb_bender_manager._kb_downstream
 
+        # raytracing without the bender correction as error profile
+        output_beam_upstream   = self._trace_oe(input_beam=self._input_beam,
+                                                shadow_oe=upstream_widget._shadow_oe,
+                                                widget_class_name="BendableEllipsoidMirror",
+                                                oe_name="H-KB_UPSTREAM",
+                                                remove_lost_rays=False)
+        output_beam_downstream = self._trace_oe(input_beam=self._input_beam,
+                                                shadow_oe=downstream_widget._shadow_oe,
+                                                widget_class_name="BendableEllipsoidMirror",
+                                                oe_name="H-KB_DOWNSTREAM",
+                                                remove_lost_rays=False)
+
+        input_beam_upstream   = self._input_beam.duplicate()
+        input_beam_upstream._beam.rays = input_beam_upstream._beam.rays[numpy.where(output_beam_upstream._beam.rays[:, 9] == 1)]
+
+        input_beam_downstream   = self._input_beam.duplicate()
+        input_beam_downstream._beam.rays = input_beam_downstream._beam.rays[numpy.where(output_beam_downstream._beam.rays[:, 9] == 1)]
+
         upstream_oe   = upstream_widget._shadow_oe.duplicate()
         downstream_oe = downstream_widget._shadow_oe.duplicate()
 
         upstream_oe._oe.RLEN1   = 0.0  # no positive part
         downstream_oe._oe.RLEN2 = 0.0  # no negative part
 
-        # trace both sides separately and get the beams:
-        upstream_beam_cursor = numpy.where(self._trace_oe(input_beam=self._input_beam,
+        upstream_beam_cursor = numpy.where(self._trace_oe(input_beam=input_beam_upstream,
                                                           shadow_oe=upstream_oe,
                                                           widget_class_name="BendableEllipsoidMirror",
                                                           oe_name="H-KB_UPSTREAM",
                                                           remove_lost_rays=False,
                                                           history=False)._beam.rays[:, 9] == 1)
 
-        downstream_beam_cursor = numpy.where(self._trace_oe(input_beam=self._input_beam,
+        downstream_beam_cursor = numpy.where(self._trace_oe(input_beam=input_beam_downstream,
                                                             shadow_oe=downstream_oe,
                                                             widget_class_name="BendableEllipsoidMirror",
                                                             oe_name="H-KB_DOWNSTREAM",
@@ -226,27 +243,26 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
 
         if (q_upstream != self.__hkb_bender_manager.q_upstream_previous) or (q_downstream != self.__hkb_bender_manager.q_downstream_previous) or \
                 (not os.path.exists(upstream_widget.output_file_name_full)) or (not os.path.exists(downstream_widget.output_file_name_full)):  # trace both the beam on the whole bender widget
-            calculate_bender(self._input_beam, upstream_widget)
-            calculate_bender(self._input_beam, downstream_widget)
+            calculate_bender(input_beam_upstream,   upstream_widget)
+            calculate_bender(input_beam_downstream, downstream_widget)
         else:
-            calculate_bender(self._input_beam, upstream_widget, do_calculation=False)
-            calculate_bender(self._input_beam, downstream_widget, do_calculation=False)
+            calculate_bender(input_beam_upstream,   upstream_widget, do_calculation=False)
+            calculate_bender(input_beam_downstream, downstream_widget, do_calculation=False)
 
         self.__hkb_bender_manager.q_upstream_previous   = q_upstream
         self.__hkb_bender_manager.q_downstream_previous = q_downstream
 
         # Redo raytracing with the bender correction as error profile
-        output_beam_upstream   = self._trace_oe(input_beam=self._input_beam,
+        output_beam_upstream   = self._trace_oe(input_beam=input_beam_upstream,
                                                 shadow_oe=upstream_widget._shadow_oe,
                                                 widget_class_name="BendableEllipsoidMirror",
                                                 oe_name="H-KB_UPSTREAM",
-                                                remove_lost_rays=remove_lost_rays)
-        output_beam_downstream = self._trace_oe(input_beam=self._input_beam,
+                                                remove_lost_rays=False)
+        output_beam_downstream = self._trace_oe(input_beam=input_beam_downstream,
                                                 shadow_oe=downstream_widget._shadow_oe,
                                                 widget_class_name="BendableEllipsoidMirror",
                                                 oe_name="H-KB_DOWNSTREAM",
-                                                remove_lost_rays=remove_lost_rays)
-
+                                                remove_lost_rays=False)
 
         def run_hybrid(output_beam, increment):
             # NOTE: Near field not possible for vkb (beam is untraceable)
@@ -274,7 +290,13 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
         output_beam_downstream = run_hybrid(output_beam_downstream, increment=201)
         output_beam_downstream._beam.rays = output_beam_downstream._beam.rays[downstream_beam_cursor]
 
-        return ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=0)
+        output_beam = ShadowBeam.mergeBeams(output_beam_upstream, output_beam_downstream, which_flux=3, merge_history=0)
+
+        if remove_lost_rays:
+            output_beam._beam.rays = output_beam._beam.rays[numpy.where(output_beam._beam.rays[:, 9] == 1)]
+            output_beam._beam.rays[:, 11] = numpy.arange(1, output_beam._beam.rays.shape[0] + 1, 1)
+
+        return output_beam
 
     def _trace_v_bimorph_mirror(self, near_field_calculation, random_seed, remove_lost_rays, verbose):
         output_beam = self._trace_oe(input_beam=self._h_bendable_mirror_beam,
@@ -301,8 +323,9 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
             except Exception:
                 raise HybridFailureException(oe="H-KB")
 
-        return run_hybrid(output_beam, increment=300)
-        #return output_beam
+        good_only = numpy.where(output_beam._beam.rays[:, 9]==1)
+
+        return run_hybrid(output_beam, increment=300), good_only
 
     def move_h_bendable_mirror_motor_1_bender(self, pos_upstream, movement=Movement.ABSOLUTE):
         self.__move_motor_1_2_bender(self.__hkb_bender_manager, pos_upstream, None, movement,

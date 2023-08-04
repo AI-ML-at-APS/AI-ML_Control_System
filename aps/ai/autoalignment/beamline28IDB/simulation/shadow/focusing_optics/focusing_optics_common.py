@@ -130,9 +130,10 @@ class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulat
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._h_bendable_mirror_beam, title="H-Bendable-Mirror", xrange=None, yrange=None)
 
             if run_all or self._v_bimorph_mirror in self._modified_elements:
-                self._v_bimorph_mirror_beam = self._trace_v_bimorph_mirror(near_field_calculation, random_seed, remove_lost_rays, verbose)
-                if near_field_calculation: self.__fix_nf_v_bimorph_mirror_beam()
-                output_beam    = self._v_bimorph_mirror_beam
+                if near_field_calculation: self._v_bimorph_mirror_beam    = self.__generate_v_bimorph_mirror_beam_nf(remove_lost_rays, random_seed, verbose)
+                else:                      self._v_bimorph_mirror_beam, _ = self._trace_v_bimorph_mirror(False, random_seed, remove_lost_rays, verbose)
+
+                output_beam = self._v_bimorph_mirror_beam
 
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._v_bimorph_mirror_beam, title="V-Bimorph-Mirror", xrange=None, yrange=None)
 
@@ -152,10 +153,21 @@ class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulat
 
         return output_beam.duplicate(history=False)
 
-    def __fix_nf_v_bimorph_mirror_beam(self):
-        go = numpy.where(self._v_bimorph_mirror_beam._beam.rays[:, 9] == 1)
-        self._v_bimorph_mirror_beam._beam.rays[go, 0] = self._h_bendable_mirror_beam_nf._beam.rays[go, 2]
-        self._v_bimorph_mirror_beam._beam.rays[go, 3] = self._h_bendable_mirror_beam_nf._beam.rays[go, 5]
+    def __generate_v_bimorph_mirror_beam_nf(self, remove_lost_rays, random_seed, verbose):
+        v_bimorph_mirror_beam, go_orig = self._trace_v_bimorph_mirror(True, random_seed, False, verbose)
+        go = numpy.where(v_bimorph_mirror_beam._beam.rays[:, 9] == 1)
+
+        if   len(go[0]) < len(go_orig[0]): go_orig = go_orig[0][0 : len(go[0])]
+        elif len(go[0]) > len(go_orig[0]): go      = go[0][0 : len(go_orig[0])]
+
+        v_bimorph_mirror_beam._beam.rays[go, 0] = self._h_bendable_mirror_beam_nf._beam.rays[go_orig, 2]
+        v_bimorph_mirror_beam._beam.rays[go, 3] = self._h_bendable_mirror_beam_nf._beam.rays[go_orig, 5]
+
+        if remove_lost_rays:
+            v_bimorph_mirror_beam._beam.rays = v_bimorph_mirror_beam._beam.rays[go]
+            v_bimorph_mirror_beam._beam.rays[:, 11] = numpy.arange(1, v_bimorph_mirror_beam._beam.rays.shape[0] + 1, 1)
+
+        return v_bimorph_mirror_beam
 
     def _trace_h_bendable_mirror(self, near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()
     def _trace_v_bimorph_mirror(self,  near_field_calculation, random_seed, remove_lost_rays, verbose): raise NotImplementedError()

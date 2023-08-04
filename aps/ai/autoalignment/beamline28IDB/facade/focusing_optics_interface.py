@@ -57,7 +57,7 @@ ini_file = get_registered_ini_instance(APPLICATION_NAME)
 res_v_bimorph_mirror_motor_bender       = ini_file.get_float_from_ini(section="Motor-Resolution",  key="VKB-Bender",      default=1.0)
 res_v_bimorph_mirror_motor_translation  = ini_file.get_float_from_ini(section="Motor-Resolution",  key="VKB-Translation", default=0.0001)
 res_h_bendable_mirror_motor_bender      = ini_file.get_float_from_ini(section="Motor-Resolution",  key="HKB-Bender",      default=1.0)
-res_h_bendable_mirror_motor_pitch       = ini_file.get_float_from_ini(section="Motor-Resolution",  key="HKB-Pitch",       default=0.0001)
+res_h_bendable_mirror_motor_pitch       = ini_file.get_float_from_ini(section="Motor-Resolution",  key="HKB-Pitch",       default=0.00001)
 res_h_bendable_mirror_motor_translation = ini_file.get_float_from_ini(section="Motor-Resolution",  key="HKB-Translation", default=0.0001)
 
 ini_file.set_value_at_ini(section="Motor-Resolution",  key="VKB-Bender",      value=res_v_bimorph_mirror_motor_bender)

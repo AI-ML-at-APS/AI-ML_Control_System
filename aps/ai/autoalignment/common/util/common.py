@@ -49,6 +49,7 @@ from datetime import datetime
 import numpy
 from matplotlib import pyplot as plt
 from matplotlib import cm
+import cmasher as cmr
 from aps.common.plot.image import get_sigma, get_fwhm, get_average, get_peak_location_2D
 from aps.common.ml.data_structures import DictionaryWrapper
 
@@ -169,6 +170,8 @@ class ColorMap:
     RAINBOW = cm.rainbow
     GRAY    = cm.gray
     VIRIDIS = cm.viridis
+    HEAT    = cm.gist_heat_r
+    SUNBURST = cmr.sunburst_r
 
 def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
             int_um="$ph/s/0.1\%BW$", peak_um="$ph/s/mm^2/0.1\%BW$",

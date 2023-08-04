@@ -166,9 +166,9 @@ def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins
                gaussian_fit=gaussian_fit
     )
 
-def __plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None,
-                                    plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW,
-                                    add_noise=False, noise=None, percentage_fluctuation=0.1, calculate_over_noise=False, noise_threshold=1.5):
+def plot_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None,
+                                  plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW,
+                                  add_noise=False, noise=None, percentage_fluctuation=0.1, calculate_over_noise=False, noise_threshold=1.5):
     if plot_mode in [PlotMode.INTERNAL, PlotMode.BOTH]:
         x_array, y_array, z_array = __get_arrays(shadow_beam, var_1, var_2, nbins_h, nbins_v, nolost, xrange, yrange, add_noise, noise, percentage_fluctuation)
 
@@ -190,10 +190,10 @@ def get_shadow_beam_divergence_distribution(shadow_beam, nbins_h=201, nbins_v=20
 def plot_shadow_beam_spatial_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, title="X,Z", xrange=None, yrange=None,
                                           plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW,
                                           add_noise=False, noise=None, percentage_fluctuation=0.1, calculate_over_noise=False, noise_threshold=1.5):
-    __plot_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map, add_noise, noise, percentage_fluctuation, calculate_over_noise, noise_threshold)
+    plot_shadow_beam_distribution(shadow_beam, 1, 3, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map, add_noise, noise, percentage_fluctuation, calculate_over_noise, noise_threshold)
 
 def plot_shadow_beam_divergence_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, title="X',Z'", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
-    __plot_shadow_beam_distribution(shadow_beam, 4, 6, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
+    plot_shadow_beam_distribution(shadow_beam, 4, 6, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
 
 def save_source_beam(source_beam, file_name="source_beam.dat"):
     source_beam.getOEHistory(0)._shadow_source_start.src.write("parameters_start_" + file_name)

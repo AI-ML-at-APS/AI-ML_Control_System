@@ -197,8 +197,8 @@ class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulat
                 if debug_mode: plot_shadow_beam_spatial_distribution(self._vkb_beam, title="VKB", xrange=None, yrange=None)
 
             if run_all or self._hkb in self._modified_elements:
-                self._hkb_beam = self._trace_hkb(near_field_calculation, random_seed, remove_lost_rays, verbose)
-                if near_field_calculation: self.__fix_nf_hkb_beam()
+                if near_field_calculation: self._hkb_beam    = self.__generate_hkb_beam_nf(remove_lost_rays, random_seed, verbose)
+                else:                      self._hkb_beam, _ = self._trace_hkb(False, random_seed, remove_lost_rays, verbose)
 
                 output_beam    = self._hkb_beam
 
@@ -220,7 +220,22 @@ class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulat
 
         return output_beam.duplicate(history=False)
 
-    def __fix_nf_hkb_beam(self):
+    def __generate_hkb_beam_nf(self, remove_lost_rays, random_seed, verbose):
+        hkb_beam, go_orig = self._trace_hkb(True, random_seed, False, verbose)
+        go = numpy.where(hkb_beam._beam.rays[:, 9] == 1)
+
+        if len(go[0]) < len(go_orig[0]):   go_orig = go_orig[0][0: len(go[0])]
+        elif len(go[0]) > len(go_orig[0]): go      = go[0][0: len(go_orig[0])]
+
+        hkb_beam._beam.rays[go, 0] = self._vkb_beam_nf._beam.rays[go_orig, 2]
+        hkb_beam._beam.rays[go, 3] = self._vkb_beam_nf._beam.rays[go_orig, 5]
+
+        if remove_lost_rays:
+            hkb_beam._beam.rays = hkb_beam._beam.rays[go]
+            hkb_beam._beam.rays[:, 11] = numpy.arange(1, hkb_beam._beam.rays.shape[0] + 1, 1)
+
+        return hkb_beam
+
         self._hkb_beam._beam.rays[:, 2] = self._vkb_beam_nf._beam.rays[:, 2]
         self._hkb_beam._beam.rays[:, 5] = self._vkb_beam_nf._beam.rays[:, 5]
 

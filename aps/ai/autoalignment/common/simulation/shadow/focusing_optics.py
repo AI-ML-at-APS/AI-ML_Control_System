@@ -177,7 +177,9 @@ class AbstractShadowFocusingOptics(AbstractSimulatedFocusingOptics):
     def _check_beam(cls, output_beam, oe, remove_lost_rays):
         if ShadowCongruence.checkEmptyBeam(output_beam):
             if ShadowCongruence.checkGoodBeam(output_beam):
-                if remove_lost_rays: output_beam._beam.rays = output_beam._beam.rays[numpy.where(output_beam._beam.rays[:, 9] == 1)]
+                if remove_lost_rays:
+                    output_beam._beam.rays = output_beam._beam.rays[numpy.where(output_beam._beam.rays[:, 9] == 1)]
+                    output_beam._beam.rays[:, 11] = numpy.arange(1, output_beam._beam.rays.shape[0] + 1, 1)
                 return output_beam
             else: raise EmptyBeamException(oe)
         else: raise EmptyBeamException(oe)

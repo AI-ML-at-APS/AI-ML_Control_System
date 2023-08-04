@@ -282,7 +282,9 @@ class CalibratedBendableFocusingOptics(FocusingOpticsCommonAbstract):
                             remove_lost_rays=remove_lost_rays,
                             verbose=verbose)
 
-        return rotate_axis_system(output_beam, rotation_angle=270.0)
+        good_only = numpy.where(output_beam._beam.rays[:, 9] == 1)
+
+        return rotate_axis_system(output_beam, rotation_angle=270.0), good_only
 
     # PRIVATE METHODS
 
