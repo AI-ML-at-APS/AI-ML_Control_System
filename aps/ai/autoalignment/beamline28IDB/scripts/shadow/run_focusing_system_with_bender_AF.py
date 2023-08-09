@@ -157,9 +157,12 @@ if __name__ == "__main__":
     focusing_system.move_h_bendable_mirror_motor_translation(0.0136, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
     '''
 
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-144,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-162,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_pitch(0.17202,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-171,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-160,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_pitch(0.1703,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES) #0.1719
+
+    print(focusing_system.get_h_bendable_mirror_motor_pitch(units=AngularUnits.DEGREES))
+
     focusing_system.move_h_bendable_mirror_motor_translation(0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
     focusing_system.move_v_bimorph_mirror_motor_bender(416, movement=Movement.ABSOLUTE) # vertical focus

@@ -102,7 +102,7 @@ class AbstractShadowFocusingOptics(AbstractSimulatedFocusingOptics):
 
         sign = -1 if invert else 1
 
-        if movement == Movement.ABSOLUTE:   element._oe.X_ROT = sign * round(angle - (90 - element._oe.T_INCIDENCE), round_digit)
+        if movement == Movement.ABSOLUTE:   element._oe.X_ROT = sign * (round(angle, round_digit) - (90 - element._oe.T_INCIDENCE))
         elif movement == Movement.RELATIVE: element._oe.X_ROT += sign * round(angle, round_digit)
         else: raise ValueError("Movement not recognized")
 
@@ -141,7 +141,7 @@ class AbstractShadowFocusingOptics(AbstractSimulatedFocusingOptics):
 
         sign = -1 if invert else 1
 
-        angle = (90 - element._oe.T_INCIDENCE) + sign * element._oe.X_ROT
+        angle = sign*(element._oe.X_ROT + sign * (90 - element._oe.T_INCIDENCE))
 
         if units == AngularUnits.MILLIRADIANS: return 1000 * numpy.radians(angle)
         elif units == AngularUnits.DEGREES:    return angle
