@@ -2,9 +2,6 @@ import os, glob
 
 import numpy
 
-from single_shot_data import extract_shape_from_measurement_file
-
-
 bimorph_calibration = numpy.zeros((19, 2)) # voltages X R
 
 bimorph_calibration[0 , 0] = 0.0
@@ -80,6 +77,11 @@ def process_calibration(calibration, index, distance):
 
 
 def plot_axis(ax, data, title, degree, xlim, ylim, color='blue', excluded=[], top=True):
+    def format_e(n):
+        from decimal import Decimal
+        a = '%E' % Decimal(n)
+        return a.split('E')[0].rstrip('0').rstrip('.') + 'E' + a.split('E')[1]
+
     ax.plot(data[:, 0], data[:, 1], "o", color=color)
     text = "Fit parameters:\n"
     xx = numpy.ma.array(data[:, 0], mask=False)
@@ -92,27 +94,28 @@ def plot_axis(ax, data, title, degree, xlim, ylim, color='blue', excluded=[], to
     xx = xx.compressed()
     yy = yy.compressed()
     param = numpy.polyfit(x=xx, y=yy, deg=degree)
-    for i in range(len(param)): text += "p" + str(i) + "=%0.10f" % (param[i],) + "\n"
+    for i in range(len(param)): text += "p" + str(i) + " = " + format_e(param[i]) + "\n"
     text += "\n"
 
     print(title + " - Fit parameters:\n" + text)
 
     ax.plot(xx, numpy.poly1d(param)(xx), "-.", lw=0.5, color=color)
-    ax.set_xlabel("Voltage [V]")
-    ax.set_ylabel("$ \\frac{1}{Q}$ [$mm^{-1}$]")
+    ax.set_xlabel("Voltage [V]", fontdict={"size": "20"})
+    ax.set_ylabel("$ \\frac{1}{Q}$ [$mm^{-1}$]", fontdict={"size": "20"})
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
+    ax.tick_params(labelsize=14)
 
     if top:
-        ax.text(x=ax.get_xlim()[0] + (ax.get_xlim()[1]-ax.get_xlim()[0])*0.05,
-                y=ax.get_ylim()[0] + (ax.get_ylim()[1]-ax.get_ylim()[0])*0.7,
-                s=text, fontsize=12)
+        ax.text(x=ax.get_xlim()[0] + (ax.get_xlim()[1]-ax.get_xlim()[0])*0.02,
+                y=ax.get_ylim()[0] + (ax.get_ylim()[1]-ax.get_ylim()[0])*0.55,
+                s=text, fontsize=20)
     else:
         ax.text(x=ax.get_xlim()[0] + (ax.get_xlim()[1]-ax.get_xlim()[0])*0.05,
-                y=ax.get_ylim()[0] + (ax.get_ylim()[1]-ax.get_ylim()[0])*0.05,
-                s=text, fontsize=12)
+                y=ax.get_ylim()[0] + (ax.get_ylim()[1]-ax.get_ylim()[0])*0.0,
+                s=text, fontsize=20)
 
-    ax.set_title(title)
+    ax.set_title(title, fontdict={"size": "20", "color": color })
 
     return param
 
@@ -122,7 +125,7 @@ horizontal_downward = process_calibration(bender_calibration, 1, distance[1])
 
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
-fig.suptitle("Benders Calibration")
+#fig.suptitle("Benders Calibration")
 
 param_vertical = plot_axis(axes[0, 0], vertical,            "Vertical",             1, xlim=[-50, 950], ylim=[-0.9e-3, 1.6e-3], color='red', top=False, excluded=[9, 10])
 axes[1, 0].remove()
@@ -130,6 +133,8 @@ param_horizontal_u = plot_axis(axes[0, 1], horizontal_upward,   "Horizontal: upw
 param_horizontal_d = plot_axis(axes[1, 1], horizontal_downward, "Horizontal: downward", 1, xlim=[-160, -40], ylim=[0.32e-3, 0.65e-3])
 
 fig.tight_layout()
+
+fig.savefig("28ID_Bender-Calibration.png")
 
 print("384 -> ",  str(1/(param_vertical[0]*384 + param_vertical[1])))
 print("-170 -> ", str(1/(param_horizontal_u[0]*-170 + param_horizontal_u[1])))
