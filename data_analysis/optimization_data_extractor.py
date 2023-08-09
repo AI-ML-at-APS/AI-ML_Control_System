@@ -78,7 +78,7 @@ def plot_trial(title, histo):
 import joblib
 
 '''
-directory = "/Users/lrebuffi/Library/CloudStorage/Box-Box/Luca_Documents/AI-ML/AXO/28-ID/Experiment-Nov-2022/AI/autofocusing/peak_fwhm/"
+directory = "/Users/lrebuffi/Library/CloudStorage/Box-Box/Luca_Documents/AI-ML/AXO/28-ID/Experiment-Nov-2022/AI/autofocusing/peak_fwhm_nlpi/"
 target_trial = 23
 
 histo_dir     = os.path.join(directory, "peak_fwhm_ref_150_2022-11-18_steps")
@@ -86,11 +86,11 @@ final_output  = os.path.join(directory, "peak_fwhm_ref_optimization_final_150_20
 
 histos = load_histograms_from_files(n_steps=150, hists_dir=histo_dir, extension="pkl")
 '''
-directory = "/Users/lrebuffi/Library/CloudStorage/Box-Box/Luca_Documents/AI-ML/AXO/28-ID/Experiment-Nov-2022/AI/autofocusing/peak_fwhm_nlpi/all_motors_coma_denoised/"
-target_trial = 54
+directory = "/Users/lrebuffi/Library/CloudStorage/Box-Box/Luca_Documents/AI-ML/AXO/28-ID/Experiment-Nov-2022/AI/autofocusing/peak_fwhm_nlpi/all_motors_worse/"
+target_trial = 88
 
-histo_dir     = os.path.join(directory, "peak_fwhm_nlpi_moo_100_2022-11-21_steps")
-final_output  = os.path.join(directory, "peak_fwhm_nlpi_moo_optimization_final_101_2022-11-21_23-54.gz")
+histo_dir     = os.path.join(directory, "peak_fwhm_nlpi_moo_100_2022-11-22_steps")
+final_output  = os.path.join(directory, "peak_fwhm_nlpi_moo_optimization_final_101_2022-11-22_10-19.gz")
 
 histos = load_histograms_from_files(n_steps=100, hists_dir=histo_dir, extension="gz")
 
