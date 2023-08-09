@@ -159,7 +159,7 @@ if __name__ == "__main__":
 
     focusing_system.move_h_bendable_mirror_motor_1_bender(-171,   movement=Movement.ABSOLUTE)
     focusing_system.move_h_bendable_mirror_motor_2_bender(-160,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_pitch(0.1703,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES) #0.1719
+    focusing_system.move_h_bendable_mirror_motor_pitch(0.1719,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES) #0.1719
 
     print(focusing_system.get_h_bendable_mirror_motor_pitch(units=AngularUnits.DEGREES))
 
