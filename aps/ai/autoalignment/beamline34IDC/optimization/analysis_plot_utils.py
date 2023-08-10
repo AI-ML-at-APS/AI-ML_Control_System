@@ -54,7 +54,7 @@ def plot_hist_2d(
     hist: Histogram,
     labelfontsize: int = 12,
     ticks: list = None,
-    sublabel: str = "A",
+    sublabel: str = "a",
     sublabel_kwargs: dict = None,
     study_num: int = None,
     study_num_kwargs: dict = None,
@@ -63,7 +63,7 @@ def plot_hist_2d(
 ):
     # norm = mpl.colors.LogNorm(props.min_count, props.max_count)
     norm = mpl.colors.Normalize(0, props.max_count)
-    cmesh = ax.pcolormesh(hist.hh * props.unit_factor, hist.vv * props.unit_factor, hist.data_2D.T, cmap=CMAP, rasterized=True)# norm=norm, rasterized=True)
+    cmesh = ax.pcolormesh(hist.hh * props.unit_factor, hist.vv[::-1] * props.unit_factor, hist.data_2D.T, cmap=CMAP, rasterized=True)# norm=norm, rasterized=True)
 
     ax.set_aspect("equal")
 
@@ -86,7 +86,7 @@ def plot_hist_2d(
     kwargs1 = {
         "x": 0.02,
         "y": 0.9,
-        "s": sublabel,
+        "s": f"{sublabel})",
         "transform": ax.transAxes,
         "size": 14,
         "color": "red",
@@ -206,23 +206,31 @@ def plot_pareto_2d(
     if legend:
         ax.legend(loc="best", framealpha=0.8)
 
-    ax.text(0.02, 0.92, sublabel, transform=ax.transAxes, size=14, color="red", fontweight="bold")
+    ax.text(0.02, 0.92, f"{sublabel})", transform=ax.transAxes, size=14, color="red", fontweight="bold")
     sublabel = chr(ord(sublabel) + 1)
     return cscatter, sublabel
 
 
 def plot_1d_lines(props, ax, hist_test, hist_init=None, hist_ground=None, label=None, labelfontsize: int = 12, axis=0, cyc=None, sublabel=None, ticklabelsize=9):
 
+    def xdata(hist):
+        if axis == 1:
+            return hist.hh
+        else:
+            return hist.vv[::-1]
+
     if cyc is None:
         cyc = cycler(ls='-')()
 
-    ax.plot(hist_test.hh * props.unit_factor, 
+
+    
+    ax.plot(xdata(hist_test) * props.unit_factor, 
             hist_test.data_2D.sum(axis=axis), label=label, **next(cyc), alpha=0.7, linewidth=2.0)
     if hist_init is not None:
-        ax.plot(hist_init.hh * props.unit_factor,
+        ax.plot(xdata(hist_init) * props.unit_factor,
                 hist_init.data_2D.sum(axis=axis), label='I', **next(cyc), alpha=0.7, linewidth=2.0)
     if hist_ground is not None:
-        ax.plot(hist_ground.hh * props.unit_factor,
+        ax.plot(xdata(hist_ground) * props.unit_factor,
                 hist_ground.data_2D.sum(axis=axis), label='M', **next(cyc), alpha=0.7, linewidth=2.0)
 
 
@@ -232,13 +240,13 @@ def plot_1d_lines(props, ax, hist_test, hist_init=None, hist_ground=None, label=
     lims = (-props.xylim * props.unit_factor, props.xylim * props.unit_factor)
 
     if axis == 0:
-        ax.set_xlabel(f'x ({props.unit_str})', size=labelfontsize)  
+        ax.set_xlabel(f'y ({props.unit_str})', size=labelfontsize)  
     elif axis == 1:
-        ax.set_xlabel(f'y ({props.unit_str})', size=labelfontsize)    
+        ax.set_xlabel(f'x ({props.unit_str})', size=labelfontsize)    
     ax.set_xlim(lims)  
     
     if sublabel is not None: 
-        ax.text(0.02, 0.92, sublabel, transform=ax.transAxes, size=14, color="red", fontweight="bold")
+        ax.text(0.02, 0.92, f"{sublabel})", transform=ax.transAxes, size=14, color="red", fontweight="bold")
         sublabel = chr(ord(sublabel) + 1)
     return sublabel
 

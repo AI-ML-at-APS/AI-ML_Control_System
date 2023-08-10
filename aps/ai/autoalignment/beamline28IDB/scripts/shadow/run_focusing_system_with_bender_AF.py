@@ -47,6 +47,7 @@
 import os
 import sys
 
+import aps
 import numpy
 
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
@@ -62,6 +63,8 @@ from aps.ai.autoalignment.common.util.shadow.common import PreProcessorFiles
 from aps.ai.autoalignment.common.util import clean_up
 
 from aps.ai.autoalignment.common.util.wrappers import EXPERIMENTAL_NOISE_TO_SIGNAL_RATIO
+
+from pathlib import Path
 
 def get_v_bimorph_mirror_motor_pitch(di, do, u):
     return numpy.degrees(numpy.arcsin((di - get_v_bimorph_mirror_motor_translation(do, u)) /
@@ -94,7 +97,7 @@ if __name__ == "__main__":
     noise     = EXPERIMENTAL_NOISE_TO_SIGNAL_RATIO * 70
 
     try: os.chdir("../../../../../../work_directory/28-ID")
-    except: os.chdir("../../../../../work_directory/28-ID")
+    except: os.chdir(Path(aps.__file__).parent.parent / "work_directory/28-ID")
 
     clean_up()
 

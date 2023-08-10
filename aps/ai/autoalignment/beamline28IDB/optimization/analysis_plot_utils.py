@@ -39,7 +39,7 @@ def plot_hist_2d(
     hist: Histogram,
     labelfontsize: int = 12,
     ticks: list = None,
-    sublabel: str = "A",
+    sublabel: str = "a",
     sublabel_kwargs: dict = None,
     study_num: int = None,
     study_num_kwargs: dict = None,
@@ -47,7 +47,7 @@ def plot_hist_2d(
 ):
     # norm = mpl.colors.LogNorm(props.min_count, props.max_count)
     norm = mpl.colors.Normalize(0, props.max_count)
-    cmesh = ax.pcolormesh(hist.hh, hist.vv, hist.data_2D.T, cmap=CMAP, rasterized=True)# norm=norm, rasterized=True)
+    cmesh = ax.pcolormesh(hist.hh, hist.vv[::-1], hist.data_2D.T, cmap=CMAP, rasterized=True)# norm=norm, rasterized=True)
 
     ax.set_aspect("equal")
 
@@ -69,7 +69,7 @@ def plot_hist_2d(
     kwargs1 = {
         "x": 0.02,
         "y": 0.9,
-        "s": sublabel,
+        "s": f"{sublabel})",
         "transform": ax.transAxes,
         "size": 16,
         "color": "red",
@@ -82,7 +82,7 @@ def plot_hist_2d(
 
     if study_num is not None:
         kwargs2 = {
-            "x": 0.87,
+            "x": 0.85,
             "y": 0.01,
             "s": rf"{study_num:<3d}",
             "color": "blue",
@@ -101,17 +101,26 @@ def plot_hist_2d(
 
 
 def add_text_to_hist(
-    props: AnalyzedProps, ax: Axes, dw: DictionaryWrapper, x: float = 0.6, y: float = 0.7, fontsize: int = 9
+    props: AnalyzedProps, ax: Axes, dw: DictionaryWrapper, hist: Histogram, x: float = 0.6, y: float = 0.7, fontsize: int = 9, text: str = None,
 ):
+
     dwd = dw._DictionaryWrapper__dictionary
-    text = (
-        rf"{'fH':<3} = {dwd['h_fwhm'] * 1000: 3.1f}" + "\n"
-        rf"{'fV':<3} = {dwd['v_fwhm']* 1000: 3.1f}" + "\n"
-        rf"{'pH':<3} = {dwd['h_peak']* 1000: 3.1f}" + "\n"
-        rf"{'pV':<3} = {dwd['v_peak']* 1000: 3.1f}" + "\n"
-        rf"{'pI':<3} = {dwd['peak_intensity']:{props.photon_count_str}}"
-    )
-    text = text.replace("e+", "e")
+    h_fwhm = dwd['h_fwhm']
+    if h_fwhm is None:
+        h_fwhm = hist.hh[1] - hist.hh[0]
+    v_fwhm = dwd['v_fwhm']
+    if v_fwhm is None:
+        v_fwhm = hist.vv[1] - hist.vv[0]
+
+    if text is None:
+        text = (
+            rf"{'fH':<3} = {h_fwhm * 1000: 3.1f}" + "\n"
+            rf"{'fV':<3} = {v_fwhm * 1000: 3.1f}" + "\n"
+            rf"{'pH':<3} = {dwd['h_peak']* 1000: 3.1f}" + "\n"
+            rf"{'pV':<3} = {dwd['v_peak']* 1000: 3.1f}" + "\n"
+            rf"{'pI':<3} = {dwd['peak_intensity']:{props.photon_count_str}}"
+        )
+        text = text.replace("e+", "e")
     ax.text(
         x,
         y,
@@ -126,7 +135,7 @@ def add_text_to_hist(
 
 
 def plot_pareto_2d(
-    props: AnalyzedProps, ax, xlabel, ylabel, sublabel: str, ground=None, fontsize=14, annotate=False, legend=False
+    props: AnalyzedProps, ax, xlabel, ylabel, sublabel: str, ground=None, fontsize=14, annotate=False, legend=False, legend_loc=None
 ):
     x = np.array([t.values[PARETO_PLOT_ORDER[xlabel]] for t in props.study.trials])
     y = np.array([t.values[PARETO_PLOT_ORDER[ylabel]] for t in props.study.trials])
@@ -146,7 +155,7 @@ def plot_pareto_2d(
         ax.scatter(ground[xlabel], ground[ylabel], color="red", marker="*", s=175, label="M")
 
     ax.set_xscale("log")
-    if ylabel != "NLPI":
+    if ylabel not in ["NLPI", "LWSI"]:
         ax.set_yscale("log")
         ylabel = rf"{ylabel} (mm)"
 
@@ -156,9 +165,14 @@ def plot_pareto_2d(
     if annotate:
         for t in props.study.best_trials:
             ax.annotate(t.number, xy=(x[t.number], y[t.number]), xytext=(3, 3), textcoords="offset points")
-    if legend:
-        ax.legend(loc="best", framealpha=0.8)
 
-    ax.text(0.02, 0.92, sublabel, transform=ax.transAxes, size=16, color="red", fontweight="bold")
+
+    ax.text(0.02, 0.92, f"{sublabel})", transform=ax.transAxes, size=16, color="red", fontweight="bold")
+    if legend:
+        if legend_loc is None:
+            ax.legend(loc = "best", framealpha=0.8)
+        else:
+            ax.legend(loc=legend_loc, framealpha=0.8)
+
     sublabel = chr(ord(sublabel) + 1)
     return cscatter, sublabel

@@ -15,7 +15,10 @@ from aps.ai.autoalignment.beamline34IDC.optimization.common import CalculationPa
 
 
 def create_study_from_trials(
-    fname: Union[str, Path], n_objectives: int = 2, directions: Sequence[str] = None
+    fname: Union[str, Path], 
+    n_objectives: int = 2, 
+    directions: Sequence[str] = None, 
+    n_trials: int = None
 ) -> "optuna.Study":
     if directions is None:
         print("Assuming minimization for all objectives.")
@@ -27,6 +30,9 @@ def create_study_from_trials(
                 raise ValueError("Direction should be minimize or maximize.")
 
     trials = joblib.load(fname)
+
+    if n_trials is not None:
+        trials = trials[:n_trials]
     dist_mins = {}
     dist_maxes = {}
     for t in trials:

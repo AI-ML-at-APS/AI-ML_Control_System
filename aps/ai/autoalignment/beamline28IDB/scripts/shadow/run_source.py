@@ -45,17 +45,17 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os
-
+import aps
 from aps.ai.autoalignment.common.simulation.facade.source_interface import Sources, StorageRing
 from aps.ai.autoalignment.common.simulation.facade.source_factory import source_factory_method, Implementors
 from aps.ai.autoalignment.common.util.shadow.common import plot_shadow_beam_spatial_distribution, plot_shadow_beam_divergence_distribution, get_shadow_beam_spatial_distribution, save_source_beam
 from aps.ai.autoalignment.common.util import clean_up
+from pathlib import Path
 
 if __name__ == "__main__":
 
     verbose = False
-
-    os.chdir("../../../../../../work_directory/28-ID")
+    os.chdir(Path(aps.__file__).parent.parent / "work_directory/28-ID")
 
     clean_up()
 

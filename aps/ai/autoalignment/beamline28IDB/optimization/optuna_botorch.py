@@ -270,7 +270,8 @@ class OptunaOptimizer(OptimizationCommon):
         if self.cp.save_images:
             if trial.number % self.cp.every_n_images == 0:
                 joblib.dump(value=self.beam_state.hist,
-                            filename=os.path.join(self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".gz"))
+                            filename=os.path.join(self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".gz"),
+                            compress=4)
 
         self._set_trial_constraints(trial)
         if self._multi_objective_optimization:
