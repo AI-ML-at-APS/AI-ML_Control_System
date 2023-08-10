@@ -360,7 +360,7 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
         if not self._v_bimorph_mirror in self._modified_elements:  self._modified_elements.append(self._v_bimorph_mirror)
 
     def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS):
-        return self._get_pitch_motor_value(self._h_bendable_mirror[0], units)
+        return self._get_pitch_motor_value(self._h_bendable_mirror[0], units, invert=True)
 
     def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_translation_motor(self._h_bendable_mirror[0], translation, movement, units,

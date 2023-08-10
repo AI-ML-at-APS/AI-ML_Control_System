@@ -54,6 +54,11 @@ def process_direction(direction):
     return [upward_data_full, upward_data_150], [downward_data_full, downward_data_150]
 
 def plot_axis(ax, data, title, degree, xlim, ylim, color='blue', escluded=[]):
+    def format_e(n):
+        from decimal import Decimal
+        a = '%E' % Decimal(n)
+        return a.split('E')[0].rstrip('0').rstrip('.') + 'E' + a.split('E')[1]
+
     ax.plot(data[:, 0], data[:, 1], "bo", color=color)
     text = "Fit parameters:\n"
     xx = numpy.ma.array(data[:, 0], mask=False)
@@ -66,18 +71,19 @@ def plot_axis(ax, data, title, degree, xlim, ylim, color='blue', escluded=[]):
     xx = xx.compressed()
     yy = yy.compressed()
     param = numpy.polyfit(x=xx, y=yy, deg=degree)
-    for i in range(len(param)): text += "p" + str(i) + "=%0.7f" % (param[i],) + "\n"
+    for i in range(len(param)): text += "p" + str(i) + " = " + format_e(param[i]) + "\n"
     text += "\n"
     ax.plot(xx, numpy.poly1d(param)(xx), "-.", lw=0.5, color=color)
-    ax.set_xlabel("Motor Position [mm]")
-    ax.set_ylabel("$ \\frac{1}{Q}$ [$mm^{-1}$]")
+    ax.set_xlabel("Motor Position [mm]", fontdict={"size": "20"})
+    ax.set_ylabel("$ \\frac{1}{Q}$ [$mm^{-1}$]", fontdict={"size": "20"})
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
+    ax.tick_params(labelsize=14)
 
     ax.text(x=ax.get_xlim()[0] + (ax.get_xlim()[1]-ax.get_xlim()[0])*0.05,
-            y=ax.get_ylim()[0] + (ax.get_ylim()[1]-ax.get_ylim()[0])*0.7,
-            s=text, fontsize=12)
-    ax.set_title(title)
+            y=ax.get_ylim()[0] + (ax.get_ylim()[1]-ax.get_ylim()[0])*0.55,
+            s=text, fontsize=20)
+    ax.set_title(title, fontdict={"size": "20", "color": color })
 
 horizontal_upward, horizontal_downward = process_direction(direction="horizontal")
 vertical_upward, vertical_downward     = process_direction(direction="vertical")
@@ -107,25 +113,8 @@ else:
 
     fig.tight_layout()
 
-'''
-fig, axes = plt.subplots(2, 4, figsize=(16, 8))
-fig.suptitle("Bender Calibration")
+    fig.savefig("34ID_Bender-Calibration.png")
 
-directories = {"horizontal" : [os.path.join(home_dir, "slits_full", "horizontal_2"), os.path.join(home_dir, "slits_150_150", "horizontal_2")],
-               "vertical"   : [os.path.join(home_dir, "slits_full", "vertical_2"),   os.path.join(home_dir, "slits_150_150", "vertical_2")]}
-
-horizontal_upward, horizontal_downward = process_direction(direction="horizontal")
-vertical_upward, vertical_downward     = process_direction(direction="vertical")
-
-plot_axis(axes[0, 0], horizontal_upward[0],   "Horizontal, slits full: upward",   2, 1/115, escluded=[0])
-plot_axis(axes[0, 1], horizontal_downward[0], "Horizontal, slits full: downward", 2, 1/115, escluded=[0, 1, 10])
-plot_axis(axes[1, 0], horizontal_upward[1],   "Horizontal, slits 150: upward",    2, 1/115, escluded=[])
-plot_axis(axes[1, 1], horizontal_downward[1], "Horizontal, slits 150: downward",  2, 1/115, escluded=[])
-plot_axis(axes[0, 2], vertical_upward[0],     "Vertical, slits full: upward",     2, 1/220, escluded=[])
-plot_axis(axes[0, 3], vertical_downward[0],   "Vertical, slits full: downward",   2, 1/220, escluded=[0, 1, 2])
-plot_axis(axes[1, 2], vertical_upward[1],     "Vertical, slits 150: upward",      2, 1/220, escluded=[0, 1])
-plot_axis(axes[1, 3], vertical_downward[1],   "Vertical, slits 150: downward",    2, 1/220, escluded=[0, 1])
-'''
 plt.show()
 
 

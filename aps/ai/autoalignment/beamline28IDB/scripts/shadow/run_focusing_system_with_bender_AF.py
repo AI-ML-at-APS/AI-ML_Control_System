@@ -160,14 +160,17 @@ if __name__ == "__main__":
     focusing_system.move_h_bendable_mirror_motor_translation(0.0136, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
     '''
 
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-174,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-162,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_pitch(0.17202,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_h_bendable_mirror_motor_translation(0.0136, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-171,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-160,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_pitch(0.1719,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES) #0.1719
 
-    focusing_system.move_v_bimorph_mirror_motor_bender(420, movement=Movement.ABSOLUTE) # vertical focus
+    print(focusing_system.get_h_bendable_mirror_motor_pitch(units=AngularUnits.DEGREES))
+
+    focusing_system.move_h_bendable_mirror_motor_translation(0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+
+    focusing_system.move_v_bimorph_mirror_motor_bender(416, movement=Movement.ABSOLUTE) # vertical focus
     focusing_system.move_v_bimorph_mirror_motor_pitch(0.1721,    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_v_bimorph_mirror_motor_translation(0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+    focusing_system.move_v_bimorph_mirror_motor_translation(0.0214, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
     #focusing_system.move_v_bimorph_mirror_motor_pitch(get_v_bimorph_mirror_motor_pitch(0.54126, 0.54126, -0.54126),    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
     #focusing_system.move_v_bimorph_mirror_motor_translation(get_v_bimorph_mirror_motor_translation(0.54126, -0.54126), movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
