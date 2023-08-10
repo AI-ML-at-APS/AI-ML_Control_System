@@ -157,17 +157,18 @@ if __name__ == "__main__":
     focusing_system.move_h_bendable_mirror_motor_translation(0.0136, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
     '''
 
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-171,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-160,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_pitch(0.1719,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES) #0.1719
+    '''
+    Focused absolute position are {'hb_1': -168.0, 'hb_2': -161.0, 'hb_pitch': 0.17188733853924987, 'hb_trans': 0.0, 'vb_bender': 419.0, 'vb_pitch': 0.17188733853924987, 'vb_trans': 0.0}
+    '''
 
-    print(focusing_system.get_h_bendable_mirror_motor_pitch(units=AngularUnits.DEGREES))
-
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-168,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-161,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_pitch(0.17189,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES) #0.1719
     focusing_system.move_h_bendable_mirror_motor_translation(0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
-    focusing_system.move_v_bimorph_mirror_motor_bender(416, movement=Movement.ABSOLUTE) # vertical focus
-    focusing_system.move_v_bimorph_mirror_motor_pitch(0.1721,    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_v_bimorph_mirror_motor_translation(0.0214, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
+    focusing_system.move_v_bimorph_mirror_motor_bender(419, movement=Movement.ABSOLUTE) # vertical focus
+    focusing_system.move_v_bimorph_mirror_motor_pitch(0.17189, movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
+    focusing_system.move_v_bimorph_mirror_motor_translation(0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
     #focusing_system.move_v_bimorph_mirror_motor_pitch(get_v_bimorph_mirror_motor_pitch(0.54126, 0.54126, -0.54126),    movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
     #focusing_system.move_v_bimorph_mirror_motor_translation(get_v_bimorph_mirror_motor_translation(0.54126, -0.54126), movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
