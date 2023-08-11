@@ -77,7 +77,7 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
         self.__vkb_bender_manager.load_calibration("V-KB")
         self.__vkb_bender_manager.set_voltage(self._input_features.get_parameter("v_bimorph_mirror_motor_bender_voltage"))
 
-    def _initialize_mirrors(self, input_features, reflectivity_file, h_bendable_mirror_error_profile_file):
+    def _initialize_mirrors(self, input_features, reflectivity_file, h_bendable_mirror_error_profile_file, v_bimorph_mirror_error_profile):
         h_bendable_mirror_motor_pitch_angle              = input_features.get_parameter("h_bendable_mirror_motor_pitch_angle")
         h_bendable_mirror_motor_pitch_angle_shadow       = 90 - numpy.degrees(h_bendable_mirror_motor_pitch_angle)
         h_bendable_mirror_motor_pitch_delta_angle        = input_features.get_parameter("h_bendable_mirror_motor_pitch_delta_angle")
@@ -174,6 +174,10 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
         v_bimorph_mirror.T_INCIDENCE = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_REFLECTION = v_bimorph_mirror_motor_pitch_angle_shadow
         v_bimorph_mirror.T_SOURCE = 1130.0 - self._shift_horizontal_mirror
+
+        v_bimorph_mirror.F_G_S = 2
+        v_bimorph_mirror.F_RIPPLE = 1
+        v_bimorph_mirror.FILE_RIP = v_bimorph_mirror_error_profile.encode()
 
         # DISPLACEMENTS
         v_bimorph_mirror.F_MOVE = 1
@@ -310,18 +314,19 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
                 if not near_field_calculation:
                     return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                              diffraction_plane=2,  # Tangential
-                                                                             calcType=2,  # Diffraction by Mirror Size
+                                                                             calcType=3,  # Diffraction by Mirror Size
                                                                              verbose=verbose,
                                                                              random_seed=None if random_seed is None else (random_seed + increment))).ff_beam
                 else:
                     return hybrid_control.hy_run(get_hybrid_input_parameters(output_beam,
                                                                              diffraction_plane=2,  # Tangential
-                                                                             calcType=2,  # Diffraction by Mirror Size
+                                                                             calcType=3,  # Diffraction by Mirror Size
                                                                              nf=1,
                                                                              verbose=verbose,
                                                                              random_seed=None if random_seed is None else (random_seed + increment))).nf_beam
-            except Exception:
-                raise HybridFailureException(oe="H-KB")
+            except Exception as e:
+                print(e)
+                raise HybridFailureException(oe="V-KB")
 
         good_only = numpy.where(output_beam._beam.rays[:, 9]==1)
 
