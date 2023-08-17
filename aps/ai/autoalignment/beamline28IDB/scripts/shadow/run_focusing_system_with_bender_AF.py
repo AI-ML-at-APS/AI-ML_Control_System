@@ -86,9 +86,9 @@ if __name__ == "__main__":
     x_range = [-detector_x/2, detector_x/2]
     y_range = [-detector_y/2, detector_y/2]
 
-    x_range = y_range = [-0.1, 0.1]
-    nbins_h = int(nbins_h*0.2/detector_x)
-    nbins_v = int(nbins_v*0.2/detector_y)
+    x_range = y_range = [-0.05, 0.05]
+    nbins_h = int(nbins_h*(x_range[1]-x_range[0])/detector_x)
+    nbins_v = int(nbins_v*(y_range[1]-y_range[0])/detector_y)
 
     add_noise = False #True
     noise     = EXPERIMENTAL_NOISE_TO_SIGNAL_RATIO * 70
