@@ -88,8 +88,9 @@ class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulat
         elif rewrite_preprocessor_files == PreProcessorFiles.NO:               reflectivity_file = "Pt.dat"
 
         h_bendable_mirror_error_profile_file = "H-Bendable-Mirror_shadow.dat"
+        v_bimorph_mirror_error_profile       = "V-Bimoprh-Mirror_shadow.dat"
 
-        self._initialize_mirrors(self._input_features, reflectivity_file, h_bendable_mirror_error_profile_file)
+        self._initialize_mirrors(self._input_features, reflectivity_file, h_bendable_mirror_error_profile_file, v_bimorph_mirror_error_profile)
 
         self._modified_elements = [self._h_bendable_mirror, self._v_bimorph_mirror]
 
