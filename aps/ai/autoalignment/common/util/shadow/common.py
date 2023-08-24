@@ -201,9 +201,12 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QThread
 
 def save_source_beam(source_beam, file_name="source_beam.dat"):
+    print("write 1")
     source_beam.getOEHistory(0)._shadow_source_start.src.write("parameters_start_" + file_name)
+    print("write 2")
     source_beam.getOEHistory(0)._shadow_source_end.src.write("parameters_end_" + file_name)
 
+    print("write 3")
     thread = _WriteThread(source_beam, file_name)
     thread.start()
     while(thread.is_alive()): time.sleep(0.1)
