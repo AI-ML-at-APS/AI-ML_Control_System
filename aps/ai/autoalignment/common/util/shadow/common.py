@@ -206,18 +206,21 @@ def save_source_beam(source_beam, file_name="source_beam.dat"):
 
     thread = _WriteThread(source_beam, file_name)
     thread.start()
-    while(not thread.isFinished()): time.sleep(0.1)
+    while(thread.is_alive()): time.sleep(0.1)
 
     #source_beam.writeToFile(file_name)
 
-class _WriteThread(QThread):
+class _WriteThread(Thread):
     def __init__(self, beam, file_name):
         super(_WriteThread, self).__init__()
         self.__beam = beam
         self.__file_name = file_name
 
     def run(self) -> None:
+        time.sleep(0.1)
+        print("before write")
         self.__beam.writeToFile(self.__file_name)
+        print("after write")
 
 
 def load_source_beam(file_name="source_beam.dat"):
