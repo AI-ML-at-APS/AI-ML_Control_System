@@ -45,6 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os, numpy
+import time
 
 import Shadow
 from Shadow.ShadowTools import write_shadow_surface
@@ -195,10 +196,28 @@ def plot_shadow_beam_spatial_distribution(shadow_beam, nbins_h=201, nbins_v=201,
 def plot_shadow_beam_divergence_distribution(shadow_beam, nbins_h=201, nbins_v=201, nolost=1, title="X',Z'", xrange=None, yrange=None, plot_mode=PlotMode.INTERNAL, aspect_ratio=AspectRatio.AUTO, color_map=ColorMap.RAINBOW):
     plot_shadow_beam_distribution(shadow_beam, 4, 6, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
 
+from threading import Thread
+#from PyQt5.QtCore import QThread
+
 def save_source_beam(source_beam, file_name="source_beam.dat"):
     source_beam.getOEHistory(0)._shadow_source_start.src.write("parameters_start_" + file_name)
     source_beam.getOEHistory(0)._shadow_source_end.src.write("parameters_end_" + file_name)
-    source_beam.writeToFile(file_name)
+
+    thread = _WriteThread(source_beam, file_name)
+    thread.start()
+    while(thread.is_alive()): time.sleep(0.1)
+
+    #source_beam.writeToFile(file_name)
+
+class _WriteThread(Thread):
+    def __init__(self, beam, file_name):
+        super(_WriteThread, self).__init__()
+        self.__beam = beam
+        self.__file_name = file_name
+
+    def run(self) -> None:
+        self.__beam.writeToFile(self.__file_name)
+
 
 def load_source_beam(file_name="source_beam.dat"):
     source_beam = ShadowBeam()
