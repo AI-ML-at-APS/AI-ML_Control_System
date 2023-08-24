@@ -45,6 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os, numpy
+import sys
 import time
 
 import Shadow
@@ -200,11 +201,21 @@ from threading import Thread
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QThread
 
+def _write_shadow_params(src, file_name):
+    dictionary = src.to_dictionary()
+    with open(file_name, 'w') as f:
+        for key, value in dictionary.items():
+            if isinstance(value, bytes): value = value.decode("utf-8")
+            f.write('%s = %s\n' % (key, value))
+
+
 def save_source_beam(source_beam, file_name="source_beam.dat"):
     print("write 1")
-    source_beam.getOEHistory(0)._shadow_source_start.src.write("parameters_start_" + file_name)
+    #source_beam.getOEHistory(0)._shadow_source_start.src.write("parameters_start_" + file_name)
+    _write_shadow_params(source_beam.getOEHistory(0)._shadow_source_start.src, "parameters_start_" + file_name)
     print("write 2")
-    source_beam.getOEHistory(0)._shadow_source_end.src.write("parameters_end_" + file_name)
+    #source_beam.getOEHistory(0)._shadow_source_end.src.write("parameters_end_" + file_name)
+    _write_shadow_params(source_beam.getOEHistory(0)._shadow_source_end.src, "parameters_end_" + file_name)
 
     print("write 3")
     thread = _WriteThread(source_beam, file_name)
@@ -220,7 +231,6 @@ class _WriteThread(Thread):
         self.__file_name = file_name
 
     def run(self) -> None:
-        time.sleep(0.1)
         print("before write")
         self.__beam.writeToFile(self.__file_name)
         print("after write")
