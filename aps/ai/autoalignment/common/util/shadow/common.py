@@ -201,40 +201,27 @@ from threading import Thread
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QThread
 
-def _write_shadow_params(src, file_name):
-    dictionary = src.to_dictionary()
+def _write_shadow_params(shadow_object, file_name):
+    dictionary = shadow_object.to_dictionary()
     with open(file_name, 'w') as f:
         for key, value in dictionary.items():
-            if isinstance(value, bytes): value = value.decode("utf-8")
-            f.write('%s = %s\n' % (key, value))
-
+            if isinstance(value, numpy.ndarray):
+                values = value
+                for index in range(len(values)):
+                    value_i = values[index]
+                    if isinstance(value_i, bytes): value_i = value_i.decode("utf-8")
+                    f.write('%s(%i) = %s\n' % (key, index+1, value_i))
+            else:
+                if isinstance(value, bytes): value = value.decode("utf-8")
+                f.write('%s = %s\n' % (key, value))
 
 def save_source_beam(source_beam, file_name="source_beam.dat"):
-    print("write 1")
+    # commented because of a these instructions don't work on Win11
     #source_beam.getOEHistory(0)._shadow_source_start.src.write("parameters_start_" + file_name)
-    _write_shadow_params(source_beam.getOEHistory(0)._shadow_source_start.src, "parameters_start_" + file_name)
-    print("write 2")
     #source_beam.getOEHistory(0)._shadow_source_end.src.write("parameters_end_" + file_name)
-    _write_shadow_params(source_beam.getOEHistory(0)._shadow_source_end.src, "parameters_end_" + file_name)
-
-    print("write 3")
-    thread = _WriteThread(source_beam, file_name)
-    thread.start()
-    while(thread.is_alive()): time.sleep(0.1)
-
-    #source_beam.writeToFile(file_name)
-
-class _WriteThread(Thread):
-    def __init__(self, beam, file_name):
-        super(_WriteThread, self).__init__()
-        self.__beam = beam
-        self.__file_name = file_name
-
-    def run(self) -> None:
-        print("before write")
-        self.__beam.writeToFile(self.__file_name)
-        print("after write")
-
+    _write_shadow_params(source_beam.getOEHistory(0)._shadow_source_start.src, "parameters_start_" + file_name)
+    _write_shadow_params(source_beam.getOEHistory(0)._shadow_source_end.src,   "parameters_end_" + file_name)
+    source_beam.writeToFile(file_name)
 
 def load_source_beam(file_name="source_beam.dat"):
     source_beam = ShadowBeam()
@@ -253,8 +240,11 @@ def load_source_beam(file_name="source_beam.dat"):
     return source_beam
 
 def save_shadow_beam(shadow_beam, file_name="shadow_beam.dat"):
-    shadow_beam.getOEHistory(-1)._shadow_oe_start._oe.write("parameters_start_" + file_name)
-    shadow_beam.getOEHistory(-1)._shadow_oe_end._oe.write("parameters_end_" + file_name)
+    # commented because of a these instructions don't work on Win11
+    #shadow_beam.getOEHistory(-1)._shadow_oe_start._oe.write("parameters_start_" + file_name)
+    #shadow_beam.getOEHistory(-1)._shadow_oe_end._oe.write("parameters_end_" + file_name)
+    _write_shadow_params(shadow_beam.getOEHistory(-1)._shadow_oe_start._oe, "parameters_start_" + file_name)
+    _write_shadow_params(shadow_beam.getOEHistory(-1)._shadow_oe_end._oe,   "parameters_end_" + file_name)
     shadow_beam.writeToFile(file_name)
 
 def load_shadow_beam(file_name="shadow_beam.dat"):
@@ -292,6 +282,7 @@ def __load_shadow_file(shadow_element, file_name):
     for name, value in config_parser.items("dummy_section"):
         if value.isdigit(): value = int(value)
         elif value.replace('.', '', 1).replace('-', '', 2).replace('E', '', 1).isdigit(): value = float(value)
+        elif value.replace('.', '', 1).replace('-', '', 2).replace('e', '', 1).isdigit(): value = float(value)
         else: value = value.encode()
 
         setattr(shadow_element, name, value)
