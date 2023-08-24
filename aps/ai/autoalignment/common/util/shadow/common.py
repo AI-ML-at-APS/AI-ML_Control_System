@@ -197,7 +197,8 @@ def plot_shadow_beam_divergence_distribution(shadow_beam, nbins_h=201, nbins_v=2
     plot_shadow_beam_distribution(shadow_beam, 4, 6, nbins_h, nbins_v, nolost, title, xrange, yrange, plot_mode, aspect_ratio, color_map)
 
 from threading import Thread
-#from PyQt5.QtCore import QThread
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QThread
 
 def save_source_beam(source_beam, file_name="source_beam.dat"):
     source_beam.getOEHistory(0)._shadow_source_start.src.write("parameters_start_" + file_name)
@@ -205,11 +206,11 @@ def save_source_beam(source_beam, file_name="source_beam.dat"):
 
     thread = _WriteThread(source_beam, file_name)
     thread.start()
-    while(thread.is_alive()): time.sleep(0.1)
+    while(not thread.isFinished()): time.sleep(0.1)
 
     #source_beam.writeToFile(file_name)
 
-class _WriteThread(Thread):
+class _WriteThread(QThread):
     def __init__(self, beam, file_name):
         super(_WriteThread, self).__init__()
         self.__beam = beam
