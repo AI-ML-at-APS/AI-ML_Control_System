@@ -72,7 +72,7 @@ def plot_trial(title, histo):
     yy = histo.vv
     zz = histo.data_2D
 
-    plot_2D(x_array=xx, y_array=yy, z_array=zz, title=title, xrange=[-0.05, 0.05], yrange=[-0.05, 0.05], color_map=ColorMap.SUNBURST)
+    plot_2D(x_array=xx, y_array=yy, z_array=zz, title=title, xrange=[-0.25, 0.25], yrange=[-0.25, 0.25], color_map=ColorMap.SUNBURST)
 
 
 import joblib
