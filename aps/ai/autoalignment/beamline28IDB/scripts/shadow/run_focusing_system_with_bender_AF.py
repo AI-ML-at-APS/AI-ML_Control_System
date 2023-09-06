@@ -89,9 +89,9 @@ if __name__ == "__main__":
     x_range = [-detector_x/2, detector_x/2]
     y_range = [-detector_y/2, detector_y/2]
 
-    x_range = y_range = [-0.1, 0.1]
-    nbins_h = int(nbins_h*0.2/detector_x)
-    nbins_v = int(nbins_v*0.2/detector_y)
+    x_range = y_range = [-0.05, 0.05]
+    nbins_h = int(nbins_h*(x_range[1]-x_range[0])/detector_x)
+    nbins_v = int(nbins_v*(y_range[1]-y_range[0])/detector_y)
 
     add_noise = False #True
     noise     = EXPERIMENTAL_NOISE_TO_SIGNAL_RATIO * 70
@@ -121,51 +121,11 @@ if __name__ == "__main__":
     focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
 
     '''
-    hb 1    (V)  :-170.0
-    hb 2    (V)  :-157.0
-    hb pitch (deg):0.17164
-    hb trans (deg):0.0
-    vb       (V)  :384.0
-    vb (mm)       : 0.54126, 0.54126, -0.54126
-    
-    hb up    (V)  :-184.0
-    hb down  (V)  :-155.0
-    hb pitch (deg):0.17089
-    hb trans (deg):-0.013599999999999998
-    vb       (V)  :372.0
-    vb pitch (deg):0.17232866863693438
-    vb trans (deg):0.015600000000000003
-    '''
-
-    '''
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-174,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-162,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_pitch(0.17202,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_h_bendable_mirror_motor_translation(0.0136, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-174,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-161,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_pitch(0.17203,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_h_bendable_mirror_motor_translation(0.018, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-173,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-162,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_pitch(0.17202,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_h_bendable_mirror_motor_translation(0.01, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-    
-    Figure 7:
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-174,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-162,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_pitch(0.17202,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES)
-    focusing_system.move_h_bendable_mirror_motor_translation(0.0136, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
-    '''
-
-    '''
     Focused absolute position are {'hb_1': -168.0, 'hb_2': -161.0, 'hb_pitch': 0.17188733853924987, 'hb_trans': 0.0, 'vb_bender': 419.0, 'vb_pitch': 0.17188733853924987, 'vb_trans': 0.0}
     '''
 
-    focusing_system.move_h_bendable_mirror_motor_1_bender(-168,   movement=Movement.ABSOLUTE)
-    focusing_system.move_h_bendable_mirror_motor_2_bender(-161,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_1_bender(-169.5,   movement=Movement.ABSOLUTE)
+    focusing_system.move_h_bendable_mirror_motor_2_bender(-160.5,   movement=Movement.ABSOLUTE)
     focusing_system.move_h_bendable_mirror_motor_pitch(0.17189,   movement=Movement.ABSOLUTE, units=AngularUnits.DEGREES) #0.1719
     focusing_system.move_h_bendable_mirror_motor_translation(0.0, movement=Movement.ABSOLUTE, units=DistanceUnits.MILLIMETERS)
 
