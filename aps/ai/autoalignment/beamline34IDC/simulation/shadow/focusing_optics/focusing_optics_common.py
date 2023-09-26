@@ -227,17 +227,14 @@ class FocusingOpticsCommonAbstract(AbstractShadowFocusingOptics, AbstractSimulat
         if len(go[0]) < len(go_orig[0]):   go_orig = go_orig[0][0: len(go[0])]
         elif len(go[0]) > len(go_orig[0]): go      = go[0][0: len(go_orig[0])]
 
-        hkb_beam._beam.rays[go, 0] = self._vkb_beam_nf._beam.rays[go_orig, 2]
-        hkb_beam._beam.rays[go, 3] = self._vkb_beam_nf._beam.rays[go_orig, 5]
+        hkb_beam._beam.rays[go, 2] = self._vkb_beam_nf._beam.rays[go_orig, 2]
+        hkb_beam._beam.rays[go, 5] = self._vkb_beam_nf._beam.rays[go_orig, 5]
 
         if remove_lost_rays:
             hkb_beam._beam.rays = hkb_beam._beam.rays[go]
             hkb_beam._beam.rays[:, 11] = numpy.arange(1, hkb_beam._beam.rays.shape[0] + 1, 1)
 
         return hkb_beam
-
-        self._hkb_beam._beam.rays[:, 2] = self._vkb_beam_nf._beam.rays[:, 2]
-        self._hkb_beam._beam.rays[:, 5] = self._vkb_beam_nf._beam.rays[:, 5]
 
     def _trace_coherence_slits(self, random_seed, remove_lost_rays, verbose):
         output_beam = self._trace_oe(input_beam=self._input_beam,
