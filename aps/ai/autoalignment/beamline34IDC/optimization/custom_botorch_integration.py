@@ -63,7 +63,8 @@ from botorch.fit import fit_gpytorch_mll
 from botorch.models import SingleTaskGP
 from botorch.models.transforms.outcome import Standardize
 from botorch.optim import optimize_acqf
-from botorch.sampling.normal import SobolQMCNormalSampler
+try: from botorch.sampling.samplers import SobolQMCNormalSampler
+except: from botorch.sampling.normal import SobolQMCNormalSampler
 from botorch.utils.multi_objective.box_decompositions import NondominatedPartitioning
 from botorch.utils.multi_objective.scalarization import get_chebyshev_scalarization
 from botorch.utils.sampling import manual_seed, sample_simplex

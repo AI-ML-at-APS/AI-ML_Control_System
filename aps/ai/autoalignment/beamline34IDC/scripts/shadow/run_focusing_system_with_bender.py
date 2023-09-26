@@ -128,13 +128,23 @@ if __name__ == "__main__":
     # perturbation of the incident beam to make adjustements necessary
 
     random_seed = 2120 # for repeatability
-    ranges = [[-0.0025, 0.0025], [-0.0025, 0.0025]]
+    #ranges = [[-0.0025, 0.0025], [-0.0025, 0.0025]]
+    ranges = [[-0.05, 0.05], [-0.05, 0.05]]
+    bins = [1001, 1001]
     focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE)
+    plot_shadow_beam_spatial_distribution(output_beam, nbins_h=bins[0], nbins_v=bins[1], xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE)
     #plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.INTERNAL)
+
+    focusing_system.move_vkb_motor_3_pitch(angle=2.9007, units=AngularUnits.MILLIRADIANS)
+
+    output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
+
+    plot_shadow_beam_spatial_distribution(output_beam, nbins_h=bins[0], nbins_v=bins[1], xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE)
+
+    sys.exit(0)
 
     dump_photon_beam_as_beamline(output_beam, "0_0")
 

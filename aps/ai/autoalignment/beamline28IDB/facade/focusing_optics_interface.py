@@ -60,7 +60,14 @@ res_h_bendable_mirror_motor_bender      = ini_file.get_float_from_ini(section="M
 res_h_bendable_mirror_motor_pitch       = ini_file.get_float_from_ini(section="Motor-Resolution",  key="HKB-Pitch",       default=0.00001)
 res_h_bendable_mirror_motor_translation = ini_file.get_float_from_ini(section="Motor-Resolution",  key="HKB-Translation", default=0.0001)
 
+DISTANCE_V_MOTORS = 360 # mm
+
+res_v_bimorph_mirror_motor_pitch = numpy.round(numpy.degrees(numpy.arcsin(res_v_bimorph_mirror_motor_translation / DISTANCE_V_MOTORS)), 5)
+
+print("28-ID - VKB Pitch Motor Resolution: " + str(res_v_bimorph_mirror_motor_pitch) + " deg")
+
 ini_file.set_value_at_ini(section="Motor-Resolution",  key="VKB-Bender",      value=res_v_bimorph_mirror_motor_bender)
+ini_file.set_value_at_ini(section="Motor-Resolution",  key="VKB-Pitch",       value=res_v_bimorph_mirror_motor_pitch)
 ini_file.set_value_at_ini(section="Motor-Resolution",  key="VKB-Translation", value=res_v_bimorph_mirror_motor_translation)
 ini_file.set_value_at_ini(section="Motor-Resolution",  key="HKB-Bender",      value=res_h_bendable_mirror_motor_bender)
 ini_file.set_value_at_ini(section="Motor-Resolution",  key="HKB-Pitch",       value=res_h_bendable_mirror_motor_pitch)
@@ -68,11 +75,6 @@ ini_file.set_value_at_ini(section="Motor-Resolution",  key="HKB-Translation", va
 
 ini_file.push()
 
-DISTANCE_V_MOTORS = 360 # mm
-
-res_v_bimorph_mirror_motor_pitch = numpy.round(numpy.degrees(numpy.arcsin(res_v_bimorph_mirror_motor_translation / DISTANCE_V_MOTORS)), 5)
-
-print("28-ID - VKB Pitch Motor Resolution: " + str(res_v_bimorph_mirror_motor_pitch) + " deg")
 
 motors = {}
 motors["v_bimorph_mirror_motor_bender"]       = MotorResolution(res_v_bimorph_mirror_motor_bender,       MotorType.OTHER)         # Bimorph mirror: bender is an actuator, "position" is in Volt
