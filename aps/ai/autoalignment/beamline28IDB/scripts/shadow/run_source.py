@@ -45,22 +45,22 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 import os
-
+import aps
 from aps.ai.autoalignment.common.simulation.facade.source_interface import Sources, StorageRing
 from aps.ai.autoalignment.common.simulation.facade.source_factory import source_factory_method, Implementors
 from aps.ai.autoalignment.common.util.shadow.common import plot_shadow_beam_spatial_distribution, plot_shadow_beam_divergence_distribution, get_shadow_beam_spatial_distribution, save_source_beam
 from aps.ai.autoalignment.common.util import clean_up
+from pathlib import Path
 
 if __name__ == "__main__":
 
     verbose = False
-
-    os.chdir("../../../../../../work_directory/28-ID")
+    os.chdir(Path(aps.__file__).parent.parent / "work_directory/28-ID")
 
     clean_up()
 
     source = source_factory_method(implementor=Implementors.SHADOW, kind_of_source=Sources.UNDULATOR)
-    source.initialize(n_rays=500000, random_seed=56565, verbose=True, storage_ring=StorageRing.APS)
+    source.initialize(n_rays=50000, random_seed=56565, verbose=True, storage_ring=StorageRing.APS)
     source.set_K_on_specific_harmonic(harmonic_energy=4000, harmonic_number=1, which=source.KDirection.VERTICAL)
     source.set_energy(photon_energy_distribution=source.PhotonEnergyDistributions.RANGE, energy=[19600.0, 20200.0], energy_points=61)
     source.set_undulator_parameters(longitudinal_central_position=-1.3, waist_position_user_defined=0.6814)

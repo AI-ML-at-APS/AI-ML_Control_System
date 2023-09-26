@@ -1,0 +1,26 @@
+{
+    "workbench.colorTheme": "Default Light+",
+    "security.workspace.trust.untrustedFiles": "open",
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    "python.analysis.inlayHints.variableTypes": true,
+    "python.sortImports.args": [
+        "--nsl",
+        "__init__.py",
+        "-l",
+        "120",
+        "--multi-line",
+        "11"
+    ],
+    "terminal.integrated.commandsToSkipShell": [
+        "language-julia.interrupt"
+    ],
+    "julia.symbolCacheDownload": true,
+    "editor.formatOnType": true,
+    "editor.wordWrapColumn": 120,
+    "editor.wordWrap": "on",
+    "python.linting.banditEnabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": ["--max-line-length=120"],
+    "python.linting.banditArgs": ["--max-line-length=120"]
+
+}

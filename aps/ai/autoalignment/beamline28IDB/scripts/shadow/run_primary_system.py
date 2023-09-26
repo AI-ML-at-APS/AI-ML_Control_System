@@ -46,6 +46,7 @@
 # ----------------------------------------------------------------------- #
 import os
 
+import aps
 from aps.ai.autoalignment.beamline28IDB.simulation.facade.primary_optics_factory import primary_optics_factory_method
 
 from aps.ai.autoalignment.common.simulation.facade.source_factory import Implementors
@@ -53,11 +54,12 @@ from aps.ai.autoalignment.common.util.shadow.common import load_source_beam, sav
 from aps.ai.autoalignment.common.util import clean_up
 
 import Shadow
+from pathlib import Path
 
 if __name__ == "__main__":
     verbose = True
 
-    os.chdir("../../../../../../work_directory/28-ID")
+    os.chdir(Path(aps.__file__).parent.parent / "work_directory/28-ID")
 
     clean_up()
 

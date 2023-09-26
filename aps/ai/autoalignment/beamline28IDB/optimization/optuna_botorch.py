@@ -57,7 +57,8 @@ import joblib
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import ExecutionMode
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_interface import AbstractFocusingOptics
 from aps.ai.autoalignment.beamline28IDB.optimization import configs
-from aps.ai.autoalignment.beamline28IDB.optimization.common import SelectionAlgorithm, OptimizationCriteria, CalculationParameters, OptimizationCommon, MooThresholds
+from aps.ai.autoalignment.beamline28IDB.optimization.common import SelectionAlgorithm, OptimizationCriteria, CalculationParameters, \
+    OptimizationCommon
 from aps.ai.autoalignment.beamline28IDB.optimization.analysis_utils import select_nash_equil_trial_from_pareto_front
 from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration import (
     BoTorchSampler,
@@ -66,7 +67,23 @@ from aps.ai.autoalignment.beamline28IDB.optimization.custom_botorch_integration 
     qnehvi_candidates_func,
     qnei_candidates_func,
 )
-from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
+class MooThresholds:
+    CENTROID       = "centroid"
+    PEAK_DISTANCE  = "peak_distance"
+    FWHM           = "fwhm"
+    SIGMA          = "sigma"
+    PEAK_INTENSITY = "peak_intensity"
+    SUM_INTENSITY  = "sum_intensity"
+    KL_DIVERGENCE = "kl_divergence"
+
+class Constraints:
+    CENTROID       = "centroid"
+    PEAK_DISTANCE  = "peak_distance"
+    FWHM           = "fwhm"
+    SIGMA          = "sigma"
+    PEAK_INTENSITY = "peak_intensity"
+    SUM_INTENSITY  = "sum_intensity"
+
 
 class OptunaOptimizer(OptimizationCommon):
     opt_platform = "optuna"
@@ -88,6 +105,7 @@ class OptunaOptimizer(OptimizationCommon):
                  no_beam_loss: float = 1e4,
                  intensity_no_beam_loss: float = 0,
                  multi_objective_optimization: bool = False,
+                 dump_directory: str = None,
                  **kwargs):
         super().__init__(calculation_parameters=calculation_parameters,
                          focusing_system=focusing_system,
@@ -109,7 +127,8 @@ class OptunaOptimizer(OptimizationCommon):
         self._sum_intensity_threshold = None
         self._loss_fn_this = None
         self._use_discrete_space = None
-        self._dump_directory = os.path.join(os.curdir, "dump")
+        
+        self._dump_directory = dump_directory if dump_directory is not None else os.path.join(os.curdir, "dump")
         if not os.path.exists(self._dump_directory): os.mkdir(self._dump_directory)
 
     def set_optimizer_options(
@@ -210,15 +229,15 @@ class OptunaOptimizer(OptimizationCommon):
         if self._constraints is None: return
 
         minimize_constraint_fns = {
-            MooThresholds.CENTROID:      self.get_centroid_distance,
-            MooThresholds.SIGMA:         self.get_sigma,
-            MooThresholds.FWHM:          self.get_fwhm,
-            MooThresholds.PEAK_DISTANCE: self.get_peak_distance,
+            Constraints.CENTROID:      self.get_centroid_distance,
+            Constraints.SIGMA:         self.get_sigma,
+            Constraints.FWHM:          self.get_fwhm,
+            Constraints.PEAK_DISTANCE: self.get_peak_distance,
         }
 
         maximize_constraint_fns = {
-            MooThresholds.SUM_INTENSITY:  self.get_sum_intensity,
-            MooThresholds.PEAK_INTENSITY: self.get_peak_intensity,
+            Constraints.SUM_INTENSITY:  self.get_sum_intensity,
+            Constraints.PEAK_INTENSITY: self.get_peak_intensity,
         }
 
         for constraint, threshold in self._constraints.items():
@@ -251,7 +270,8 @@ class OptunaOptimizer(OptimizationCommon):
         if self.cp.save_images:
             if trial.number % self.cp.every_n_images == 0:
                 joblib.dump(value=self.beam_state.hist,
-                            filename=os.path.join(self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".gz"))
+                            filename=os.path.join(self._dump_directory, "optimized_beam_histogram_" + str(trial.number) + ".gz"),
+                            compress=4)
 
         self._set_trial_constraints(trial)
         if self._multi_objective_optimization:
@@ -306,6 +326,7 @@ class OptunaOptimizer(OptimizationCommon):
         if algorithm == SelectionAlgorithm.TOPSIS:
             n_loss_parameters = len(self.loss_parameters)
             n_trials = len(trials)
+            print(n_trials)
 
             all_values = numpy.ones((n_trials, n_loss_parameters))
             for ti in range(n_trials): all_values[ti, :] = trials[ti].values
@@ -323,6 +344,8 @@ class OptunaOptimizer(OptimizationCommon):
             closeness = s_minus / (s_plus + s_minus)
 
             idx = np.argmax(closeness)
+            print(closeness)
+            print(idx)
         elif algorithm == SelectionAlgorithm.NASH_EQUILIBRIUM:
             _, idx, _ = select_nash_equil_trial_from_pareto_front(self.study)
 

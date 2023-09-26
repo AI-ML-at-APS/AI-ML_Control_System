@@ -45,13 +45,19 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # ----------------------------------------------------------------------- #
 
+from typing import List
+
 import numpy as np
+
+import aps.ai.autoalignment.beamline34IDC.optimization.configs as configs
+from aps.ai.autoalignment.beamline34IDC.facade.focusing_optics_interface import \
+    AbstractFocusingOptics
 from aps.ai.autoalignment.common.facade.parameters import Movement
 
 
 # Using distance units of micrometers
 # All distance movements are in micrometers: motors 3 and the 'q' parameter.
-def get_movement(movement) -> object:
+def get_movement(movement) -> int:
     movement_types = {"relative": Movement.RELATIVE, "absolute": Movement.ABSOLUTE}
     if movement in movement_types:
         return movement_types[movement]
@@ -60,18 +66,16 @@ def get_movement(movement) -> object:
     raise ValueError
 
 
-def get_motor_move_fn(focusing_system, motor):
+def get_motor_move_fn(focusing_system: AbstractFocusingOptics, motor: str):
     motor_move_fns = {
-        "hkb_4": focusing_system.move_hkb_motor_4_translation,
-        "hkb_3": focusing_system.move_hkb_motor_3_pitch,
-        # hkb_q': focusing_system.change_hkb_shape,
-        "vkb_4": focusing_system.move_vkb_motor_4_translation,
-        "vkb_3": focusing_system.move_vkb_motor_3_pitch,
-        #'vkb_q': focusing_system.change_vkb_shape,
-        "hkb_1": focusing_system.move_hkb_motor_1_bender,
-        "hkb_2": focusing_system.move_hkb_motor_2_bender,
-        "vkb_1": focusing_system.move_vkb_motor_1_bender,
-        "vkb_2": focusing_system.move_vkb_motor_2_bender,
+        "hb_1": focusing_system.move_hkb_motor_1_bender,
+        "hb_2": focusing_system.move_hkb_motor_2_bender,
+        "hb_pitch": focusing_system.move_hkb_motor_3_pitch,
+        "hb_trans": focusing_system.move_hkb_motor_4_translation,
+        "vb_1": focusing_system.move_vkb_motor_1_bender,
+        "vb_2": focusing_system.move_vkb_motor_2_bender,
+        "vb_pitch": focusing_system.move_vkb_motor_3_pitch,
+        "vb_trans": focusing_system.move_vkb_motor_4_translation
     }
 
     if motor in motor_move_fns:
@@ -81,31 +85,32 @@ def get_motor_move_fn(focusing_system, motor):
     raise ValueError
 
 
-def move_motors(focusing_system, motors, translations, movement="relative"):
+def move_motors(
+    focusing_system: AbstractFocusingOptics, motors: List[str], values: List[float], movement: str = "relative"
+):
     movement = get_movement(movement)
     if np.ndim(motors) == 0:
         motors = [motors]
-    if np.ndim(translations) == 0:
-        translations = [translations]
-    for motor, trans in zip(motors, translations):
-        # if trans == 0: continue
+    if np.ndim(values) == 0:
+        values = [values]
+    for motor, value in zip(motors, values):
         motor_move_fn = get_motor_move_fn(focusing_system, motor)
-        motor_move_fn(trans, movement=movement)
+        unit = configs.UNITS_PER_MOTOR[motor]
+        motor_move_fn(value, movement=movement, units=unit)
+
     return focusing_system
 
 
-def get_motor_absolute_position_fn(focusing_system, motor):
+def get_motor_absolute_position_fn(focusing_system: AbstractFocusingOptics, motor: str):
     motor_get_pos_fns = {
-        "hkb_4": focusing_system.get_hkb_motor_4_translation,
-        "hkb_3": focusing_system.get_hkb_motor_3_pitch,
-        "hkb_q": focusing_system.get_hkb_q_distance,
-        "vkb_4": focusing_system.get_vkb_motor_4_translation,
-        "vkb_3": focusing_system.get_vkb_motor_3_pitch,
-        "vkb_q": focusing_system.get_vkb_q_distance,
-        "hkb_1": focusing_system.get_hkb_motor_1_bender,
-        "hkb_2": focusing_system.get_hkb_motor_2_bender,
-        "vkb_1": focusing_system.get_vkb_motor_1_bender,
-        "vkb_2": focusing_system.get_vkb_motor_2_bender,
+        "hb_1": focusing_system.get_hkb_motor_1_bender,
+        "hb_2": focusing_system.get_hkb_motor_2_bender,
+        "hb_pitch": focusing_system.get_hkb_motor_3_pitch,
+        "hb_trans": focusing_system.get_hkb_motor_4_translation,
+        "vb_1": focusing_system.get_vkb_motor_1_bender,
+        "vb_2": focusing_system.get_vkb_motor_2_bender,
+        "vb_pitch": focusing_system.get_vkb_motor_3_pitch,
+        "vb_trans": focusing_system.get_vkb_motor_4_translation,
     }
     if motor in motor_get_pos_fns:
         return motor_get_pos_fns[motor]
@@ -116,11 +121,11 @@ def get_motor_absolute_position_fn(focusing_system, motor):
 
 def get_absolute_positions(focusing_system, motors):
 
-    if np.ndim(motors) == 0:
-        motors = [motors]
+    if np.ndim(motors) == 0: motors = [motors]
 
     positions = []
     for motor in motors:
-        position = get_motor_absolute_position_fn(focusing_system, motor)()
+        unit = configs.UNITS_PER_MOTOR[motor]
+        position = get_motor_absolute_position_fn(focusing_system, motor)(units=unit)
         positions.append(position)
     return positions

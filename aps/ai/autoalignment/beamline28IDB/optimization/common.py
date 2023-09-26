@@ -49,6 +49,10 @@ import abc
 from typing import Dict, List, NamedTuple, NoReturn, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
+import dataclasses as dt
+from scipy.stats import multivariate_normal
+import scipy
 
 from aps.ai.autoalignment.beamline28IDB.facade.focusing_optics_factory import (
     ExecutionMode,
@@ -59,7 +63,10 @@ from aps.ai.autoalignment.beamline28IDB.optimization import configs, movers
 from aps.ai.autoalignment.common.simulation.facade.parameters import Implementors
 from aps.ai.autoalignment.common.util import clean_up
 from aps.ai.autoalignment.common.util.common import DictionaryWrapper, Histogram, get_info
+from aps.ai.autoalignment.common.util.common import AspectRatio, ColorMap, PlotMode
 from aps.ai.autoalignment.common.util.wrappers import get_distribution_info as get_simulated_distribution_info
+from aps.ai.autoalignment.common.util.wrappers import plot_distribution as plot_distribution_internal
+from aps.ai.autoalignment.common.util.common import calculate_projections_over_noise
 from aps.ai.autoalignment.common.util.shadow.common import (
     EmptyBeamException,
     HybridFailureException,
@@ -74,18 +81,14 @@ class OptimizationCriteria:
     SIGMA                       = "sigma"
     NEGATIVE_LOG_PEAK_INTENSITY = "negative_log_peak_intensity"
     LOG_WEIGHTED_SUM_INTENSITY  = "log_weighted_sum_intensity"
+    KL_DIVERGENCE_WITH_GAUSSIAN = "kl_divergence"
 
-class MooThresholds:
-    CENTROID       = "centroid"
-    PEAK_DISTANCE  = "peak_distance"
-    FWHM           = "fwhm"
-    SIGMA          = "sigma"
-    PEAK_INTENSITY = "peak_intensity"
-    SUM_INTENSITY  = "sum_intensity"
+
 
 class SelectionAlgorithm:
     TOPSIS           = "topsis"
     NASH_EQUILIBRIUM = "nash-equilibrium"
+
 
 class BeamState(NamedTuple):
     photon_beam: object
@@ -99,7 +102,8 @@ class BeamParameterOutput(NamedTuple):
     hist: Histogram
     dw: DictionaryWrapper
 
-class CalculationParameters(object):
+@dt.dataclass
+class CalculationParameters:
     execution_mode : int = ExecutionMode.SIMULATION
     implementor: int     = Implementors.SHADOW
     xrange: List[float] = None
@@ -119,6 +123,23 @@ class CalculationParameters(object):
     reference_v : float = 0.0
     save_images : bool = False
     every_n_images : int = 5
+    rng: np.random.Generator = dt.field(init=False)
+
+    def __post_init__(self):
+        self.rng = np.random.default_rng(self.random_seed)
+
+@dt.dataclass
+class PlotParameters:
+    implementor: int = Implementors.SHADOW
+    title: str = 'X,Z'
+    xrange: List[float] = None
+    yrange: List[float] = None
+    nbins_h: int = None
+    nbins_v: int = None
+    plot_mode: int = PlotMode.INTERNAL
+    aspect_ratio: int = AspectRatio.AUTO
+    color_map: int = ColorMap.VIRIDIS
+
 
 def get_distribution_info(cp: CalculationParameters, photon_beam: object = None, **kwargs):
     if cp.execution_mode == ExecutionMode.SIMULATION:
@@ -161,6 +182,12 @@ def get_distribution_info(cp: CalculationParameters, photon_beam: object = None,
     else:
         raise ValueError("Executione Mode not valid")
 
+def plot_distribution(ppm: PlotParameters, photon_beam: object, **kwargs):
+    params = dt.asdict(ppm)
+    params.update(kwargs)
+
+    plot_distribution_internal(beam=photon_beam, **params)
+
 def get_random_init(cp : CalculationParameters,
                     focusing_system: AbstractFocusingOptics = None, 
                     motor_types: List[str] = None,
@@ -185,7 +212,7 @@ def get_random_init(cp : CalculationParameters,
     regenerate              = True
 
     while regenerate:
-        initial_guess = [np.random.uniform(m1, m2) for (m1, m2) in init_range]
+        initial_guess = [cp.rng.uniform(m1, m2) for (m1, m2) in init_range]
         focusing_system = movers.move_motors(focusing_system, motor_types, initial_guess, movement="relative")
         centroid, photon_beam, hist, dw = get_centroid_distance(cp, focusing_system, None, **kwargs)
 
@@ -299,7 +326,7 @@ def get_weighted_sum_intensity(cp: CalculationParameters, focusing_system: Abstr
     if cp.do_gaussian_fit: raise NotImplementedError
 
     photon_beam, hist, dw = get_beam_hist_dw(cp, focusing_system, photon_beam, **kwargs)
-    sum_intensity         = _get_weighted_sum_intensity_from_hist(hist, radial_weight_power, no_beam_value)
+    sum_intensity         = _get_weighted_sum_intensity_from_hist(cp, hist, radial_weight_power, no_beam_value)
 
     return BeamParameterOutput(sum_intensity, photon_beam, hist, dw)
 
@@ -308,6 +335,16 @@ def get_peak_intensity(cp : CalculationParameters, focusing_system: AbstractFocu
     peak = _get_peak_intensity_from_dw(dw, cp.do_gaussian_fit, no_beam_value)
 
     return BeamParameterOutput(peak, photon_beam, hist, dw)
+
+def get_kl_divergence_with_gaussian_from_hist(cp: CalculationParameters, focusing_system: AbstractFocusingOptics, photon_beam: object,
+                                              no_beam_value: float = 0.0,  ref_pdf: npt.NDArray[float] = None, ref_fwhm: Tuple[float] = (1e-2, 1e-2),
+                                              eps: float = 1e-8, return_ref_pdf: bool = False, **kwargs) -> BeamParameterOutput:
+    photon_beam, hist, dw = get_beam_hist_dw(cp, focusing_system, photon_beam, **kwargs)
+    kl_div = _get_kl_divergence_with_gaussian_from_hist(hist, ref_pdf=ref_pdf, ref_fwhm=ref_fwhm, no_beam_value=no_beam_value,
+                                                        eps=eps, calculate_over_noise=cp.calculate_over_noise,
+                                                        noise_threshold=cp.noise_threshold, return_ref_pdf=return_ref_pdf)
+    return BeamParameterOutput(kl_div, photon_beam, hist, dw)
+
 
 # -------------------------------------------------------------------- #
 
@@ -325,7 +362,8 @@ def _get_fwhm_from_dw(dw: DictionaryWrapper,
     else:
         h_fwhm = dw.get_parameter("h_fwhm")
         v_fwhm = dw.get_parameter("v_fwhm")
-
+    h_fwhm = 0 if h_fwhm is None else h_fwhm
+    v_fwhm = 0 if v_fwhm is None else v_fwhm
     return ((h_fwhm - reference_h) ** 2 + (v_fwhm - reference_v) ** 2) ** 0.5
 
 
@@ -383,15 +421,102 @@ def _get_peak_distance_from_dw(dw: DictionaryWrapper,
 
     return ((h_peak - reference_h) ** 2 + (v_peak - reference_v) ** 2) ** 0.5
 
-def _get_weighted_sum_intensity_from_hist(hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0 ) -> float:
+def _get_weighted_sum_intensity_from_hist(cp: CalculationParameters, hist: Histogram, radial_weight_power: float = 0, no_beam_value: float = 0,
+                                          verbose: bool = False) -> float:
     if hist is None: return no_beam_value
+
+    data_2D = hist.data_2D
+    if cp.calculate_over_noise:
+        data_2D, *_ = calculate_projections_over_noise(data_2D, cp.noise_threshold)
 
     mesh = np.meshgrid(hist.hh, hist.vv)
     radius = (mesh[0]**2 + mesh[1]**2)**0.5
     weight = radius**radial_weight_power
-    weighted_hist = hist.data_2D*weight.T
+    weighted_hist = data_2D*weight.T
 
     return weighted_hist.sum()
+
+
+def _get_kl_divergence_with_gaussian_from_hist(cp: CalculationParameters, hist: Histogram,  ref_pdf: npt.NDArray[float] = None, 
+                                               reference_h: float=1e-3, refernece_v: float=1e-3,
+                                               eps: float = 1e-8, no_beam_value: float = 0, 
+                                               return_ref_pdf: bool = False, verbose: bool = False) -> float:
+    # ref_fwhm is in mm
+    
+    if hist is None: return no_beam_value
+
+    data_2D = hist.data_2D
+    if cp.calculate_over_noise:
+        data_2D, *_ = calculate_projections_over_noise(data_2D, cp.noise_threshold)
+
+    dsum = data_2D.sum()
+    dat_pdf = data_2D / dsum + eps
+
+    if ref_pdf is None:
+        if verbose:
+            print("Ref pdf is not supplied. Using reference_h and reference_v to create a Gaussian.")
+        ref_fwhm = np.array([reference_h, refernece_v]) + eps
+        vv, hh = np.meshgrid(hist.vv, hist.hh)
+        pos = np.dstack((hh, vv))
+        std_dev = ref_fwhm / (2 * (2 * np.log(2)) ** 0.5)
+        cov = np.array([[std_dev[0] ** 2, 0], [0, std_dev[1] ** 2]])
+        ref_pdf = multivariate_normal.pdf(pos, cov=cov)
+        ref_pdf = ref_pdf / ref_pdf.sum() + 1e-8
+    else:
+        if verbose:
+            print("Ref pdf is supplied. Ignoring reference_h and refernece_v")
+
+    kl_div = np.sum(dat_pdf * np.log(2 * dat_pdf / (ref_pdf + dat_pdf))
+                   + ref_pdf * np.log(2 * ref_pdf / (ref_pdf + dat_pdf)))
+    #kl_div = np.sum(dat_pdf * np.log(dat_pdf / ref_pdf))
+    if not return_ref_pdf:
+        return kl_div
+    else:
+        return kl_div, ref_pdf
+
+def _get_wasserstein_dist_with_gaussian_from_hist(cp: CalculationParameters, hist: Histogram,  ref_pdf: npt.NDArray[float] = None, 
+                                               reference_h: float=1e-3, refernece_v: float=1e-3,
+                                               eps: float = 1e-8, no_beam_value: float = 0, 
+                                               return_ref_pdf: bool = False, verbose: bool = False) -> float:
+    # ref_fwhm is in mm
+    raise NotImplementedError
+    if hist is None: return no_beam_value
+
+    data_2D = hist.data_2D
+    if cp.calculate_over_noise:
+        data_2D, *_ = calculate_projections_over_noise(data_2D, cp.noise_threshold)
+
+    dsum = data_2D.sum()
+    dat_pdf = data_2D / dsum + eps
+
+    if ref_pdf is None:
+        if verbose:
+            print("Ref pdf is not supplied. Using reference_h and reference_v to create a Gaussian.")
+        ref_fwhm = np.array([reference_h, refernece_v]) + eps
+        vv, hh = np.meshgrid(hist.vv, hist.hh)
+        pos = np.dstack((hh, vv))
+        std_dev = ref_fwhm / (2 * (2 * np.log(2)) ** 0.5)
+        cov = np.array([[std_dev[0] ** 2, 0], [0, std_dev[1] ** 2]])
+        ref_pdf = multivariate_normal.pdf(pos, cov=cov)
+        ref_pdf = ref_pdf / ref_pdf.sum() + 1e-8
+    else:
+        if verbose:
+            print("Ref pdf is supplied. Ignoring reference_h and refernece_v")
+
+    #kl_div = np.sum(dat_pdf * np.log(2 * dat_pdf / (ref_pdf + dat_pdf))
+    #                + ref_pdf * np.log(2 * ref_pdf / (ref_pdf + dat_pdf)))
+
+    from scipy.spatial.distance import cdist
+    from scipy.optimize import linear_sum_assignment
+
+    d = cdist(Y1, Y2)
+    assignment = linear_sum_assignment(d)
+    kl_div = np.sum(dat_pdf * np.log(dat_pdf / ref_pdf))
+    if not return_ref_pdf:
+        return kl_div
+    else:
+        return kl_div, ref_pdf
+
 
 def _get_peak_intensity_from_dw( dw: DictionaryWrapper, do_gaussian_fit: bool = False, no_beam_value: float = 0.0) -> float:
     if dw is None: return no_beam_value
@@ -468,22 +593,10 @@ class OptimizationCommon(abc.ABC):
         self._loss_function_list = []
         temp_loss_min_value = 0
         for loss_type in self.loss_parameters:
-            if loss_type == OptimizationCriteria.CENTROID:
-                self._loss_function_list.append(self.get_centroid_distance)
-            elif loss_type == OptimizationCriteria.PEAK_DISTANCE:
-                self._loss_function_list.append(self.get_peak_distance)
-            elif loss_type == OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY:
-                print("Warning: Stopping condition for the peak intensity case is not supported.")
-                self._loss_function_list.append(self.get_negative_log_peak_intensity)
-            elif loss_type == OptimizationCriteria.FWHM:
-                self._loss_function_list.append(self.get_fwhm)
-            elif loss_type == OptimizationCriteria.SIGMA:
-                self._loss_function_list.append(self.get_sigma)
-            elif loss_type == OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY:
-                self._loss_function_list.append(self.get_log_weighted_sum_intensity)
-            else:
-                raise ValueError("Supplied loss parameter is not valid.")
+            self._loss_function_list.append(self.get_beam_property_function_for_loss(loss_type))
             temp_loss_min_value += configs.DEFAULT_LOSS_TOLERANCES[loss_type]
+            if loss_type == OptimizationCriteria.KL_DIVERGENCE_WITH_GAUSSIAN:
+                self._ref_pdf = None
 
         self._multi_objective_optimization = multi_objective_optimization
         self._loss_min_value = temp_loss_min_value if loss_min_value is None else loss_min_value
@@ -502,6 +615,18 @@ class OptimizationCommon(abc.ABC):
 
         self.guesses_all = []
         self.results_all = []
+
+    def get_beam_property_function_for_loss(self, beam_prop: str):
+        property_functions = {OptimizationCriteria.CENTROID: self.get_centroid_distance,
+                              OptimizationCriteria.PEAK_DISTANCE: self.get_peak_distance,
+                              OptimizationCriteria.NEGATIVE_LOG_PEAK_INTENSITY: self.get_negative_log_peak_intensity,
+                              OptimizationCriteria.FWHM: self.get_fwhm,
+                              OptimizationCriteria.SIGMA: self.get_sigma,
+                              OptimizationCriteria.LOG_WEIGHTED_SUM_INTENSITY: self.get_log_weighted_sum_intensity,
+                              OptimizationCriteria.KL_DIVERGENCE_WITH_GAUSSIAN: self.get_kl_divergence_with_gaussian_from_hist}
+        if beam_prop not in property_functions:
+            raise ValueError("Supplied loss option is not valid.")
+        return property_functions[beam_prop]
 
     def _update_beam_state(self) -> bool:
         current_beam, current_hist, current_dw = get_beam_hist_dw(self.cp, self.focusing_system, None, **self._kwargs)
@@ -525,10 +650,10 @@ class OptimizationCommon(abc.ABC):
         return log_peak
 
     def get_sum_intensity(self) -> float:
-        return _get_weighted_sum_intensity_from_hist(self.beam_state.hist, 0, self._intensity_no_beam_loss)
+        return _get_weighted_sum_intensity_from_hist(self.cp, self.beam_state.hist, 0, self._intensity_no_beam_loss)
 
     def get_weighted_sum_intensity(self) -> float:
-        return _get_weighted_sum_intensity_from_hist(self.beam_state.hist, 2, self._intensity_no_beam_loss)
+        return _get_weighted_sum_intensity_from_hist(self.cp, self.beam_state.hist, 2, self._intensity_no_beam_loss)
 
     def get_log_weighted_sum_intensity(self) -> float:
         weighted_sum_intensity = self.get_weighted_sum_intensity()
@@ -566,6 +691,16 @@ class OptimizationCommon(abc.ABC):
                                   self.cp.do_gaussian_fit,
                                   self._no_beam_loss)
 
+    def get_kl_divergence_with_gaussian_from_hist(self) -> float:
+        kl_div, self._ref_pdf = _get_kl_divergence_with_gaussian_from_hist(self.cp, self.beam_state.hist, self._ref_pdf,
+                                                          self.reference_parameter_h_v[OptimizationCriteria.FWHM][0],
+                                                          self.reference_parameter_h_v[OptimizationCriteria.FWHM][1],
+                                                          no_beam_value=self._intensity_no_beam_loss,
+                                                          return_ref_pdf=True)
+        return kl_div
+
+
+
     def loss_function(self, translations: Union[List[float], "np.ndarray"], verbose: bool = True) -> float:
         """This mutates the state of the focusing system."""
         self.focusing_system = movers.move_motors(self.focusing_system, self.motor_types, translations, movement="relative")
@@ -602,7 +737,7 @@ class OptimizationCommon(abc.ABC):
     def get_random_init(self, guess_range: List[float] = None, verbose=True):
         guess_range = self._get_guess_ranges(guess_range)
 
-        initial_guess = [np.random.uniform(m1, m2) for (m1, m2) in guess_range]
+        initial_guess = [self.cp.rng.uniform(m1, m2) for (m1, m2) in guess_range]
         lossfn_obj_this = self.TrialInstanceLossFunction(self, verbose=verbose)
         guess_loss = lossfn_obj_this.loss(initial_guess, verbose=False)
         if verbose: print("Random guess", initial_guess, "has loss", guess_loss)

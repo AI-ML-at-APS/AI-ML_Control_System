@@ -55,7 +55,7 @@ from oasys_srw.srwlib import array, srwl, deepcopy
 
 from aps.ai.autoalignment.common.util.common import get_info, plot_2D, Flip, PlotMode, AspectRatio, ColorMap
 
-uti_plot_init(backend="Qt5Agg")
+#uti_plot_init(backend="Qt5Agg")
 
 def __get_arrays(srw_wavefront):
     _, x_array, y_array, i = srw_wavefront.get_intensity(multi_electron=False)

@@ -103,6 +103,7 @@ DEFAULT_LOSS_TOLERANCES = {
     "negative_log_peak_intensity": -np.inf,
     "sigma": 2e-4,
     "log_weighted_sum_intensity": -np.inf,
+    "kl_divergence": -np.inf
 }
 DEFAULT_CONSTRAINT_OPTIONS = [
     "peak_distance",
