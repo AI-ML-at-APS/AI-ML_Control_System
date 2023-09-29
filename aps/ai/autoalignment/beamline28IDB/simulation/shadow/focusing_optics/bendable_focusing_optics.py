@@ -356,16 +356,16 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
         return self._get_q_distance(self._h_bendable_mirror[0]), self._get_q_distance(self._h_bendable_mirror[1])
 
     def move_h_bendable_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self._move_pitch_motor(self._h_bendable_mirror[0], angle, movement, units, invert=True,
+        self._move_pitch_motor(self._h_bendable_mirror[0], angle, movement, units, invert=False,
                                round_digit=self._motor_resolution.get_motor_resolution("h_bendable_mirror_motor_pitch", units=units)[1])
-        self._move_pitch_motor(self._h_bendable_mirror[1], angle, movement, units, invert=True,
+        self._move_pitch_motor(self._h_bendable_mirror[1], angle, movement, units, invert=False,
                                round_digit=self._motor_resolution.get_motor_resolution("h_bendable_mirror_motor_pitch", units=units)[1])
 
         if not self._h_bendable_mirror in self._modified_elements: self._modified_elements.append(self._h_bendable_mirror)
         if not self._v_bimorph_mirror in self._modified_elements:  self._modified_elements.append(self._v_bimorph_mirror)
 
     def get_h_bendable_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS):
-        return self._get_pitch_motor_value(self._h_bendable_mirror[0], units, invert=True)
+        return self._get_pitch_motor_value(self._h_bendable_mirror[0], units, invert=False)
 
     def move_h_bendable_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_translation_motor(self._h_bendable_mirror[0], translation, movement, units,
@@ -403,13 +403,13 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
 
 
     def move_v_bimorph_mirror_motor_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self._move_pitch_motor(self._v_bimorph_mirror, angle, movement, units,
+        self._move_pitch_motor(self._v_bimorph_mirror, angle, movement, units, invert=True,
                                round_digit=self._motor_resolution.get_motor_resolution("v_bimorph_mirror_motor_pitch", units=AngularUnits.DEGREES)[1])
 
         if not self._v_bimorph_mirror in self._modified_elements: self._modified_elements.append(self._v_bimorph_mirror)
 
     def get_v_bimorph_mirror_motor_pitch(self, units=AngularUnits.MILLIRADIANS):
-        return self._get_pitch_motor_value(self._v_bimorph_mirror, units)
+        return self._get_pitch_motor_value(self._v_bimorph_mirror, units, invert=True)
 
     def move_v_bimorph_mirror_motor_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_translation_motor(self._v_bimorph_mirror, translation, movement, units,
