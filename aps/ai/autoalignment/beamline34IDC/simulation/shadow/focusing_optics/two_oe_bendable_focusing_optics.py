@@ -253,22 +253,22 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
 
     def move_vkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
         self._move_pitch_motor(self._vkb[0], angle, movement, units,
-                               round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_3_pitch", units=AngularUnits.DEGREES)[1], invert=True)
+                               round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_3_pitch", units=AngularUnits.DEGREES)[1])
         self._move_pitch_motor(self._vkb[1], angle, movement, units,
-                               round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_3_pitch", units=AngularUnits.DEGREES)[1], invert=True)
+                               round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_3_pitch", units=AngularUnits.DEGREES)[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_vkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS):
         # motor 3/4 are identical for the two sides
-        return self._get_pitch_motor_value(self._vkb[0], units, invert=True)
+        return self._get_pitch_motor_value(self._vkb[0], units)
 
     def move_vkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
-        self._move_translation_motor(self._vkb[0], translation, movement, units,
-                                      round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_4_translation", units=DistanceUnits.MILLIMETERS)[1], invert=True)
-        self._move_translation_motor(self._vkb[1], translation, movement, units,
-                                      round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_4_translation", units=DistanceUnits.MILLIMETERS)[1], invert=True)
+        self._move_translation_motor(self._vkb[0], translation, movement, units, invert=True,
+                                      round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_4_translation", units=DistanceUnits.MILLIMETERS)[1])
+        self._move_translation_motor(self._vkb[1], translation, movement, units, invert=True,
+                                      round_digit=self._motor_resolution.get_motor_resolution("vkb_motor_4_translation", units=DistanceUnits.MILLIMETERS)[1])
 
         if not self._vkb in self._modified_elements: self._modified_elements.append(self._vkb)
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
@@ -301,16 +301,16 @@ class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
         return self._get_q_distance(self._hkb[0]), self._get_q_distance(self._hkb[1])
 
     def move_hkb_motor_3_pitch(self, angle, movement=Movement.ABSOLUTE, units=AngularUnits.MILLIRADIANS):
-        self._move_pitch_motor(self._hkb[0], angle, movement, units,
+        self._move_pitch_motor(self._hkb[0], angle, movement, units, invert=True,
                                  round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_3_pitch", units=AngularUnits.DEGREES)[1])
-        self._move_pitch_motor(self._hkb[1], angle, movement, units,
+        self._move_pitch_motor(self._hkb[1], angle, movement, units, invert=True,
                                  round_digit=self._motor_resolution.get_motor_resolution("hkb_motor_3_pitch", units=AngularUnits.DEGREES)[1])
 
         if not self._hkb in self._modified_elements: self._modified_elements.append(self._hkb)
 
     def get_hkb_motor_3_pitch(self, units=AngularUnits.MILLIRADIANS):
         # motor 3/4 are identical for the two sides
-        return self._get_pitch_motor_value(self._hkb[0], units)
+        return self._get_pitch_motor_value(self._hkb[0], units, invert=True)
 
     def move_hkb_motor_4_translation(self, translation, movement=Movement.ABSOLUTE, units=DistanceUnits.MICRON):
         self._move_translation_motor(self._hkb[0], translation, movement, units,

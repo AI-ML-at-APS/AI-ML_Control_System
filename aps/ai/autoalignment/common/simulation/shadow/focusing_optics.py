@@ -116,14 +116,14 @@ class AbstractShadowFocusingOptics(AbstractSimulatedFocusingOptics):
 
         sign = -1 if invert else 1
 
-        total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + sign * element._oe.X_ROT)
+        total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + element._oe.X_ROT)
 
         if movement == Movement.ABSOLUTE:
-            element._oe.OFFY = round(translation, round_digit) * numpy.sin(total_pitch_angle)
-            element._oe.OFFZ = round(translation, round_digit) * numpy.cos(total_pitch_angle)
+            element._oe.OFFY = sign * round(translation, round_digit) * numpy.sin(total_pitch_angle)
+            element._oe.OFFZ = sign * round(translation, round_digit) * numpy.cos(total_pitch_angle)
         elif movement == Movement.RELATIVE:
-            element._oe.OFFY += round(translation, round_digit) * numpy.sin(total_pitch_angle)
-            element._oe.OFFZ += round(translation, round_digit) * numpy.cos(total_pitch_angle)
+            element._oe.OFFY += sign * round(translation, round_digit) * numpy.sin(total_pitch_angle)
+            element._oe.OFFZ += sign * round(translation, round_digit) * numpy.cos(total_pitch_angle)
         else:
             raise ValueError("Movement not recognized")
 
