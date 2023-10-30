@@ -140,8 +140,7 @@ class AbstractShadowFocusingOptics(AbstractSimulatedFocusingOptics):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
         sign = -1 if invert else 1
-
-        angle = sign*(element._oe.X_ROT + sign * (90 - element._oe.T_INCIDENCE))
+        angle = 90 - element._oe.T_INCIDENCE + sign*element._oe.X_ROT
 
         if units == AngularUnits.MILLIRADIANS: return 1000 * numpy.radians(angle)
         elif units == AngularUnits.DEGREES:    return angle
@@ -152,8 +151,10 @@ class AbstractShadowFocusingOptics(AbstractSimulatedFocusingOptics):
     def _get_translation_motor_value(cls, element, units=DistanceUnits.MICRON, invert=False):
         if element is None: raise ValueError("Initialize Focusing Optics System first")
 
-        pitch_angle = cls._get_pitch_motor_value(element, units=AngularUnits.RADIANS, invert=invert)
-        translation = numpy.average([element._oe.OFFY / numpy.sin(pitch_angle), element._oe.OFFZ / numpy.cos(pitch_angle)])
+        sign = -1 if invert else 1
+        total_pitch_angle = numpy.radians(90 - element._oe.T_INCIDENCE + element._oe.X_ROT)
+
+        translation = sign*numpy.average([element._oe.OFFY / numpy.sin(total_pitch_angle), element._oe.OFFZ / numpy.cos(total_pitch_angle)])
 
         if units == DistanceUnits.MICRON:        return translation * 1e3
         elif units == DistanceUnits.MILLIMETERS: return translation
