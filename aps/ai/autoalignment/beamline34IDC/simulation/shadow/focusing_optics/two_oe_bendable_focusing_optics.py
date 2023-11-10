@@ -57,9 +57,8 @@ from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits
 
 from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommonAbstract
 from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.calibrated_bender import CalibratedBenderManager, HKBMockWidget, VKBMockWidget
-from aps.ai.autoalignment.beamline34IDC.simulation.facade.focusing_optics_interface import get_default_input_features
 
-from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl.double_rod_bendable_ellispoid_mirror_bl import apply_bender_surface
+from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl.fixed_rods_bender_ellispoid_mirror_bl import apply_bender_surface
 
 class TwoOEBendableFocusingOptics(FocusingOpticsCommonAbstract):
     def __init__(self):

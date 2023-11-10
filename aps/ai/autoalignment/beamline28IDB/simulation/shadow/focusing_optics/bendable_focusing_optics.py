@@ -57,7 +57,7 @@ from aps.ai.autoalignment.common.util.shadow.common import HybridFailureExceptio
 from aps.ai.autoalignment.beamline28IDB.simulation.shadow.focusing_optics.calibrated_bender import TwoMotorsCalibratedBenderManager, OneMotorCalibratedBenderManager, HKBMockWidget
 from aps.ai.autoalignment.common.facade.parameters import Movement, AngularUnits, DistanceUnits
 
-from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl.aps_bendable_ellipsoid_mirror_bl import apply_bender_surface
+from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl.flexural_hinge_bender_ellipsoid_mirror_bl import apply_bender_surface
 
 class BendableFocusingOptics(FocusingOpticsCommonAbstract):
     def __init__(self):
