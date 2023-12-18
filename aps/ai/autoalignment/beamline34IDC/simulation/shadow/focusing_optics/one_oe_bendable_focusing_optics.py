@@ -59,7 +59,7 @@ from aps.ai.autoalignment.common.facade.parameters import Movement, DistanceUnit
 from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.focusing_optics_common import FocusingOpticsCommonAbstract
 from aps.ai.autoalignment.beamline34IDC.simulation.shadow.focusing_optics.calibrated_bender import CalibratedBenderManager, HKBMockWidget, VKBMockWidget
 
-from syned.tools.benders.fixed_rods_bender_manager import ideal_height_profile
+from srxraylib.profiles.benders.fixed_rods_bender_manager import ideal_height_profile
 from orangecontrib.shadow_advanced_tools.widgets.optical_elements.bl.fixed_rods_bender_ellispoid_mirror_bl import apply_bender_surface
 
 class CalibratedBendableFocusingOptics(FocusingOpticsCommonAbstract):

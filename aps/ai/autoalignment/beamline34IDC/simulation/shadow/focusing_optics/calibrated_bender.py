@@ -48,7 +48,7 @@
 import os, numpy
 
 from oasys.widgets import congruence
-from syned.tools.benders.fixed_rods_bender_manager import calculate_W0, calculate_taper_factor
+from srxraylib.profiles.benders.fixed_rods_bender_manager import calculate_W0, calculate_taper_factor
 
 from aps.common.initializer import get_registered_ini_instance
 from aps.common.ml.mocks import MockWidget
