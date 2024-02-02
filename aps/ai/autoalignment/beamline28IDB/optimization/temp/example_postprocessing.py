@@ -44,7 +44,7 @@ if __name__ == "__main__":
     study.add_trials(autofocus_trials)
 
     # Generating the pareto front for the multiobjective optimization
-    optuna.visualization.matplotlib.plot_pareto_front(study, target_names=["centroid", "sigma"])
+    optuna.visualization.matplotlib.plot_pareto_front_correlations(study, target_names=["centroid", "sigma"])
     plt.tight_layout()
 
     # plt.savefig(...) to save the image
