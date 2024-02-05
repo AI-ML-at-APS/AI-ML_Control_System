@@ -237,7 +237,7 @@ class BendableFocusingOptics(FocusingOpticsCommonAbstract):
             if do_calculation:
                 widget._shadow_oe._oe.FILE_RIP = bytes(widget.ms_defect_file_name, 'utf-8')  # restore original error profile
 
-                apply_bender_surface(widget=widget, input_beam=input_beam, shadow_oe=widget._shadow_oe)
+                apply_bender_surface(widget=widget, shadow_oe=widget._shadow_oe)
             else:
                 widget._shadow_oe._oe.F_RIPPLE = 1
                 widget._shadow_oe._oe.F_G_S = 2

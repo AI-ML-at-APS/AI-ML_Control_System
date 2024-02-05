@@ -101,7 +101,7 @@ if __name__ == "__main__":
     # V-KB: sigma min 0.00037730694191372074 found at (U,D): [142.0, 240.5]
     # H-KB: sigma min 0.00016296492041427147 found at (U,D): [216.5, 112.5]
     #
-    input_features.set_parameter("coh_slits_h_aperture", 0.03)
+    input_features.set_parameter("coh_slits_h_aperture", 0.5)
     input_features.set_parameter("coh_slits_v_aperture", 0.07)
     #input_features.set_parameter("coh_slits_h_aperture", 0.15)
     #input_features.set_parameter("coh_slits_v_aperture", 0.15)
@@ -129,22 +129,22 @@ if __name__ == "__main__":
 
     random_seed = 2120 # for repeatability
     #ranges = [[-0.0025, 0.0025], [-0.0025, 0.0025]]
-    ranges = [[-0.05, 0.05], [-0.05, 0.05]]
-    bins = [1001, 1001]
-    focusing_system.perturbate_input_photon_beam(shift_h=0.0, shift_v=0.0)
+    ranges = [[-0.005, 0.005], [-0.005, 0.005]]
+    bins = [101, 101]
+    focusing_system.perturbate_input_photon_beam(shift_h=0.001, shift_v=0.001, rotation_h=1e-6, rotation_v=-1e-6)
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
     plot_shadow_beam_spatial_distribution(output_beam, nbins_h=bins[0], nbins_v=bins[1], xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE)
     #plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.INTERNAL)
 
+    sys.exit(0)
+
     focusing_system.move_vkb_motor_3_pitch(angle=2.9007, units=AngularUnits.MILLIRADIANS)
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
     plot_shadow_beam_spatial_distribution(output_beam, nbins_h=bins[0], nbins_v=bins[1], xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE)
-
-    sys.exit(0)
 
     dump_photon_beam_as_beamline(output_beam, "0_0")
 
