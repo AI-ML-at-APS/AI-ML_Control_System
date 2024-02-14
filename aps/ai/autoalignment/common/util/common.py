@@ -101,7 +101,7 @@ def get_info(x_array, y_array, z_array, xrange=None, yrange=None, do_gaussian_fi
     sigma_v                                  = get_sigma(hh_v, yy)
     centroid_h                               = get_average(hh_h, xx)
     centroid_v                               = get_average(hh_v, yy)
-    peak_h, peak_v                           = get_peak_location_2D(xx, yy, hh)
+    peak_h, peak_v, _, _                     = get_peak_location_2D(xx, yy, hh)
 
     ticket['xrange'] = xrange
     ticket['yrange'] = yrange
@@ -198,7 +198,7 @@ def plot_2D(x_array, y_array, z_array, title="X,Z", xrange=None, yrange=None,
     sigma_v        = get_sigma(hh_v, yy)
     centroid_h     = get_average(hh_h, xx)
     centroid_v     = get_average(hh_v, yy)
-    peak_h, peak_v = get_peak_location_2D(xx, yy, hh, smooth=True)
+    peak_h, peak_v, _, _ = get_peak_location_2D(xx, yy, hh, smooth=True)
 
     integral_intensity = numpy.sum(hh) * (1 if int_um=="" else (xx[1] - xx[0]) * (yy[1] - yy[0]))
     peak_intensity     = numpy.average(hh[numpy.where(hh >= numpy.max(hh) * 0.95)]),

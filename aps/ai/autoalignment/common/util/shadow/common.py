@@ -143,7 +143,7 @@ def __get_shadow_beam_distribution(shadow_beam, var_1, var_2, nbins_h=201, nbins
         fwhm_v    = ticket['fwhm_v']
         intensity = ticket['intensity']
 
-    peak_h, peak_v = get_peak_location_2D(xx, yy, hh)
+    peak_h, peak_v, _, _ = get_peak_location_2D(xx, yy, hh)
 
     if do_gaussian_fit:
         try:    gaussian_fit = calculate_2D_gaussian_fit(data_2D=hh, x=xx, y=yy)
