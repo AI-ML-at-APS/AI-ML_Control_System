@@ -101,7 +101,7 @@ if __name__ == "__main__":
     # V-KB: sigma min 0.00037730694191372074 found at (U,D): [142.0, 240.5]
     # H-KB: sigma min 0.00016296492041427147 found at (U,D): [216.5, 112.5]
     #
-    input_features.set_parameter("coh_slits_h_aperture", 0.5)
+    input_features.set_parameter("coh_slits_h_aperture", 0.03)
     input_features.set_parameter("coh_slits_v_aperture", 0.07)
     #input_features.set_parameter("coh_slits_h_aperture", 0.15)
     #input_features.set_parameter("coh_slits_v_aperture", 0.15)
@@ -109,6 +109,15 @@ if __name__ == "__main__":
     input_features.set_parameter("vkb_motor_2_bender_position", 243.5)
     input_features.set_parameter("hkb_motor_1_bender_position", 215.5)
     input_features.set_parameter("hkb_motor_2_bender_position", 110.5)
+
+    #input_features.set_parameter("vkb_motor_1_bender_position", 138.6815795)
+    #input_features.set_parameter("vkb_motor_2_bender_position", 239.22484)
+    #input_features.set_parameter("vkb_motor_3_pitch_position", 3.0162817)
+    #input_features.set_parameter("vkb_motor_4_translation_position", 1.021437)
+    #input_features.set_parameter("hkb_motor_1_bender_position", 195.30123)
+    #input_features.set_parameter("hkb_motor_2_bender_position", 96.169262)
+    #input_features.set_parameter("hkb_motor_3_pitch_position", 3.01779)
+    #input_features.set_parameter("hkb_motor_4_translation_position", 13.7914)
 
     focusing_system.initialize(input_photon_beam=input_beam,
                                input_features=input_features,
@@ -135,7 +144,7 @@ if __name__ == "__main__":
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    plot_shadow_beam_spatial_distribution(output_beam, nbins_h=bins[0], nbins_v=bins[1], xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE)
+    plot_shadow_beam_spatial_distribution(output_beam, nbins_h=bins[0], nbins_v=bins[1], xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.INTERNAL)
     #plot_shadow_beam_spatial_distribution(output_beam, xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.INTERNAL)
 
     sys.exit(0)
@@ -144,7 +153,7 @@ if __name__ == "__main__":
 
     output_beam = focusing_system.get_photon_beam(verbose=verbose, near_field_calculation=True, debug_mode=False, random_seed=random_seed)
 
-    plot_shadow_beam_spatial_distribution(output_beam, nbins_h=bins[0], nbins_v=bins[1], xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.NATIVE)
+    plot_shadow_beam_spatial_distribution(output_beam, nbins_h=bins[0], nbins_v=bins[1], xrange=ranges[0], yrange=ranges[1], plot_mode=PlotMode.INTERNAL)
 
     dump_photon_beam_as_beamline(output_beam, "0_0")
 
